@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lawyer-pwa-v2';
+const CACHE_NAME = 'lawyer-pwa-v3';
 
 const PRECACHE_URLS = [
   './',
@@ -91,6 +91,20 @@ const PRECACHE_URLS = [
   './js/html2pdf.bundle.min.js'
 ];
 
+const INSTALL_URLS = [
+  './',
+  './index.html',
+  './manifest.json',
+  './icons/icon-mobile.png',
+  './icons/icon.ico',
+  './css/tailwind.min.css',
+  './css/style.css',
+  './css/local-fonts.css',
+  './js/main.js',
+  './js/header.js',
+  './pwa-register.js'
+];
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
@@ -99,7 +113,7 @@ self.addEventListener('install', (event) => {
       // IMPORTANT: cache.addAll() fails the whole install if any single URL fails.
       // We cache best-effort to ensure SW still installs and app remains usable offline.
       await Promise.allSettled(
-        PRECACHE_URLS.map((url) => cache.add(url).catch(() => null))
+        INSTALL_URLS.map((url) => cache.add(url).catch(() => null))
       );
 
       await self.skipWaiting();

@@ -17,6 +17,37 @@ let updateInfo = null;
 let isCheckingForUpdates = false;
 let isDownloadingUpdate = false;
 
+async function refreshWebAppToLatest() {
+    try {
+        try { updateUpdateStatus('جاري تحديث الموقع...', 'checking'); } catch (_) { }
+
+        try {
+            if ('serviceWorker' in navigator) {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                await Promise.allSettled((regs || []).map(r => r.unregister()));
+            }
+        } catch (_) { }
+
+        try {
+            if (typeof caches !== 'undefined' && caches && typeof caches.keys === 'function') {
+                const keys = await caches.keys();
+                await Promise.allSettled((keys || []).map(k => caches.delete(k)));
+            }
+        } catch (_) { }
+
+        try { localStorage.removeItem('pwa_offline_ready'); } catch (_) { }
+
+        try {
+            const sep = (location.search && location.search.length > 0) ? '&' : '?';
+            location.replace(location.pathname + location.search + sep + 'reloaded=' + Date.now() + location.hash);
+        } catch (_) {
+            try { location.reload(); } catch (_) { }
+        }
+    } catch (_) {
+        try { location.reload(); } catch (_) { }
+    }
+}
+
 
 function initUpdater() {
     if (!window.electronAPI) {
@@ -190,11 +221,7 @@ async function checkForUpdates() {
 
         
         if (!window.electronAPI) {
-            updateUpdateStatus('التحديثات متاحة لنسخة الويندوز فقط', 'up-to-date');
-            hideInstallButton();
-            hideProgressBar();
-            hideUpdateInfo();
-            showToast('ميزة التحديث متاحة لتطبيق ويندوز فقط. يرجى استخدام نسخة الكمبيوتر.', 'info');
+            await refreshWebAppToLatest();
             return;
         }
 
