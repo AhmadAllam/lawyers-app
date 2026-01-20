@@ -48,53 +48,40 @@
                     ].join(';');
 
                     const title = document.createElement('div');
-                    title.textContent = 'جاري فتح الموقع';
-                    title.style.cssText = 'font-weight:900;color:#0f172a;font-size:16px;margin-bottom:10px;';
+                    title.textContent = 'جاري التحميل';
+                    title.style.cssText = 'font-weight:900;color:#0f172a;font-size:16px;margin-bottom:12px;';
 
-                    const circleWrap = document.createElement('div');
-                    circleWrap.style.cssText = 'display:flex;align-items:center;justify-content:center;margin:10px 0 6px;';
+                    const pulseWrap = document.createElement('div');
+                    pulseWrap.style.cssText = 'display:flex;align-items:center;justify-content:center;padding:10px 0;';
 
-                    const circle = document.createElement('div');
-                    circle.id = 'app-loading-circle';
-                    circle.setAttribute('aria-label', 'جاري التحميل');
-                    circle.style.cssText = [
-                        'width:74px',
-                        'height:74px',
+                    const pulse = document.createElement('div');
+                    pulse.id = 'app-loading-pulse';
+                    pulse.style.cssText = [
+                        'width:54px',
+                        'height:54px',
                         'border-radius:9999px',
                         'background:#0EA5E9',
-                        'box-shadow:0 0 0 0 rgba(14,165,233,.45)',
-                        'animation:appPulse 1.2s ease-in-out infinite'
+                        'box-shadow:0 0 0 0 rgba(14,165,233,.55)',
+                        'animation:appPulse 1.05s ease-in-out infinite'
                     ].join(';');
-                    circleWrap.appendChild(circle);
+                    pulseWrap.appendChild(pulse);
 
                     const hint = document.createElement('div');
-                    hint.textContent = 'جاري التحميل...';
+                    hint.textContent = 'الرجاء الانتظار...';
                     hint.style.cssText = 'margin-top:10px;font-size:13px;color:#334155;';
 
                     const style = document.createElement('style');
                     style.setAttribute('data-app-loading-style', '1');
-                    style.textContent = `
-                        @keyframes appPulse {
-                            0% {
-                                transform: scale(.92);
-                                background: #0EA5E9;
-                                box-shadow: 0 0 0 0 rgba(14, 165, 233, .45);
-                            }
-                            50% {
-                                transform: scale(1);
-                                background: #22c55e;
-                                box-shadow: 0 0 0 18px rgba(34, 197, 94, 0);
-                            }
-                            100% {
-                                transform: scale(.92);
-                                background: #0EA5E9;
-                                box-shadow: 0 0 0 0 rgba(14, 165, 233, .45);
-                            }
-                        }
-                    `;
+                    style.textContent = [
+                        '@keyframes appPulse{',
+                        '0%{transform:scale(.92);box-shadow:0 0 0 0 rgba(14,165,233,.55);opacity:.95}',
+                        '70%{transform:scale(1);box-shadow:0 0 0 18px rgba(14,165,233,0);opacity:1}',
+                        '100%{transform:scale(.92);box-shadow:0 0 0 0 rgba(14,165,233,0);opacity:.95}',
+                        '}',
+                    ].join('');
 
                     box.appendChild(title);
-                    box.appendChild(circleWrap);
+                    box.appendChild(pulseWrap);
                     box.appendChild(hint);
                     overlay.appendChild(box);
 
