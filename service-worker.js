@@ -200,7 +200,19 @@ self.addEventListener('fetch', (event) => {
         .catch(() => {
           if (req.mode === 'navigate') {
             return caches.match(req, isSameOrigin ? { ignoreSearch: true } : undefined)
-              .then((navCached) => navCached || caches.match('./index.html'));
+              .then((navCached) => {
+                if (navCached) return navCached;
+
+                try {
+                  const u = new URL(req.url);
+                  const p = (u && u.pathname) ? String(u.pathname) : '';
+                  if (/\/setup\.html$/i.test(p)) {
+                    return caches.match('./setup.html') || caches.match('./index.html');
+                  }
+                } catch (_) {}
+
+                return caches.match('./index.html');
+              });
           }
           return cached;
         });
