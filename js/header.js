@@ -1,15 +1,110 @@
 (function () {
-     try {
-         if (typeof document === 'undefined') return;
-         if (document.querySelector('script[data-pwa-register="1"]')) return;
-         const s = document.createElement('script');
-         s.src = 'pwa-register.js';
-         s.async = true;
-         s.defer = true;
-         s.setAttribute('data-pwa-register', '1');
-         (document.head || document.documentElement).appendChild(s);
-     } catch (e) { }
- })();
+    try {
+        if (typeof document === 'undefined') return;
+
+        const isDesktopApp = (function () {
+            try { return !!(typeof window !== 'undefined' && window.electronAPI); } catch (_) { return false; }
+        })();
+
+        try {
+            if (!isDesktopApp) {
+                if (document.getElementById('app-loading-overlay')) {
+                    // already created
+                } else {
+                    const overlay = document.createElement('div');
+                    overlay.id = 'app-loading-overlay';
+                    overlay.setAttribute('data-app-loading', '1');
+                    overlay.style.cssText = [
+                        'position:fixed',
+                        'inset:0',
+                        'background:rgba(255,255,255,0.92)',
+                        'z-index:2147483646',
+                        'display:flex',
+                        'align-items:center',
+                        'justify-content:center',
+                        'padding:16px',
+                        'direction:rtl'
+                    ].join(';');
+
+                    const box = document.createElement('div');
+                    box.style.cssText = [
+                        'width:min(520px, 100%)',
+                        'background:#ffffff',
+                        'border:1px solid rgba(15,23,42,.12)',
+                        'border-radius:16px',
+                        'padding:16px',
+                        'box-shadow:0 16px 40px rgba(15,23,42,.14)',
+                        'font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial',
+                        'text-align:center'
+                    ].join(';');
+
+                    const title = document.createElement('div');
+                    title.textContent = 'جاري فتح الموقع';
+                    title.style.cssText = 'font-weight:900;color:#0f172a;font-size:16px;margin-bottom:10px;';
+
+                    const barWrap = document.createElement('div');
+                    barWrap.style.cssText = 'width:100%;height:12px;background:#e5e7eb;border-radius:9999px;overflow:hidden;';
+
+                    const bar = document.createElement('div');
+                    bar.id = 'app-loading-bar';
+                    bar.style.cssText = [
+                        'height:100%',
+                        'width:45%',
+                        'background:linear-gradient(90deg, #0EA5E9, #2563eb, #0EA5E9)',
+                        'background-size:200% 100%',
+                        'animation:appLoadingMove 1.1s linear infinite'
+                    ].join(';');
+                    barWrap.appendChild(bar);
+
+                    const hint = document.createElement('div');
+                    hint.textContent = 'انتظر لحظات...';
+                    hint.style.cssText = 'margin-top:10px;font-size:13px;color:#334155;';
+
+                    const style = document.createElement('style');
+                    style.setAttribute('data-app-loading-style', '1');
+                    style.textContent = '@keyframes appLoadingMove{0%{background-position:0% 0}100%{background-position:200% 0}}';
+
+                    box.appendChild(title);
+                    box.appendChild(barWrap);
+                    box.appendChild(hint);
+                    overlay.appendChild(box);
+
+                    (document.head || document.documentElement).appendChild(style);
+                    (document.body || document.documentElement).appendChild(overlay);
+                }
+
+                const hideOverlay = () => {
+                    try {
+                        const el = document.getElementById('app-loading-overlay');
+                        if (!el) return;
+                        el.style.transition = 'opacity .25s ease';
+                        el.style.opacity = '0';
+                        setTimeout(() => {
+                            try { el.remove(); } catch (_) {
+                                try { if (el.parentNode) el.parentNode.removeChild(el); } catch (_) { }
+                            }
+                        }, 280);
+                    } catch (_) { }
+                };
+
+                // اختيار (ب): نخفيه بعد اكتمال تحميل كل عناصر الصفحة
+                window.addEventListener('load', () => {
+                    setTimeout(hideOverlay, 150);
+                });
+            }
+        } catch (e) { }
+
+        if (!isDesktopApp) {
+            if (document.querySelector('script[data-pwa-register="1"]')) return;
+            const s = document.createElement('script');
+            s.src = 'pwa-register.js';
+            s.async = true;
+            s.defer = true;
+            s.setAttribute('data-pwa-register', '1');
+            (document.head || document.documentElement).appendChild(s);
+        }
+    } catch (e) { }
+})();
 
 async function updateCountersInHeader() {
     try {
