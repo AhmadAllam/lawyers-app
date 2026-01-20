@@ -581,6 +581,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (prev) prev.addEventListener('click', handlePrev);
     if (next) next.addEventListener('click', handleNext);
     render();
+
+    try {
+        // إشعار بأن الصفحة أصبحت جاهزة للاستخدام (لإخفاء شاشة التحميل)
+        window.dispatchEvent(new CustomEvent('lawyer:page:ready'));
+    } catch (e) {}
 });
 
 async function importSampleData() {

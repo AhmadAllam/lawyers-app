@@ -6,6 +6,15 @@
             try { return !!(typeof window !== 'undefined' && window.electronAPI); } catch (_) { return false; }
         })();
 
+        const isSetupPage = (function () {
+            try {
+                if (typeof location === 'undefined') return false;
+                return /\/setup\.html$/i.test(location.pathname || '') || /setup\.html$/i.test(location.href || '');
+            } catch (_) {
+                return false;
+            }
+        })();
+
         try {
             if (!isDesktopApp) {
                 if (document.getElementById('app-loading-overlay')) {
@@ -87,10 +96,20 @@
                     } catch (_) { }
                 };
 
-                // اختيار (ب): نخفيه بعد اكتمال تحميل كل عناصر الصفحة
-                window.addEventListener('load', () => {
-                    setTimeout(hideOverlay, 150);
-                });
+                // في صفحة الإعداد: نخفيه لما الصفحة تقول إنها جاهزة (مش على اكتمال التحميل العام)
+                if (isSetupPage) {
+                    window.addEventListener('lawyer:page:ready', () => {
+                        setTimeout(hideOverlay, 150);
+                    }, { once: true });
+
+                    // مهلة احتياطية: لو لأي سبب ما وصلتش إشارة الجاهزية
+                    setTimeout(hideOverlay, 12000);
+                } else {
+                    // اختيار (ب): نخفيه بعد اكتمال تحميل كل عناصر الصفحة
+                    window.addEventListener('load', () => {
+                        setTimeout(hideOverlay, 150);
+                    });
+                }
             }
         } catch (e) { }
 
