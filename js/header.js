@@ -105,12 +105,33 @@
 
                 // في صفحة الإعداد: نخفيه لما الصفحة تقول إنها جاهزة (مش على اكتمال التحميل العام)
                 if (isSetupPage) {
-                    window.addEventListener('lawyer:page:ready', () => {
-                        setTimeout(hideOverlay, 150);
+                    let pageLoaded = false;
+                    let pageReady = false;
+
+                    try {
+                        pageLoaded = (document && document.readyState === 'complete');
+                    } catch (_) { pageLoaded = false; }
+
+                    const tryHide = () => {
+                        try {
+                            if (pageLoaded && pageReady) {
+                                setTimeout(hideOverlay, 150);
+                            }
+                        } catch (_) { }
+                    };
+
+                    window.addEventListener('load', () => {
+                        pageLoaded = true;
+                        tryHide();
                     }, { once: true });
 
-                    // مهلة احتياطية: لو لأي سبب ما وصلتش إشارة الجاهزية
-                    setTimeout(hideOverlay, 12000);
+                    window.addEventListener('lawyer:page:ready', () => {
+                        pageReady = true;
+                        tryHide();
+                    }, { once: true });
+
+                    // مهلة احتياطية: لو لأي سبب حصل تعليق
+                    setTimeout(hideOverlay, 20000);
                 } else {
                     // اختيار (ب): نخفيه بعد اكتمال تحميل كل عناصر الصفحة
                     window.addEventListener('load', () => {
