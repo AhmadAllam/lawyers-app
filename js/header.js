@@ -51,30 +51,50 @@
                     title.textContent = 'جاري فتح الموقع';
                     title.style.cssText = 'font-weight:900;color:#0f172a;font-size:16px;margin-bottom:10px;';
 
-                    const barWrap = document.createElement('div');
-                    barWrap.style.cssText = 'width:100%;height:12px;background:#e5e7eb;border-radius:9999px;overflow:hidden;';
+                    const circleWrap = document.createElement('div');
+                    circleWrap.style.cssText = 'display:flex;align-items:center;justify-content:center;margin:10px 0 6px;';
 
-                    const bar = document.createElement('div');
-                    bar.id = 'app-loading-bar';
-                    bar.style.cssText = [
-                        'height:100%',
-                        'width:45%',
-                        'background:linear-gradient(90deg, #0EA5E9, #2563eb, #0EA5E9)',
-                        'background-size:200% 100%',
-                        'animation:appLoadingMove 1.1s linear infinite'
+                    const circle = document.createElement('div');
+                    circle.id = 'app-loading-circle';
+                    circle.setAttribute('aria-label', 'جاري التحميل');
+                    circle.style.cssText = [
+                        'width:74px',
+                        'height:74px',
+                        'border-radius:9999px',
+                        'background:#0EA5E9',
+                        'box-shadow:0 0 0 0 rgba(14,165,233,.45)',
+                        'animation:appPulse 1.2s ease-in-out infinite'
                     ].join(';');
-                    barWrap.appendChild(bar);
+                    circleWrap.appendChild(circle);
 
                     const hint = document.createElement('div');
-                    hint.textContent = 'انتظر لحظات...';
+                    hint.textContent = 'جاري التحميل...';
                     hint.style.cssText = 'margin-top:10px;font-size:13px;color:#334155;';
 
                     const style = document.createElement('style');
                     style.setAttribute('data-app-loading-style', '1');
-                    style.textContent = '@keyframes appLoadingMove{0%{background-position:0% 0}100%{background-position:200% 0}}';
+                    style.textContent = `
+                        @keyframes appPulse {
+                            0% {
+                                transform: scale(.92);
+                                background: #0EA5E9;
+                                box-shadow: 0 0 0 0 rgba(14, 165, 233, .45);
+                            }
+                            50% {
+                                transform: scale(1);
+                                background: #22c55e;
+                                box-shadow: 0 0 0 18px rgba(34, 197, 94, 0);
+                            }
+                            100% {
+                                transform: scale(.92);
+                                background: #0EA5E9;
+                                box-shadow: 0 0 0 0 rgba(14, 165, 233, .45);
+                            }
+                        }
+                    `;
 
                     box.appendChild(title);
-                    box.appendChild(barWrap);
+                    box.appendChild(circleWrap);
                     box.appendChild(hint);
                     overlay.appendChild(box);
 
