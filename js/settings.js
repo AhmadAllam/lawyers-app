@@ -1484,12 +1484,18 @@ async function displaySettingsModal() {
                         track.dataset.boundNotSupported = '1';
                         track.style.cursor = 'not-allowed';
                         track.setAttribute('tabindex', '0');
-                        // على الويب (GitHub Pages) بعض المتصفحات تمنع onClick داخل عناصر معينة أو مع disabled.
-                        // نربط مستمع ضغط هنا لضمان ظهور التوست دائمًا.
-                        track.addEventListener('click', (ev) => {
-                            try { ev.preventDefault(); ev.stopPropagation(); } catch (e) { }
-                            showNotSupportedToast();
-                        }, true);
+                        // GitHub Pages / Web: mouse & touch should also show the toast
+                        // (the checkbox is disabled, so we intercept on the track itself)
+                        if (!track.dataset.boundNotSupportedClick) {
+                            track.dataset.boundNotSupportedClick = '1';
+                            const handler = (ev) => {
+                                try { if (ev) { ev.preventDefault(); ev.stopPropagation(); } } catch (e) { }
+                                showNotSupportedToast();
+                            };
+                            track.addEventListener('click', handler);
+                            track.addEventListener('pointerdown', handler);
+                            track.addEventListener('touchstart', handler, { passive: false });
+                        }
                         track.addEventListener('keydown', (ev) => {
                             const k = ev && (ev.key || ev.code);
                             if (k === 'Enter' || k === ' ' || k === 'Spacebar') {
