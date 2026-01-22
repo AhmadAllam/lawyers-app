@@ -6,7 +6,6 @@
   <title>المحامى الرقمى</title>
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#0EA5E9" />
-  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   
@@ -241,6 +240,34 @@
       }
     }
 
+    /* Mobile home: office name + stats cards palette (no layout changes) */
+    @media (max-width: 768px) {
+      #mobile-top-actions {
+        background: linear-gradient(180deg, #c3f3dd 0%, #a7e8cc 100%) !important;
+        border: 1px solid rgba(52, 211, 153, 0.45) !important;
+      }
+      #mobile-office-card {
+        background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%) !important;
+        border: 1px solid rgba(52, 211, 153, 0.45) !important;
+      }
+      #mobile-office-card span,
+      #mobile-office-name-card {
+        color: #0f172a !important;
+      }
+
+      #mobile-stats {
+        background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%) !important;
+        border: 1px solid rgba(52, 211, 153, 0.45) !important;
+      }
+      #mobile-stats .rounded-xl {
+        background: rgba(255, 255, 255, 0.85) !important;
+        border: 1px solid rgba(15, 23, 42, 0.12) !important;
+      }
+      #mobile-stats .rounded-xl * {
+        color: #0f172a !important;
+      }
+    }
+
     @media (max-width: 360px) {
       /* تحسين شريط الأزرار على الشاشات الصغيرة جداً */
       .md\:hidden header .flex.items-center.justify-center {
@@ -398,7 +425,7 @@
       <div class="md:hidden">
         <header class="mb-1">
           
-          <div class="rounded-xl p-3 shadow-sm" style="background-color:#4b5563;">
+          <div id="mobile-top-actions" class="rounded-xl p-3 shadow-sm" style="background-color:#4b5563;">
             <div class="flex items-center justify-center gap-6">
               <button id="notifications-btn-mobile" class="flex flex-col items-center gap-1 hover:bg-gray-700 rounded-lg p-2 transition-colors">
                 <div class="relative">
@@ -420,7 +447,7 @@
         </header>
         
         
-        <div class="p-3 rounded-xl shadow-sm mb-1" style="background-color: #4b5563;">
+        <div id="mobile-office-card" class="p-3 rounded-xl shadow-sm mb-1" style="background-color: #4b5563;">
           <div class="text-center mb-1">
             <span class="font-semibold text-sm" style="color: #e5e7eb;">مرحباً</span>
           </div>

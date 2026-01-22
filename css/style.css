@@ -7,6 +7,13 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* Global top header bar: make it black instead of the default blue utilities.
+   IMPORTANT: keep buttons (home/back) styling intact by only changing header background/border. */
+header.bg-blue-900 {
+    background-color: #000000 !important;
+    border-bottom-color: #000000 !important;
+}
+
 .tab-item.active {
     border-color: var(--md-sys-color-primary) !important;
     box-shadow: 0 4px 8px rgba(14, 165, 233, 0.3);
