@@ -339,8 +339,24 @@
     if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
       window.addEventListener('beforeinstallprompt', function (e) {
         try {
-          e.preventDefault();
-          deferredInstallPrompt = e;
+          // لا نمنع بانر التثبيت الافتراضي إلا عندما نكون في مسار التثبيت داخل صفحة الإعداد.
+          // هذا يمنع رسالة الكونسول: Banner not shown... عند فتح الصفحة الرئيسية.
+          const allowCustomPrompt = (function () {
+            try {
+              return (typeof isOnSetupPage === 'function'
+                && typeof canShowInstallPromptNow === 'function'
+                && isOnSetupPage()
+                && canShowInstallPromptNow());
+            } catch (_) { return false; }
+          })();
+
+          if (allowCustomPrompt) {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+          } else {
+            // دع المتصفح يعرض البانر الافتراضي إذا أراد
+            deferredInstallPrompt = null;
+          }
         } catch (err) {}
       });
 
