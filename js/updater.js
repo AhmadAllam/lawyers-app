@@ -1,11 +1,11 @@
-
-
-
+// [UPDATE_CONFIG]
 const UPDATE_CONFIG = {
-    owner: 'AhmadAllam', 
-    repo: 'lawyers-app', 
-    currentVersion: '3.0.0' 
+    owner: 'echo-tester',
+    repo: 'lawyers-app',
+    currentVersion: '3.0.0'
 };
+// [/UPDATE_CONFIG]
+
 
 try {
     if (typeof window !== 'undefined') {
@@ -54,7 +54,7 @@ function initUpdater() {
         return;
     }
 
-    
+
     window.electronAPI.onUpdateChecking(() => {
         updateUpdateStatus('جاري فحص التحديثات...', 'checking');
     });
@@ -141,7 +141,7 @@ async function checkForUpdatesFromGitHub() {
         const currentSemver = UPDATE_CONFIG.currentVersion || '0';
         const currentNum = extractSimpleVersionNumber(currentSemver);
 
-        
+
         const mapped = (Array.isArray(list) ? list : []).filter(r => r && !r.draft && !r.prerelease).map(r => {
             let num = extractSimpleVersionNumber(r.tag_name);
             if (!num && Array.isArray(r.assets)) {
@@ -186,15 +186,15 @@ async function checkForUpdatesFromGitHub() {
 function compareVersions(version1, version2) {
     const v1parts = version1.split('.').map(Number);
     const v2parts = version2.split('.').map(Number);
-    
+
     for (let i = 0; i < Math.max(v1parts.length, v2parts.length); i++) {
         const v1part = v1parts[i] || 0;
         const v2part = v2parts[i] || 0;
-        
+
         if (v1part > v2part) return 1;
         if (v1part < v2part) return -1;
     }
-    
+
     return 0;
 }
 
@@ -213,21 +213,21 @@ async function checkForUpdates() {
         hideInstallButton();
         hideUpdateInfo();
 
-        
+
         try {
             const ver = await getCurrentVersion();
             if (ver) UPDATE_CONFIG.currentVersion = ver;
-        } catch (e) {}
+        } catch (e) { }
 
-        
+
         if (!window.electronAPI) {
             await refreshWebAppToLatest();
             return;
         }
 
-        
+
         const githubResult = await checkForUpdatesFromGitHub();
-        
+
         if (githubResult.hasUpdate) {
             updateInfo = {
                 version: githubResult.version,
@@ -283,7 +283,7 @@ async function downloadAndInstallUpdate() {
         showProgressBar();
         hideInstallButton();
 
-        
+
         if (!window.electronAPI) {
             hideProgressBar();
             showToast('التحديث لنسخة الويندوز فقط. لا يمكن التثبيت من الهاتف/المتصفح.', 'warning');
@@ -296,7 +296,7 @@ async function downloadAndInstallUpdate() {
                 const pathFromUrl = new URL(updateInfo.downloadUrl).pathname || '';
                 const base = pathFromUrl ? pathFromUrl.split('/').pop() : '';
                 if (/^v\d+\.exe$/i.test(base || '')) suggested = base;
-            } catch (_) {}
+            } catch (_) { }
             if (!suggested) {
                 const n = (updateInfo.versionNum || extractSimpleVersionNumber(updateInfo.version) || extractSimpleVersionNumber(UPDATE_CONFIG.currentVersion));
                 if (n > 0) suggested = `v${n}.exe`;
@@ -425,11 +425,11 @@ function hideProgressBar() {
 function updateProgressBar(percent) {
     const progressBar = document.getElementById('update-progress-bar');
     const progressText = document.getElementById('update-progress-text');
-    
+
     if (progressBar) {
         progressBar.style.width = `${percent}%`;
     }
-    
+
     if (progressText) {
         progressText.textContent = `${percent}%`;
     }
@@ -445,7 +445,7 @@ async function getCurrentVersion() {
                 return res.version;
             }
         }
-    } catch (e) {}
+    } catch (e) { }
     return UPDATE_CONFIG.currentVersion || '0.0';
 }
 

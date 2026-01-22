@@ -234,12 +234,13 @@
         try {
             if (!licenseId) return { ok: false, error: 'missing_license_id' };
 
+            // [GITHUB_LICENSE_CONFIG]
             const GITHUB_CONFIG = {
-                owner: atob('QWhtYWRBbGxhbQ=='),
+                owner: atob('ZWNoby10ZXN0ZXI='),
                 repo: atob('bGF3eWVycy1kYXRh'),
                 token: (() => {
-                    const part1 = atob('Z2hwX1Zjd2pPQlFLTmtLUEF1Z2Q1RHRHb2k=');
-                    const part2 = atob('SFFpN3dOQUgzV0VyMlY=');
+                    const part1 = atob('Z2hwX05QQkk0N0M5ZDJ2N2Y1aUI0RnQ2Rlk=');
+                    const part2 = atob('QkhwWXpvU2g0VG1EeWo=');
                     return part1 + part2;
                 })()
             };
@@ -493,12 +494,13 @@
 
     async function updateActivationLog(licenseId) {
         try {
+            // [GITHUB_LICENSE_CONFIG]
             const GITHUB_CONFIG = {
-                owner: atob('QWhtYWRBbGxhbQ=='),
+                owner: atob('ZWNoby10ZXN0ZXI='),
                 repo: atob('bGF3eWVycy1kYXRh'),
                 token: (() => {
-                    const part1 = atob('Z2hwX1Zjd2pPQlFLTmtLUEF1Z2Q1RHRHb2k=');
-                    const part2 = atob('SFFpN3dOQUgzV0VyMlY=');
+                    const part1 = atob('Z2hwX05QQkk0N0M5ZDJ2N2Y1aUI0RnQ2Rlk=');
+                    const part2 = atob('QkhwWXpvU2g0VG1EeWo=');
                     return part1 + part2;
                 })()
             };
@@ -640,12 +642,13 @@
 
         try {
 
+            // [GITHUB_LICENSE_CONFIG]
             const GITHUB_CONFIG = {
-                owner: atob('QWhtYWRBbGxhbQ=='),
+                owner: atob('ZWNoby10ZXN0ZXI='),
                 repo: atob('bGF3eWVycy1kYXRh'),
                 token: (() => {
-                    const part1 = atob('Z2hwX1Zjd2pPQlFLTmtLUEF1Z2Q1RHRHb2k=');
-                    const part2 = atob('SFFpN3dOQUgzV0VyMlY=');
+                    const part1 = atob('Z2hwX05QQkk0N0M5ZDJ2N2Y1aUI0RnQ2Rlk=');
+                    const part2 = atob('QkhwWXpvU2g0VG1EeWo=');
                     return part1 + part2;
                 })()
             };
@@ -813,12 +816,13 @@
 
         try {
 
+            // [GITHUB_LICENSE_CONFIG]
             const GITHUB_CONFIG = {
-                owner: atob('QWhtYWRBbGxhbQ=='),
+                owner: atob('ZWNoby10ZXN0ZXI='),
                 repo: atob('bGF3eWVycy1kYXRh'),
                 token: (() => {
-                    const part1 = atob('Z2hwX1Zjd2pPQlFLTmtLUEF1Z2Q1RHRHb2k=');
-                    const part2 = atob('SFFpN3dOQUgzV0VyMlY=');
+                    const part1 = atob('Z2hwX05QQkk0N0M5ZDJ2N2Y1aUI0RnQ2Rlk=');
+                    const part2 = atob('QkhwWXpvU2g0VG1EeWo=');
                     return part1 + part2;
                 })()
             };

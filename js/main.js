@@ -131,6 +131,9 @@ async function handleCardClick(id) {
             sessionStorage.removeItem('returnToPage');
             sessionStorage.removeItem('returnToClientId');
             sessionStorage.removeItem('openClientDetailsOnSearch');
+            sessionStorage.removeItem('clientViewSelectedClientId');
+            sessionStorage.removeItem('clientViewSelectedCaseId');
+            sessionStorage.removeItem('clientViewSelectedCaseIndex');
         } catch (e) { }
         window.location.href = 'new.html';
     } else if (id === 'search') {

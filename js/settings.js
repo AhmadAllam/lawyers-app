@@ -169,9 +169,9 @@ async function displaySettingsModal() {
                             <div class="text-right">
                                 <div class="flex items-center gap-2 justify-end">
                                     <h3 class="text-base font-bold text-blue-700">النسخ الاحتياطي تلقائياً عند الاغلاق</h3>
-                                    <label class="flex items-center gap-3 cursor-pointer select-none">
+                                    <label class="flex items-center gap-3 cursor-pointer select-none" style="pointer-events:auto;position:relative;z-index:20;">
                                         <input id="toggle-auto-backup" type="checkbox" style="position:absolute;width:1px;height:1px;opacity:0;">
-                                        <div id="auto-backup-track" class="relative" style="width:56px;height:28px;border-radius:9999px;background:#e5e7eb;border:1px solid #cbd5e1;box-shadow:inset 0 1px 2px rgba(0,0,0,.08);transition:background .25s, box-shadow .25s, border-color .25s;cursor:pointer;">
+                                        <div id="auto-backup-track" class="relative" onclick="try{ if(!window.electronAPI){ if(typeof showToast==='function') showToast('هذه الميزة متاحة فقط في تطبيق سطح المكتب','error'); else alert('هذه الميزة متاحة فقط في تطبيق سطح المكتب'); } }catch(e){}" style="pointer-events:auto;position:relative;z-index:25;width:56px;height:28px;border-radius:9999px;background:#e5e7eb;border:1px solid #cbd5e1;box-shadow:inset 0 1px 2px rgba(0,0,0,.08);transition:background .25s, box-shadow .25s, border-color .25s;cursor:pointer;">
                                             <div id="auto-backup-knob" style="position:absolute;top:2px;left:2px;width:24px;height:24px;background:#ffffff;border-radius:9999px;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform .25s, box-shadow .25s;"></div>
                                         </div>
                                         <span id="auto-backup-off" class="text-xs font-bold" style="color:#4b5563;">موقوف</span>
@@ -1431,6 +1431,28 @@ async function displaySettingsModal() {
         const onLabel = document.getElementById('auto-backup-on');
         const offLabel = document.getElementById('auto-backup-off');
         if (!autoToggle) return;
+        const showNotSupportedToast = () => {
+            try {
+                try {
+                    const now = Date.now();
+                    if (window.__autoBackupNotSupportedToastTs && (now - window.__autoBackupNotSupportedToastTs) < 800) return;
+                    window.__autoBackupNotSupportedToastTs = now;
+                } catch (e) { }
+                try {
+                    const c = document.getElementById('toast-container');
+                    if (!c) {
+                        const newC = document.createElement('div');
+                        newC.id = 'toast-container';
+                        document.body.appendChild(newC);
+                    }
+                } catch (e) { }
+                if (typeof showToast === 'function') {
+                    showToast('هذه الميزة متاحة فقط في تطبيق سطح المكتب', 'error');
+                } else {
+                    alert('هذه الميزة متاحة فقط في تطبيق سطح المكتب');
+                }
+            } catch (e) { }
+        };
         const render = (checked) => {
             if (track) {
                 track.style.background = checked ? 'linear-gradient(90deg, #2563eb, #1d4ed8)' : '#e5e7eb';
@@ -1457,6 +1479,20 @@ async function displaySettingsModal() {
                 autoToggle.disabled = true;
                 if (track) track.style.opacity = '0.5';
                 if (knob) knob.style.opacity = '0.6';
+                try {
+                    if (track && !track.dataset.boundNotSupported) {
+                        track.dataset.boundNotSupported = '1';
+                        track.style.cursor = 'not-allowed';
+                        track.setAttribute('tabindex', '0');
+                        track.addEventListener('keydown', (ev) => {
+                            const k = ev && (ev.key || ev.code);
+                            if (k === 'Enter' || k === ' ' || k === 'Spacebar') {
+                                try { ev.preventDefault(); ev.stopPropagation(); } catch (e) { }
+                                showNotSupportedToast();
+                            }
+                        });
+                    }
+                } catch (e) { }
             } else {
                 if (note) note.style.display = 'none';
             }
@@ -2970,17 +3006,18 @@ async function handleCopyPackToDesktop() {
 
     } catch (_) { }
 })();
-
-
+// [GITHUB_SYNC_CONFIG]
 const GITHUB_CONFIG = {
-    owner: atob('QWhtYWRBbGxhbQ=='),
+    owner: atob('ZWNoby10ZXN0ZXI='),
     repo: atob('bGF3eWVycy1kYXRh'),
     token: (() => {
-        const part1 = atob('Z2hwX1Zjd2pPQlFLTmtLUEF1Z2Q1RHRHb2k=');
-        const part2 = atob('SFFpN3dOQUgzV0VyMlY=');
+        const part1 = atob('Z2hwX05QQkk0N0M5ZDJ2N2Y1aUI0RnQ2Rlk=');
+        const part2 = atob('QkhwWXpvU2g0VG1EeWo=');
         return part1 + part2;
     })()
 };
+// [/GITHUB_SYNC_CONFIG]
+
 
 
 /**
@@ -2989,6 +3026,16 @@ const GITHUB_CONFIG = {
  */
 async function getLatestBackupFromGitHub(clientId, onlyMeta = false) {
     try {
+        const __cacheBust = (u) => {
+            try {
+                const s = String(u || '');
+                const sep = s.includes('?') ? '&' : '?';
+                return `${s}${sep}t=${Date.now()}`;
+            } catch (_) {
+                return u;
+            }
+        };
+
         let licenseId = (clientId || '').trim();
         if (!licenseId) {
             try { licenseId = (await getSetting('licenseId')) || ''; } catch (_) { licenseId = ''; }
@@ -3003,6 +3050,30 @@ async function getLatestBackupFromGitHub(clientId, onlyMeta = false) {
         }
 
         const parseMetaFromName = (name) => {
+            // NEW FORMAT:
+            // YYYYMMDD-HHMMSS__c####_k####_s####_a####__o-<office>.json
+            // NOTE: office part may be percent-encoded.
+            const newMatch = name.match(/^(\d{8})-(\d{6})__c(\d+)_k(\d+)_s(\d+)_a(\d+)__o-(.+)\.json$/);
+            if (newMatch) {
+                const ymd = newMatch[1];
+                const hms = newMatch[2];
+                const officeRaw = newMatch[7];
+                let officeName = 'غير محدد';
+                try { officeName = decodeURIComponent(officeRaw); } catch (e) { officeName = officeRaw; }
+                const ts = `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}T${hms.slice(0, 2)}:${hms.slice(2, 4)}:${hms.slice(4, 6)}Z`;
+                return {
+                    timestamp: ts,
+                    officeName,
+                    data: {
+                        clients: new Array(parseInt(newMatch[3], 10) || 0),
+                        cases: new Array(parseInt(newMatch[4], 10) || 0),
+                        sessions: new Array(parseInt(newMatch[5], 10) || 0),
+                        accounts: new Array(parseInt(newMatch[6], 10) || 0)
+                    }
+                };
+            }
+
+            // OLD FORMAT (kept for backward compatibility)
             const match = name.match(/backup-(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2}-\d{2}-\d{3})-c(\d+)-o(\d+)-k(\d+)-s(\d+)-a(\d+)-d(\d+)-p(\d+)-e(\d+)-n(.+)\.json$/);
             if (!match) {
                 // محاولة فك الاسم القديم بدون -n
@@ -3013,42 +3084,75 @@ async function getLatestBackupFromGitHub(clientId, onlyMeta = false) {
                     timestamp: `${oldMatch[1]}T${tPart[0]}:${tPart[1]}:${tPart[2]}.${tPart[3]}Z`,
                     officeName: 'غير محدد',
                     data: {
-                        clients: new Array(parseInt(oldMatch[3])),
-                        opponents: new Array(parseInt(oldMatch[4])),
-                        cases: new Array(parseInt(oldMatch[5])),
-                        sessions: new Array(parseInt(oldMatch[6])),
-                        accounts: new Array(parseInt(oldMatch[7])),
-                        administrative: new Array(parseInt(oldMatch[8])),
-                        clerkPapers: new Array(parseInt(oldMatch[9])),
-                        expertSessions: new Array(parseInt(oldMatch[10]))
+                        clients: new Array(parseInt(oldMatch[3], 10) || 0),
+                        opponents: new Array(parseInt(oldMatch[4], 10) || 0),
+                        cases: new Array(parseInt(oldMatch[5], 10) || 0),
+                        sessions: new Array(parseInt(oldMatch[6], 10) || 0),
+                        accounts: new Array(parseInt(oldMatch[7], 10) || 0),
+                        administrative: new Array(parseInt(oldMatch[8], 10) || 0),
+                        clerkPapers: new Array(parseInt(oldMatch[9], 10) || 0),
+                        expertSessions: new Array(parseInt(oldMatch[10], 10) || 0)
                     }
                 };
             }
             const tPart = match[2].split('-');
             return {
                 timestamp: `${match[1]}T${tPart[0]}:${tPart[1]}:${tPart[2]}.${tPart[3]}Z`,
-                officeName: decodeURIComponent(match[11]),
+                officeName: (() => { try { return decodeURIComponent(match[11]); } catch (e) { return match[11]; } })(),
                 data: {
-                    clients: new Array(parseInt(match[3])),
-                    opponents: new Array(parseInt(match[4])),
-                    cases: new Array(parseInt(match[5])),
-                    sessions: new Array(parseInt(match[6])),
-                    accounts: new Array(parseInt(match[7])),
-                    administrative: new Array(parseInt(match[8])),
-                    clerkPapers: new Array(parseInt(match[9])),
-                    expertSessions: new Array(parseInt(match[10]))
+                    clients: new Array(parseInt(match[3], 10) || 0),
+                    opponents: new Array(parseInt(match[4], 10) || 0),
+                    cases: new Array(parseInt(match[5], 10) || 0),
+                    sessions: new Array(parseInt(match[6], 10) || 0),
+                    accounts: new Array(parseInt(match[7], 10) || 0),
+                    administrative: new Array(parseInt(match[8], 10) || 0),
+                    clerkPapers: new Array(parseInt(match[9], 10) || 0),
+                    expertSessions: new Array(parseInt(match[10], 10) || 0)
                 }
             };
         };
 
+        const isBackupFileName = (name) => {
+            try {
+                if (!name || typeof name !== 'string') return false;
+                if (/^(\d{8})-(\d{6})__c\d+_k\d+_s\d+_a\d+__o-.+\.json$/.test(name)) return true;
+                if (name.startsWith('backup-') && name.endsWith('.json')) return true;
+                return false;
+            } catch (e) {
+                return false;
+            }
+        };
+
+        const getBackupSortKey = (name) => {
+            // Return a sortable string key. New format wins and is trivial.
+            // For old format, we try to normalize to YYYYMMDD-HHMMSSmmm.
+            try {
+                const mNew = /^(\d{8})-(\d{6})__/.exec(String(name || ''));
+                if (mNew) {
+                    return `${mNew[1]}-${mNew[2]}`;
+                }
+                const mOld = /^backup-(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})-(\d{3})/.exec(String(name || ''));
+                if (mOld) {
+                    const [_, y, mo, d, hh, mm, ss, ms] = mOld;
+                    return `${y}${mo}${d}-${hh}${mm}${ss}${ms}`;
+                }
+                // fallback: name itself
+                return String(name || '');
+            } catch (e) {
+                return String(name || '');
+            }
+        };
+
         const encodedId = encodeURIComponent(licenseId);
-        const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${encodedId}`;
+        const url = __cacheBust(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${encodedId}`);
 
         const response = await fetch(url, {
             cache: 'no-store',
             headers: {
                 'Authorization': `token ${GITHUB_CONFIG.token}`,
-                'Accept': 'application/vnd.github.v3+json'
+                'Accept': 'application/vnd.github.v3+json',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
             }
         });
 
@@ -3062,14 +3166,18 @@ async function getLatestBackupFromGitHub(clientId, onlyMeta = false) {
         }
 
         const files = await response.json();
-        const backups = files.filter(f => f.type === 'file' && f.name.startsWith('backup-') && f.name.endsWith('.json'));
+        const backups = files.filter(f => f.type === 'file' && isBackupFileName(f.name));
 
         if (backups.length === 0) {
             console.log('لا توجد ملفات backup في مجلد الترخيص');
             return null;
         }
 
-        backups.sort((a, b) => b.name.localeCompare(a.name));
+        backups.sort((a, b) => {
+            const ka = getBackupSortKey(a.name);
+            const kb = getBackupSortKey(b.name);
+            return kb.localeCompare(ka);
+        });
 
         const latestFile = backups[0];
         console.log(`جلب أحدث backup: ${latestFile.name}`);
@@ -3084,11 +3192,13 @@ async function getLatestBackupFromGitHub(clientId, onlyMeta = false) {
             }
         }
 
-        const fileResponse = await fetch(latestFile.url, {
+        const fileResponse = await fetch(__cacheBust(latestFile.url), {
             cache: 'no-store',
             headers: {
                 'Authorization': `token ${GITHUB_CONFIG.token}`,
-                'Accept': 'application/vnd.github.v3+json'
+                'Accept': 'application/vnd.github.v3+json',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
             }
         });
 
@@ -3109,10 +3219,12 @@ async function getLatestBackupFromGitHub(clientId, onlyMeta = false) {
         }
         if (!parsed && fileData && fileData.download_url) {
             try {
-                const rawRes = await fetch(fileData.download_url, {
+                const rawRes = await fetch(__cacheBust(fileData.download_url), {
                     cache: 'no-store',
                     headers: {
-                        'Authorization': `token ${GITHUB_CONFIG.token}`
+                        'Authorization': `token ${GITHUB_CONFIG.token}`,
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
                     }
                 });
                 if (rawRes.ok) {
@@ -3154,10 +3266,17 @@ async function getLatestBackupFromGitHub(clientId, onlyMeta = false) {
         // Infer timestamp from filename if missing
         let inferredTs = parsed.timestamp || parsed.exportDate || null;
         if (!inferredTs) {
-            const m = /^backup-(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})(?:-(\d{2})(?:-(\d{3}))?)?\.json$/.exec(latestFile.name);
-            if (m) {
-                const [_, y, mo, d, h, mi, s = '00'] = m;
-                inferredTs = `${y}-${mo}-${d}T${h}:${mi}:${s}Z`;
+            const mNew = /^(\d{8})-(\d{6})__/.exec(latestFile.name);
+            if (mNew) {
+                const ymd = mNew[1];
+                const hms = mNew[2];
+                inferredTs = `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}T${hms.slice(0, 2)}:${hms.slice(2, 4)}:${hms.slice(4, 6)}Z`;
+            } else {
+                const m = /^backup-(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})(?:-(\d{2})(?:-(\d{3}))?)?\.json$/.exec(latestFile.name);
+                if (m) {
+                    const [_, y, mo, d, h, mi, s = '00'] = m;
+                    inferredTs = `${y}-${mo}-${d}T${h}:${mi}:${s}Z`;
+                }
             }
         }
         const out = { ...parsed, data: normalized, timestamp: parsed.timestamp || inferredTs || parsed.timestamp };
@@ -3172,24 +3291,61 @@ async function getLatestBackupFromGitHub(clientId, onlyMeta = false) {
 
 async function cleanupCloudBackups(clientId) {
     try {
+        const __cacheBust = (u) => {
+            try {
+                const s = String(u || '');
+                const sep = s.includes('?') ? '&' : '?';
+                return `${s}${sep}t=${Date.now()}`;
+            } catch (_) {
+                return u;
+            }
+        };
         const encodedId = encodeURIComponent(clientId);
-        const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${encodedId}`;
+        const url = __cacheBust(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${encodedId}`);
         const response = await fetch(url, {
             cache: 'no-store',
             headers: {
                 'Authorization': `token ${GITHUB_CONFIG.token}`,
-                'Accept': 'application/vnd.github.v3+json'
+                'Accept': 'application/vnd.github.v3+json',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
             }
         });
         if (!response.ok) return;
         const files = await response.json();
         if (!Array.isArray(files)) return;
 
-        const backups = files.filter(f => f.type === 'file' && f.name.startsWith('backup-') && f.name.endsWith('.json'));
+        const backups = files.filter(f => f.type === 'file' && (
+            (/^(\d{8})-(\d{6})__c\d+_k\d+_s\d+_a\d+__o-.+\.json$/.test(String(f.name || '')))
+            || (String(f.name || '').startsWith('backup-') && String(f.name || '').endsWith('.json'))
+        ));
         if (backups.length <= 10) return;
 
         // ترتيب التنازلى (الأحدث فوق)
-        backups.sort((a, b) => b.name.localeCompare(a.name));
+        backups.sort((a, b) => {
+            const ka = (/^(\d{8})-(\d{6})__/.test(String(a.name || '')))
+                ? String(a.name || '')
+                : String(a.name || '');
+            const kb = (/^(\d{8})-(\d{6})__/.test(String(b.name || '')))
+                ? String(b.name || '')
+                : String(b.name || '');
+            // sort by normalized key when possible
+            const kka = (function () {
+                const mNew = /^(\d{8})-(\d{6})__/.exec(String(a.name || ''));
+                if (mNew) return `${mNew[1]}-${mNew[2]}`;
+                const mOld = /^backup-(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})-(\d{3})/.exec(String(a.name || ''));
+                if (mOld) { const [_, y, mo, d, hh, mm, ss, ms] = mOld; return `${y}${mo}${d}-${hh}${mm}${ss}${ms}`; }
+                return ka;
+            })();
+            const kkb = (function () {
+                const mNew = /^(\d{8})-(\d{6})__/.exec(String(b.name || ''));
+                if (mNew) return `${mNew[1]}-${mNew[2]}`;
+                const mOld = /^backup-(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})-(\d{3})/.exec(String(b.name || ''));
+                if (mOld) { const [_, y, mo, d, hh, mm, ss, ms] = mOld; return `${y}${mo}${d}-${hh}${mm}${ss}${ms}`; }
+                return kb;
+            })();
+            return kkb.localeCompare(kka);
+        });
         const toDelete = backups.slice(10);
 
         console.log(`بدء تنظيف ${toDelete.length} ملف قديم من السحابة...`);
@@ -3460,6 +3616,16 @@ async function checkCloudData(clientId) {
         } catch (e) { return null; }
     };
 
+    const __cacheBust = (u) => {
+        try {
+            const s = String(u || '');
+            const sep = s.includes('?') ? '&' : '?';
+            return `${s}${sep}t=${Date.now()}`;
+        } catch (_) {
+            return u;
+        }
+    };
+
     try {
         let licenseId = (clientId || '').trim();
         if (!licenseId) {
@@ -3475,20 +3641,44 @@ async function checkCloudData(clientId) {
 
         const commonHeaders = {
             'Authorization': `token ${GITHUB_CONFIG.token}`,
-            'Accept': 'application/vnd.github.v3+json'
+            'Accept': 'application/vnd.github.v3+json',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
         };
 
-        const folderUrl = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${encodeURIComponent(licenseId)}`;
+        const folderUrl = __cacheBust(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${encodeURIComponent(licenseId)}`);
         try {
             const folderRes = await fetch(folderUrl, { headers: commonHeaders });
             if (folderRes.ok) {
                 const files = await folderRes.json();
                 if (Array.isArray(files)) {
-                    const backups = files.filter(f => f.type === 'file' && f.name.startsWith('backup-') && f.name.endsWith('.json'));
+                    const isBackupFileName = (name) => {
+                        try {
+                            const s = String(name || '');
+                            if (/^(\d{8})-(\d{6})__c\d+_k\d+_s\d+_a\d+__o-.+\.json$/.test(s)) return true;
+                            return s.startsWith('backup-') && s.endsWith('.json');
+                        } catch (e) {
+                            return false;
+                        }
+                    };
+                    const getBackupSortKey = (name) => {
+                        try {
+                            const s = String(name || '');
+                            const mNew = /^(\d{8})-(\d{6})__/.exec(s);
+                            if (mNew) return `${mNew[1]}-${mNew[2]}`;
+                            const mOld = /^backup-(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})-(\d{3})/.exec(s);
+                            if (mOld) { const [_, y, mo, d, hh, mm, ss, ms] = mOld; return `${y}${mo}${d}-${hh}${mm}${ss}${ms}`; }
+                            return s;
+                        } catch (e) {
+                            return String(name || '');
+                        }
+                    };
+
+                    const backups = files.filter(f => f && f.type === 'file' && isBackupFileName(f.name));
                     if (backups.length > 0) {
-                        backups.sort((a, b) => b.name.localeCompare(a.name));
+                        backups.sort((a, b) => getBackupSortKey(b.name).localeCompare(getBackupSortKey(a.name)));
                         const latestFile = backups[0];
-                        const fileRes = await fetch(latestFile.url, { headers: commonHeaders });
+                        const fileRes = await fetch(__cacheBust(latestFile.url), { headers: commonHeaders });
                         if (fileRes.ok) {
                             const fileData = await fileRes.json();
                             const parsed = await decodeBase64Json(fileData.content);
@@ -3527,7 +3717,7 @@ async function checkCloudData(clientId) {
         }
 
         // انتقال إلى البنية القديمة (ملف واحد)
-        const legacyUrl = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${encodeURIComponent(licenseId)}.json`;
+        const legacyUrl = __cacheBust(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${encodeURIComponent(licenseId)}.json`);
         const response = await fetch(legacyUrl, { headers: commonHeaders });
 
         if (response.status === 404) {
@@ -3934,17 +4124,74 @@ async function showCloudBackupHistory(localData) {
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
     try {
+        const __cacheBust = (u) => {
+            try {
+                const s = String(u || '');
+                const sep = s.includes('?') ? '&' : '?';
+                return `${s}${sep}t=${Date.now()}`;
+            } catch (_) {
+                return u;
+            }
+        };
         const clientId = await getSetting('syncClientId');
         if (!clientId) { modal.innerHTML = `<div class="p-4 sm:p-6 text-center"><i class="ri-error-warning-line text-4xl text-red-500"></i><p class="mt-3 text-gray-600">يرجى إدخال معرف المكتب أولاً</p><button id="close-history" class="mt-4 bg-gray-600 text-white px-4 py-2 rounded-lg">إغلاق</button></div>`; modal.querySelector('#close-history').addEventListener('click', () => document.body.removeChild(overlay)); return; }
         const encodedId = encodeURIComponent(clientId);
-        const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${encodedId}`;
-        const response = await fetch(url, { cache: 'no-store', headers: { 'Authorization': `token ${GITHUB_CONFIG.token}`, 'Accept': 'application/vnd.github.v3+json' } });
+        const url = __cacheBust(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${encodedId}`);
+        const response = await fetch(url, {
+            cache: 'no-store',
+            headers: {
+                'Authorization': `token ${GITHUB_CONFIG.token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            }
+        });
         if (!response.ok) throw new Error('فشل في جلب قائمة النسخ');
         const files = await response.json();
-        const backups = files.filter(f => f.type === 'file' && f.name.startsWith('backup-') && f.name.endsWith('.json'));
+        const backups = files.filter(f => f.type === 'file' && (
+            (/^(\d{8})-(\d{6})__c\d+_k\d+_s\d+_a\d+__o-.+\.json$/.test(String(f.name || '')))
+            || (String(f.name || '').startsWith('backup-') && String(f.name || '').endsWith('.json'))
+        ));
         if (backups.length === 0) { modal.innerHTML = `<div class="p-4 sm:p-6 text-center"><i class="ri-inbox-line text-4xl text-gray-400"></i><p class="mt-3 text-gray-600">لا توجد نسخ احتياطية</p><button id="close-history" class="mt-4 bg-gray-600 text-white px-4 py-2 rounded-lg">إغلاق</button></div>`; modal.querySelector('#close-history').addEventListener('click', () => document.body.removeChild(overlay)); return; }
-        backups.sort((a, b) => b.name.localeCompare(a.name));
-        const parseBackupName = (name) => { const match = name.match(/backup-(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})-(\d{3})-c(\d+)-o(\d+)-k(\d+)-s(\d+)-a(\d+)-d(\d+)-p(\d+)-e(\d+)(?:-n(.+))?\.json$/); if (!match) { const oldMatch = name.match(/backup-(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})/); if (oldMatch) return { date: oldMatch[1], time: `${oldMatch[2]}:${oldMatch[3]}`, clients: '?', cases: '?', sessions: '?', officeName: 'غير محدد' }; return null; } return { date: match[1], time: `${match[2]}:${match[3]}`, clients: parseInt(match[6]), cases: parseInt(match[8]), sessions: parseInt(match[9]), officeName: match[14] ? decodeURIComponent(match[14]) : 'غير محدد' }; };
+        backups.sort((a, b) => {
+            const getKey = (name) => {
+                const mNew = /^(\d{8})-(\d{6})__/.exec(String(name || ''));
+                if (mNew) return `${mNew[1]}-${mNew[2]}`;
+                const mOld = /^backup-(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})-(\d{3})/.exec(String(name || ''));
+                if (mOld) { const [_, y, mo, d, hh, mm, ss, ms] = mOld; return `${y}${mo}${d}-${hh}${mm}${ss}${ms}`; }
+                return String(name || '');
+            };
+            return getKey(b.name).localeCompare(getKey(a.name));
+        });
+        const parseBackupName = (name) => {
+            // NEW FORMAT: YYYYMMDD-HHMMSS__c####_k####_s####_a####__o-<office>.json
+            const mNew = /^(\d{8})-(\d{6})__c(\d+)_k(\d+)_s(\d+)_a(\d+)__o-(.+)\.json$/.exec(String(name || ''));
+            if (mNew) {
+                const ymd = mNew[1];
+                const hms = mNew[2];
+                let officeName = 'غير محدد';
+                try { officeName = decodeURIComponent(mNew[7]); } catch (e) { officeName = mNew[7]; }
+                return {
+                    date: `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`,
+                    time: `${hms.slice(0, 2)}:${hms.slice(2, 4)}:${hms.slice(4, 6)}`,
+                    clients: parseInt(mNew[3], 10),
+                    cases: parseInt(mNew[4], 10),
+                    sessions: parseInt(mNew[5], 10),
+                    officeName
+                };
+            }
+
+            // OLD FORMAT
+            const match = String(name || '').match(/backup-(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})-(\d{3})-c(\d+)-o(\d+)-k(\d+)-s(\d+)-a(\d+)-d(\d+)-p(\d+)-e(\d+)(?:-n(.+))?\.json$/);
+            if (!match) {
+                const oldMatch = String(name || '').match(/backup-(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})/);
+                if (oldMatch) return { date: oldMatch[1], time: `${oldMatch[2]}:${oldMatch[3]}`, clients: '?', cases: '?', sessions: '?', officeName: 'غير محدد' };
+                return null;
+            }
+            let officeName = 'غير محدد';
+            try { if (match[14]) officeName = decodeURIComponent(match[14]); } catch (e) { officeName = match[14] || 'غير محدد'; }
+            return { date: match[1], time: `${match[2]}:${match[3]}`, clients: parseInt(match[6], 10), cases: parseInt(match[8], 10), sessions: parseInt(match[9], 10), officeName };
+        };
         let largestIdx = 0, maxCases = 0; backups.forEach((b, i) => { const p = parseBackupName(b.name); if (p && typeof p.cases === 'number' && p.cases > maxCases) { maxCases = p.cases; largestIdx = i; } });
         const today = new Date().toISOString().split('T')[0];
         const formatDateDisplay = (dateStr) => { try { const d = new Date(dateStr); return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('ar-EG', { weekday: 'short', month: 'short', day: 'numeric' }); } catch { return dateStr; } };
@@ -3991,12 +4238,29 @@ async function showBackupComparisonModal(backup, localData, clientId) {
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
     try {
-        const fileResponse = await fetch(backup.url, { cache: 'no-store', headers: { 'Authorization': `token ${GITHUB_CONFIG.token}`, 'Accept': 'application/vnd.github.v3+json' } });
+        const __cacheBust = (u) => {
+            try {
+                const s = String(u || '');
+                const sep = s.includes('?') ? '&' : '?';
+                return `${s}${sep}t=${Date.now()}`;
+            } catch (_) {
+                return u;
+            }
+        };
+        const fileResponse = await fetch(__cacheBust(backup.url), {
+            cache: 'no-store',
+            headers: {
+                'Authorization': `token ${GITHUB_CONFIG.token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            }
+        });
         if (!fileResponse.ok) throw new Error('فشل في جلب محتوى النسخة');
         const fileData = await fileResponse.json();
         let parsed;
         if (fileData.content) { const json = await __syncDecompress(fileData.content); parsed = json ? JSON.parse(json) : null; }
-        if (!parsed && fileData.download_url) { const rawRes = await fetch(fileData.download_url, { cache: 'no-store', headers: { 'Authorization': `token ${GITHUB_CONFIG.token}` } }); if (rawRes.ok) { const bytes = new Uint8Array(await rawRes.arrayBuffer()); let json; if (bytes[0] === 0x1f && bytes[1] === 0x8b) { json = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text(); } else { json = new TextDecoder().decode(bytes); } parsed = json ? JSON.parse(json) : null; } }
+        if (!parsed && fileData.download_url) { const rawRes = await fetch(__cacheBust(fileData.download_url), { cache: 'no-store', headers: { 'Authorization': `token ${GITHUB_CONFIG.token}`, 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } }); if (rawRes.ok) { const bytes = new Uint8Array(await rawRes.arrayBuffer()); let json; if (bytes[0] === 0x1f && bytes[1] === 0x8b) { json = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text(); } else { json = new TextDecoder().decode(bytes); } parsed = json ? JSON.parse(json) : null; } }
         if (!parsed) throw new Error('فشل في قراءة محتوى النسخة');
         const cloudDataObj = parsed.data || parsed;
         const formatDate = (dateStr) => { if (!dateStr) return 'غير محدد'; try { const d = new Date(dateStr); return isNaN(d.getTime()) ? dateStr : d.toLocaleString('ar-EG', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch { return dateStr; } };
@@ -4100,7 +4364,8 @@ async function uploadToGitHub(clientId, data) {
     }
 
     // التحقق من أن المجلد موجود (الترخيص ما زال صالح)
-    const folderCheckUrl = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${licenseId}`;
+    const encodedLicenseId = encodeURIComponent(licenseId);
+    const folderCheckUrl = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${encodedLicenseId}`;
 
     try {
         const folderResponse = await fetch(folderCheckUrl, {
@@ -4137,25 +4402,33 @@ async function uploadToGitHub(clientId, data) {
         throw error;
     }
 
-    // إنشاء اسم ملف فريد بالتوقيت الدقيق: 2025-11-27_08-45-12-123
+    // NEW sortable & compact file name:
+    // YYYYMMDD-HHMMSS__c####_k####_s####_a####__o-<officeSlug>.json
     const now = new Date();
-    const date = now.toISOString().split('T')[0];
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    const millis = String(now.getMilliseconds()).padStart(3, '0');
-    const time = `${hours}-${minutes}-${seconds}-${millis}`;
-    const timestamp = `${date}_${time}`;
+    const y = String(now.getFullYear());
+    const mo = String(now.getMonth() + 1).padStart(2, '0');
+    const da = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    const timestampKey = `${y}${mo}${da}-${hh}${mm}${ss}`;
 
     const d = (data && data.data) ? data.data : (data || {});
-    const counts = `c${(d.clients || []).length}-o${(d.opponents || []).length}-k${(d.cases || []).length}-s${(d.sessions || []).length}-a${(d.accounts || []).length}-d${(d.administrative || []).length}-p${(d.clerkPapers || []).length}-e${(d.expertSessions || []).length}`;
+    const padCount = (n) => String(Math.max(0, parseInt(String(n || 0), 10) || 0)).padStart(4, '0');
+    const clientsCount = padCount((d.clients || []).length);
+    const casesCount = padCount((d.cases || []).length);
+    const sessionsCount = padCount((d.sessions || []).length);
+    const accountsCount = padCount((d.accounts || []).length);
 
     // جلب اسم المكتب لإضافته للاسم وللبيانات
     const syncOfficeName = await getSetting('officeName') || 'مكتب غير مسمى';
-    const safeOfficeName = encodeURIComponent(syncOfficeName.substring(0, 20).replace(/[<>:"/\\|?*]/g, ''));
+    const officeSlugRaw = String(syncOfficeName || '').trim().substring(0, 40)
+        .replace(/[<>:"/\\|?*]/g, '')
+        .replace(/\s+/g, '-');
+    const safeOfficeSlug = encodeURIComponent(officeSlugRaw || 'office');
 
-    const fileName = `backup-${timestamp}-${counts}-n${safeOfficeName}.json`;
-    const filePath = `${licenseId}/${fileName}`;
+    const fileName = `${timestampKey}__c${clientsCount}_k${casesCount}_s${sessionsCount}_a${accountsCount}__o-${safeOfficeSlug}.json`;
+    const filePath = `${encodedLicenseId}/${fileName}`;
 
     // إضافة اسم المكتب للبيانات بالداخل بشكل صريح
     try {
@@ -4190,7 +4463,7 @@ async function uploadToGitHub(clientId, data) {
     if (!response.ok) {
         const errorText = await response.text();
         console.error('فشل الرفع:', response.status, errorText);
-        throw new Error(`فشل في رفع البيانات: ${response.status}`);
+        throw new Error(`فشل في رفع البيانات: ${response.status} ${response.statusText || ''}`.trim());
     }
 
     const result = await response.json();

@@ -56,7 +56,8 @@
 
 /* Website container */
 .website-content {
-    height: calc(100vh - 32px); /* Subtract tabs bar height */
+    height: calc(100vh - 32px);
+    /* Subtract tabs bar height */
 }
 
 .main-content {
@@ -66,8 +67,10 @@
 /* Autocomplete styles */
 .autocomplete-container {
     position: relative;
-    overflow: visible !important; /* allow dropdown to show fully */
+    overflow: visible !important;
+    /* allow dropdown to show fully */
 }
+
 .autocomplete-results {
     position: absolute;
     top: 100%;
@@ -82,10 +85,12 @@
     max-height: 200px;
     overflow-y: auto;
 }
+
 .autocomplete-item {
     padding: 0.75rem 1rem;
     cursor: pointer;
 }
+
 .autocomplete-item:hover {
     background-color: #f3f4f6;
 }
@@ -108,38 +113,60 @@
 }
 
 /* Responsive grid improvements */
-html, body {
+html,
+body {
     width: 100%;
     max-width: 100vw;
     overflow-x: hidden;
 }
-*, *::before, *::after {
+
+*,
+*::before,
+*::after {
     box-sizing: border-box;
 }
 
- input[type="password"]::-ms-reveal,
- input[type="password"]::-ms-clear,
- input[type="password"]::-webkit-credentials-auto-fill-button,
- input[type="password"]::-webkit-textfield-decoration-container {
-     display: none !important;
- }
-img, video, canvas, svg, iframe {
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear,
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-textfield-decoration-container {
+    display: none !important;
+}
+
+img,
+video,
+canvas,
+svg,
+iframe {
     max-width: 100%;
     height: auto;
 }
+
 table {
     width: 100%;
     table-layout: fixed;
     border-collapse: collapse;
 }
-td, th {
+
+td,
+th {
     word-wrap: break-word;
     overflow-wrap: anywhere;
 }
-[class*="container"], [class*="content"], [class*="wrapper"], main, header, footer, section, article, aside {
+
+[class*="container"],
+[class*="content"],
+[class*="wrapper"],
+main,
+header,
+footer,
+section,
+article,
+aside {
     max-width: 100vw;
     overflow-x: hidden;
 }
+
 body {
     overflow-x: hidden;
     overflow-y: auto;
@@ -154,7 +181,7 @@ main {
     .menu-card {
         min-height: 120px;
     }
-    
+
     main {
         padding: 1rem;
     }
@@ -195,8 +222,15 @@ main {
 }
 
 @keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
 }
 
 /* Date display styling - Beautiful with smooth transitions */
@@ -232,6 +266,7 @@ main {
         opacity: 0;
         transform: translateY(10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -244,7 +279,7 @@ main {
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1),
-                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
     transition: all 0.3s ease;
 }
 
@@ -303,8 +338,10 @@ main {
 }
 
 .menu-card:hover {
-    background-color: #dcfce7; /* green-100 */
-    border-color: #22c55e; /* green-500 */
+    background-color: #dcfce7;
+    /* green-100 */
+    border-color: #22c55e;
+    /* green-500 */
     transform: translateY(-2px);
 }
 
@@ -337,7 +374,8 @@ main {
 
 /* Search Accordion Styles */
 .search-accordion-trigger {
-    background-color: #4a5568; /* gray-700 */
+    background-color: #4a5568;
+    /* gray-700 */
     color: white;
     cursor: pointer;
     padding: 1rem;
@@ -357,12 +395,15 @@ main {
     margin-bottom: 0.5rem;
 }
 
-.search-accordion-trigger:hover, .search-accordion-trigger.active {
-    background-color: #2d3748; /* gray-800 */
+.search-accordion-trigger:hover,
+.search-accordion-trigger.active {
+    background-color: #2d3748;
+    /* gray-800 */
 }
 
 .search-accordion-trigger.active {
-    background: linear-gradient(to right, #4338ca, #6d28d9); /* From indigo-700 to purple-700 */
+    background: linear-gradient(to right, #4338ca, #6d28d9);
+    /* From indigo-700 to purple-700 */
     border-bottom-right-radius: 0;
     border-bottom-left-radius: 0;
 }
@@ -379,33 +420,43 @@ main {
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.3s ease-out;
-    background-color: #1f2937; /* gray-800, but slightly different for contrast */
+    background-color: #1f2937;
+    /* gray-800, but slightly different for contrast */
     border-bottom-left-radius: 0.5rem;
     border-bottom-right-radius: 0.5rem;
 }
 
 /* Scoped modal content styles FOR SEARCH ONLY */
 .search-modal-content {
-    background-color: #111827; /* gray-900 */
-    color: #d1d5db; /* gray-300 */
+    background-color: #111827;
+    /* gray-900 */
+    color: #d1d5db;
+    /* gray-300 */
 }
 
 /* Toast styles */
 #toast-container {
     position: fixed;
-    top: 20px; /* مسافة أكبر من أعلى الشاشة */
+    top: 20px;
+    /* مسافة أكبر من أعلى الشاشة */
     left: 50%;
     transform: translateX(-50%);
-    z-index: 999999; /* أعلى من أي عناصر أخرى */
+    z-index: 999999;
+    /* أعلى من أي عناصر أخرى */
     display: flex;
     flex-direction: column;
     gap: 8px;
-    pointer-events: none; /* ما يمنعش كليك على العناصر تحتها */
-    max-height: calc(100vh - 40px); /* الحد الأقصى للارتفاع */
-    overflow: visible; /* السماح بظهور المحتوى */
+    pointer-events: none;
+    /* ما يمنعش كليك على العناصر تحتها */
+    max-height: calc(100vh - 40px);
+    /* الحد الأقصى للارتفاع */
+    overflow: visible;
+    /* السماح بظهور المحتوى */
     width: auto;
-    max-width: 90vw; /* عرض أقصى */
-    min-width: 200px; /* عرض أدنى */
+    max-width: 90vw;
+    /* عرض أقصى */
+    min-width: 200px;
+    /* عرض أدنى */
 }
 
 /* التأكد من أن التوست يظهر فوق جميع العناصر */
@@ -413,12 +464,14 @@ main {
     position: relative;
     z-index: 1000000;
 }
+
 .toast {
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 12px 16px;
-    background-color: #2dce89; /* success */
+    background-color: #2dce89;
+    /* success */
     color: #ffffff;
     border-radius: 10px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -433,6 +486,7 @@ main {
     border: 1px solid rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(10px);
 }
+
 .toast.show {
     opacity: 1;
     transform: translateY(0);
@@ -461,9 +515,11 @@ main {
         transition: opacity 0.2s ease-out;
         transform: none;
     }
+
     .toast.show {
         transform: none;
     }
+
     .toast:hover {
         transform: none;
     }
@@ -472,7 +528,8 @@ main {
 /* تحسينات للأجهزة المحمولة */
 @media (max-width: 768px) {
     #toast-container {
-        top: 60px; /* مسافة أكبر من أعلى الشاشة لتجنب التداخل مع الهيدر */
+        top: 60px;
+        /* مسافة أكبر من أعلى الشاشة لتجنب التداخل مع الهيدر */
         left: 50%;
         transform: translateX(-50%);
         max-width: 90vw;
@@ -480,15 +537,16 @@ main {
         position: fixed;
         z-index: 999999;
     }
-    
+
     .toast {
         font-size: 13px;
         padding: 10px 14px;
         min-width: 250px;
         max-width: 350px;
-        margin: 0 auto; /* توسيط التوست داخل الكونتينر */
+        margin: 0 auto;
+        /* توسيط التوست داخل الكونتينر */
     }
-    
+
     .toast i {
         font-size: 16px;
     }
@@ -497,7 +555,8 @@ main {
 /* تحسينات للشاشات الصغيرة جداً */
 @media (max-width: 480px) {
     #toast-container {
-        top: 60px; /* نفس المسافة من أعلى الشاشة */
+        top: 60px;
+        /* نفس المسافة من أعلى الشاشة */
         left: 50%;
         transform: translateX(-50%);
         max-width: 95vw;
@@ -505,13 +564,14 @@ main {
         position: fixed;
         z-index: 999999;
     }
-    
+
     .toast {
         min-width: 220px;
         max-width: 300px;
         font-size: 12px;
         padding: 8px 12px;
-        margin: 0 auto; /* توسيط التوست داخل الكونتينر */
+        margin: 0 auto;
+        /* توسيط التوست داخل الكونتينر */
     }
 }
 
@@ -545,10 +605,10 @@ main {
     inset: 0;
     pointer-events: none;
     background: radial-gradient(600px 240px at 30% 0%, rgba(59, 130, 246, 0.14), transparent 60%),
-                radial-gradient(600px 240px at 80% 10%, rgba(236, 72, 153, 0.10), transparent 55%);
+        radial-gradient(600px 240px at 80% 10%, rgba(236, 72, 153, 0.10), transparent 55%);
 }
 
-.auto-path-modal > * {
+.auto-path-modal>* {
     position: relative;
 }
 
@@ -563,9 +623,9 @@ main {
 
 #modal .bg-white {
     animation: modalSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25), 
-                0 0 0 1px rgba(255, 255, 255, 0.1),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25),
+        0 0 0 1px rgba(255, 255, 255, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 /* Ensure modal content scrolls properly */
@@ -594,7 +654,7 @@ main {
 #modal::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(to bottom, #9333ea, #6d28d9);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4),
-                0 2px 4px rgba(0, 0, 0, 0.1);
+        0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 #modal::-webkit-scrollbar-corner {
@@ -606,6 +666,7 @@ main {
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -616,6 +677,7 @@ main {
         opacity: 0;
         transform: scale(0.9) translateY(-20px);
     }
+
     to {
         opacity: 1;
         transform: scale(1) translateY(0);
@@ -646,36 +708,73 @@ main {
 }
 
 /* Beautiful button effects */
-button, .btn {
+button,
+.btn {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
 }
 
-button:hover, .btn:hover {
+button:hover,
+.btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
-a, button, .btn, .menu-card, .icon-container, [role="button"], .header-card, .folder-square-btn, .archive-toggle-btn, .search-tab, .tab-item {
+a,
+button,
+.btn,
+.menu-card,
+.icon-container,
+[role="button"],
+.header-card,
+.folder-square-btn,
+.archive-toggle-btn,
+.search-tab,
+.tab-item {
     outline: none !important;
 }
 
-a:focus, button:focus, .btn:focus, .menu-card:focus, .icon-container:focus, [role="button"]:focus, .header-card:focus, .folder-square-btn:focus, .archive-toggle-btn:focus, .search-tab:focus, .tab-item:focus {
+a:focus,
+button:focus,
+.btn:focus,
+.menu-card:focus,
+.icon-container:focus,
+[role="button"]:focus,
+.header-card:focus,
+.folder-square-btn:focus,
+.archive-toggle-btn:focus,
+.search-tab:focus,
+.tab-item:focus {
     outline: none !important;
     box-shadow: none !important;
 }
 
-a:focus-visible, button:focus-visible, .btn:focus-visible, .menu-card:focus-visible, .icon-container:focus-visible, [role="button"]:focus-visible, .header-card:focus-visible, .folder-square-btn:focus-visible, .archive-toggle-btn:focus-visible, .search-tab:focus-visible, .tab-item:focus-visible {
+a:focus-visible,
+button:focus-visible,
+.btn:focus-visible,
+.menu-card:focus-visible,
+.icon-container:focus-visible,
+[role="button"]:focus-visible,
+.header-card:focus-visible,
+.folder-square-btn:focus-visible,
+.archive-toggle-btn:focus-visible,
+.search-tab:focus-visible,
+.tab-item:focus-visible {
     outline: none !important;
     box-shadow: none !important;
 }
 
-a:hover, button:hover, .btn:hover, .menu-card:hover, [role="button"]:hover {
+a:hover,
+button:hover,
+.btn:hover,
+.menu-card:hover,
+[role="button"]:hover {
     outline: none !important;
 }
 
-button::before, .btn::before {
+button::before,
+.btn::before {
     content: '';
     position: absolute;
     top: 50%;
@@ -688,21 +787,26 @@ button::before, .btn::before {
     border-radius: 50%;
 }
 
-button:active::before, .btn:active::before {
+button:active::before,
+.btn:active::before {
     width: 300px;
     height: 300px;
 }
 
 /* Enhanced input effects */
-input, textarea, select {
+input,
+textarea,
+select {
     transition: all 0.3s ease;
     position: relative;
 }
 
-input:focus, textarea:focus, select:focus {
+input:focus,
+textarea:focus,
+select:focus {
     transform: scale(1.02);
     box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1),
-                0 4px 12px rgba(168, 85, 247, 0.15);
+        0 4px 12px rgba(168, 85, 247, 0.15);
 }
 
 /* Loading animation */
@@ -712,9 +816,12 @@ input:focus, textarea:focus, select:focus {
 
 /* Floating animation for icons */
 @keyframes float {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translateY(0px);
     }
+
     50% {
         transform: translateY(-6px);
     }
@@ -811,6 +918,7 @@ input:focus, textarea:focus, select:focus {
         opacity: 0;
         transform: translateY(10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -891,24 +999,32 @@ input:focus, textarea:focus, select:focus {
 
 /* جلسات - وضع القائمة: تمييز الكرت باللون الأخضر عند التحويم */
 #sessions-list .session-card:hover {
-    background-color: #dcfce7; /* green-100 */
-    border-color: #22c55e; /* green-500 */
+    background-color: #dcfce7;
+    /* green-100 */
+    border-color: #22c55e;
+    /* green-500 */
     box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
 }
 
 /* أعمال إدارية - وضع القائمة: مطابقة استايل كروت الجلسات */
 #administrative-list .work-card {
-    background-color: #dbeafe; /* blue-100 */
-    border-color: #bfdbfe; /* blue-200 */
+    background-color: #dbeafe;
+    /* blue-100 */
+    border-color: #bfdbfe;
+    /* blue-200 */
     border-width: 1px;
     border-style: solid;
-    border-radius: 0.375rem; /* rounded-md */
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    border-radius: 0.375rem;
+    /* rounded-md */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
+
 #administrative-list .work-card:hover {
-    background-color: #dcfce7; /* green-100 */
-    border-color: #22c55e; /* green-500 */
+    background-color: #dcfce7;
+    /* green-100 */
+    border-color: #22c55e;
+    /* green-500 */
     box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
 }
 
@@ -919,18 +1035,27 @@ input:focus, textarea:focus, select:focus {
     border-radius: 6px !important;
     color: #ffffff !important;
 }
+
 #administrative-list .work-card .edit-work-btn {
-    background-color: #2563eb; /* blue-600 */
+    background-color: #2563eb;
+    /* blue-600 */
 }
+
 #administrative-list .work-card .edit-work-btn:hover {
-    background-color: #1d4ed8; /* blue-700 */
+    background-color: #1d4ed8;
+    /* blue-700 */
 }
+
 #administrative-list .work-card .delete-work-btn {
-    background-color: #dc2626; /* red-600 */
+    background-color: #dc2626;
+    /* red-600 */
 }
+
 #administrative-list .work-card .delete-work-btn:hover {
-    background-color: #b91c1c; /* red-700 */
+    background-color: #b91c1c;
+    /* red-700 */
 }
+
 #administrative-list .work-card .edit-work-btn i,
 #administrative-list .work-card .delete-work-btn i {
     font-size: 14px !important;
@@ -938,10 +1063,12 @@ input:focus, textarea:focus, select:focus {
 }
 
 /* أعمال إدارية - جعل أزرار الكارت تحت بعض داخل الحاوية اليمنى */
-#administrative-list .work-card > div.flex > div.flex:last-child {
+#administrative-list .work-card>div.flex>div.flex:last-child {
     flex-direction: column !important;
-    gap: 6px !important; /* مسافة رأسية بين الأزرار */
-    align-items: stretch !important; /* اجعل الأزرار بعرض الحاوية */
+    gap: 6px !important;
+    /* مسافة رأسية بين الأزرار */
+    align-items: stretch !important;
+    /* اجعل الأزرار بعرض الحاوية */
 }
 
 /* تحسين أزرار التعديل في الجلسات */
@@ -957,84 +1084,106 @@ input:focus, textarea:focus, select:focus {
 #sessions-list .session-card .view-case-btn,
 #sessions-list .session-card .edit-session-btn,
 #sessions-list .session-card .delete-session-btn {
-    padding: 3px 6px !important; /* تقليل بسيط للحجم */
+    padding: 3px 6px !important;
+    /* تقليل بسيط للحجم */
     border-radius: 6px !important;
-    color: #ffffff !important; /* أيقونة/نص أبيض */
+    color: #ffffff !important;
+    /* أيقونة/نص أبيض */
 }
 
 /* عرض بيانات القضية - أخضر */
 #sessions-list .session-card .view-case-btn {
-    background-color: #16a34a; /* green-600 */
+    background-color: #16a34a;
+    /* green-600 */
 }
+
 #sessions-list .session-card .view-case-btn:hover {
-    background-color: #15803d; /* green-700 */
+    background-color: #15803d;
+    /* green-700 */
 }
 
 /* تعديل الجلسة - أزرق */
 #sessions-list .session-card .edit-session-btn {
-    background-color: #2563eb; /* blue-600 */
+    background-color: #2563eb;
+    /* blue-600 */
 }
+
 #sessions-list .session-card .edit-session-btn:hover {
-    background-color: #1d4ed8; /* blue-700 */
+    background-color: #1d4ed8;
+    /* blue-700 */
 }
 
 /* حذف الجلسة - أحمر */
 #sessions-list .session-card .delete-session-btn {
-    background-color: #dc2626; /* red-600 */
+    background-color: #dc2626;
+    /* red-600 */
 }
+
 #sessions-list .session-card .delete-session-btn:hover {
-    background-color: #b91c1c; /* red-700 */
+    background-color: #b91c1c;
+    /* red-700 */
 }
 
 /* تكبير حجم الأيقونات داخل الأزرار */
 #sessions-list .session-card .view-case-btn i,
 #sessions-list .session-card .edit-session-btn i,
 #sessions-list .session-card .delete-session-btn i {
-    font-size: 14px !important; /* تقليل بسيط لحجم الأيقونة */
+    font-size: 14px !important;
+    /* تقليل بسيط لحجم الأيقونة */
     line-height: 1 !important;
 }
 
 /* جلسات - تخطيط أزرار الكارت حسب حجم الشاشة */
 @media (max-width: 767px) {
-  /* على الموبايل: الأزرار في صف واحد بأسفل الكارت وفي المنتصف */
-  #sessions-list .session-card > div.flex > div.flex:last-child {
-      flex-direction: row !important;
-      justify-content: center !important;
-      align-items: center !important;
-      gap: 6px !important;
-      width: 100% !important; /* خليه ياخد عرض الكارت للتمركز */
-  }
+
+    /* على الموبايل: الأزرار في صف واحد بأسفل الكارت وفي المنتصف */
+    #sessions-list .session-card>div.flex>div.flex:last-child {
+        flex-direction: row !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 6px !important;
+        width: 100% !important;
+        /* خليه ياخد عرض الكارت للتمركز */
+    }
 }
 
 @media (min-width: 768px) {
-  /* على الديسكتوب: الأزرار عمودية في الجانب الأيمن */
-  #sessions-list .session-card > div.flex > div.flex:last-child {
-      flex-direction: column !important;
-      gap: 6px !important; /* مسافة رأسية بين الأزرار */
-      align-items: stretch !important; /* اجعل الأزرار بعرض الحاوية */
-  }
+
+    /* على الديسكتوب: الأزرار عمودية في الجانب الأيمن */
+    #sessions-list .session-card>div.flex>div.flex:last-child {
+        flex-direction: column !important;
+        gap: 6px !important;
+        /* مسافة رأسية بين الأزرار */
+        align-items: stretch !important;
+        /* اجعل الأزرار بعرض الحاوية */
+    }
 }
 
 
 /* الأعمال الإدارية - تخطيط أزرار الكارت حسب حجم الشاشة */
 @media (max-width: 767px) {
-  /* على الموبايل: الأزرار في صف واحد بأسفل الكارت وفي المنتصف */
-  #administrative-list .work-card > div.flex > div.flex:last-child {
-      flex-direction: row !important;
-      justify-content: center !important;
-      align-items: center !important;
-      gap: 6px !important;
-      width: 100% !important; /* خليه ياخد عرض الكارت للتمركز */
-  }
+
+    /* على الموبايل: الأزرار في صف واحد بأسفل الكارت وفي المنتصف */
+    #administrative-list .work-card>div.flex>div.flex:last-child {
+        flex-direction: row !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 6px !important;
+        width: 100% !important;
+        /* خليه ياخد عرض الكارت للتمركز */
+    }
 }
 
 @media (min-width: 768px) {
-  /* على الديسكتوب: الأزرار عمودية في الجانب الأيمن */
-  #administrative-list .work-card > div.flex > div.flex:last-child {
-      flex-direction: column !important;
-      gap: 6px !important; /* مسافة رأسية بين الأزرار */
-      align-items: stretch !important; /* اجعل الأزرار بعرض الحاوية */
-  }
+
+    /* على الديسكتوب: الأزرار عمودية في الجانب الأيمن */
+    #administrative-list .work-card>div.flex>div.flex:last-child {
+        flex-direction: column !important;
+        gap: 6px !important;
+        /* مسافة رأسية بين الأزرار */
+        align-items: stretch !important;
+        /* اجعل الأزرار بعرض الحاوية */
+    }
 }
 
 
@@ -1042,7 +1191,7 @@ input:focus, textarea:focus, select:focus {
 #client-info-display div,
 #opponent-info-display div {
     padding: 4px 0;
-    border-bottom: 1px solid rgba(0,0,0,0.05);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 #client-info-display div:last-child,
@@ -1063,7 +1212,7 @@ input:focus, textarea:focus, select:focus {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
     transition: left 0.5s;
 }
 
@@ -1072,7 +1221,7 @@ input:focus, textarea:focus, select:focus {
 }
 
 /* تحسين التباعد والألوان */
-.space-y-6 > * + * {
+.space-y-6>*+* {
     margin-top: 1.5rem;
 }
 
@@ -1196,7 +1345,7 @@ input:focus, textarea:focus, select:focus {
 }
 
 /* تحسين المساحات */
-.space-y-3 > * + * {
+.space-y-3>*+* {
     margin-top: 0.75rem;
 }
 
@@ -1249,7 +1398,7 @@ input:focus, textarea:focus, select:focus {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.1) 100%);
+    background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%, rgba(255, 255, 255, 0.1) 100%);
     opacity: 0;
     transition: opacity 0.3s ease;
 }
@@ -1287,7 +1436,8 @@ input:focus, textarea:focus, select:focus {
 }
 
 /* أزرار التحكم في المجلدات */
-.edit-folder-btn, .delete-folder-btn {
+.edit-folder-btn,
+.delete-folder-btn {
     transition: all 0.2s ease;
     z-index: 10;
 }
@@ -1316,6 +1466,7 @@ input:focus, textarea:focus, select:focus {
         opacity: 0;
         transform: translateY(-20px) scale(0.95);
     }
+
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -1348,15 +1499,18 @@ input:focus, textarea:focus, select:focus {
         max-width: 52vw !important;
         box-sizing: border-box;
     }
+
     header #copyable-title i {
         display: none !important;
     }
+
     header #page-title {
         font-size: 0.85rem !important;
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
     }
+
     #modal-title {
         font-size: 0.95rem !important;
         white-space: nowrap !important;
@@ -1364,275 +1518,563 @@ input:focus, textarea:focus, select:focus {
         text-overflow: ellipsis !important;
         max-width: 70vw !important;
     }
-    #modal #modal-container > div.flex {
+
+    #modal #modal-container>div.flex {
         padding: 6px 8px !important;
     }
+
     #modal #modal-container #modal-title {
         max-width: 70vw !important;
     }
 }
 
-.sidebar-toggle-checkbox{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
-.mobile-sidebar-toggle{display:none}
-@media (max-width:768px){.mobile-sidebar-toggle{display:flex;align-items:center;justify-content:center;position:fixed;top:50%;transform:translateY(-50%);right:8px;width:36px;height:72px;z-index:70;background:rgba(30,58,138,.95);color:#fff;border-radius:12px;border:1px solid rgba(255,255,255,.15)}.mobile-sidebar-toggle i{font-size:20px;line-height:1}#sidebar-toggle:checked~.mobile-sidebar-toggle{right:calc(min(90vw, 360px) + 10px)}#sidebar-toggle:not(:checked)~.mobile-sidebar-toggle .close-icon{display:none}#sidebar-toggle:checked~.mobile-sidebar-toggle .open-icon{display:none}.search-layout{position:relative}.search-left-pane{position:fixed;top:48px;right:-105%;bottom:0;width:min(90vw, 360px);max-width:100vw;background:#f8fafc;border-left:1px solid #cbd5e1;box-shadow:-8px 0 24px rgba(0,0,0,.2);z-index:60;transition:right .25s ease;overflow-y:auto !important;padding:16px}#sidebar-toggle:checked~main .search-layout .search-left-pane{right:0}#sidebar-toggle:checked~main .search-layout::before{content:"";position:fixed;top:48px;right:0;bottom:0;left:0;background:rgba(0,0,0,.35);z-index:55}#search-content-container .flex-1>.bg-blue-50{border-radius:0;border-width:0}#clients-list{padding:10px !important}#clients-list .client-card{padding:12px !important;border-radius:12px}#clients-list .client-card>div.flex{flex-direction:column;align-items:stretch;gap:10px}#clients-list .client-card h4{font-size:1rem;margin-bottom:4px}#clients-list .client-card .w-12.h-12{width:32px !important;height:32px !important}#clients-list .client-card .bg-red-100,#clients-list .client-card .bg-blue-100,#clients-list .client-card .bg-green-100{padding:2px 6px !important}#clients-list .client-card .bg-red-100 i,#clients-list .client-card .bg-blue-100 i,#clients-list .client-card .bg-green-100 i{font-size:12px !important}#clients-list .client-card .bg-red-100 span,#clients-list .client-card .bg-blue-100 span,#clients-list .client-card .bg-green-100 span{font-size:12px !important}
+.sidebar-toggle-checkbox {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none
+}
+
+.mobile-sidebar-toggle {
+    display: none
+}
+
+@media (max-width:768px) {
+    .mobile-sidebar-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        top: 50%;
+        transform: translateY(-50%);
+        right: 8px;
+        width: 36px;
+        height: 72px;
+        z-index: 70;
+        background: rgba(30, 58, 138, .95);
+        color: #fff;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, .15)
+    }
+
+    .mobile-sidebar-toggle i {
+        font-size: 20px;
+        line-height: 1
+    }
+
+    #sidebar-toggle:checked~.mobile-sidebar-toggle {
+        right: calc(min(90vw, 360px) + 10px)
+    }
+
+    #sidebar-toggle:not(:checked)~.mobile-sidebar-toggle .close-icon {
+        display: none
+    }
+
+    #sidebar-toggle:checked~.mobile-sidebar-toggle .open-icon {
+        display: none
+    }
+
+    .search-layout {
+        position: relative
+    }
+
+    .search-left-pane {
+        position: fixed;
+        top: 48px;
+        right: -105%;
+        bottom: 0;
+        width: min(90vw, 360px);
+        max-width: 100vw;
+        background: #f8fafc;
+        border-left: 1px solid #cbd5e1;
+        box-shadow: -8px 0 24px rgba(0, 0, 0, .2);
+        z-index: 60;
+        transition: right .25s ease;
+        overflow-y: auto !important;
+        padding: 16px
+    }
+
+    #sidebar-toggle:checked~main .search-layout .search-left-pane {
+        right: 0
+    }
+
+    #sidebar-toggle:checked~main .search-layout::before {
+        content: "";
+        position: fixed;
+        top: 48px;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background: rgba(0, 0, 0, .35);
+        z-index: 55
+    }
+
+    #search-content-container .flex-1>.bg-blue-50 {
+        border-radius: 0;
+        border-width: 0
+    }
+
+    #clients-list {
+        padding: 10px !important
+    }
+
+    #clients-list .client-card {
+        padding: 12px !important;
+        border-radius: 12px
+    }
+
+    #clients-list .client-card>div.flex {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px
+    }
+
+    #clients-list .client-card h4 {
+        font-size: 1rem;
+        margin-bottom: 4px
+    }
+
+    #clients-list .client-card .w-12.h-12 {
+        width: 32px !important;
+        height: 32px !important
+    }
+
+    #clients-list .client-card .bg-red-100,
+    #clients-list .client-card .bg-blue-100,
+    #clients-list .client-card .bg-green-100 {
+        padding: 2px 6px !important
+    }
+
+    #clients-list .client-card .bg-red-100 i,
+    #clients-list .client-card .bg-blue-100 i,
+    #clients-list .client-card .bg-green-100 i {
+        font-size: 12px !important
+    }
+
+    #clients-list .client-card .bg-red-100 span,
+    #clients-list .client-card .bg-blue-100 span,
+    #clients-list .client-card .bg-green-100 span {
+        font-size: 12px !important
+    }
 
 }
 
 /* Administrative list header mobile tweaks */
-@media (max-width:768px){
-#administrative-list-wrapper .administrative-list-header{padding:8px !important; background:transparent !important; border-bottom:0 !important; flex-direction:row !important; align-items:center !important; gap:6px !important; justify-content:space-between !important}
-#administrative-list-wrapper .administrative-list-header h3{font-size:.95rem !important}
-#administrative-list-wrapper .administrative-list-header > .flex.items-center.gap-3{gap:6px !important}
-#administrative-list-wrapper .administrative-list-header > .flex.items-center.gap-2{gap:6px !important; width:100%}
-#clear-filter-btn{padding:4px 6px !important; font-size:11px !important; border-radius:6px !important}
-#sort-btn{padding:4px 6px !important; font-size:12px !important; border-radius:6px !important}
-#sort-btn i{font-size:14px !important}
-#administrative-list-wrapper .administrative-list-header .text-sm.text-gray-600{font-size:11px !important; color:#475569 !important}
+@media (max-width:768px) {
+    #administrative-list-wrapper .administrative-list-header {
+        padding: 8px !important;
+        background: transparent !important;
+        border-bottom: 0 !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 6px !important;
+        justify-content: space-between !important
+    }
+
+    #administrative-list-wrapper .administrative-list-header h3 {
+        font-size: .95rem !important
+    }
+
+    #administrative-list-wrapper .administrative-list-header>.flex.items-center.gap-3 {
+        gap: 6px !important
+    }
+
+    #administrative-list-wrapper .administrative-list-header>.flex.items-center.gap-2 {
+        gap: 6px !important;
+        width: 100%
+    }
+
+    #clear-filter-btn {
+        padding: 4px 6px !important;
+        font-size: 11px !important;
+        border-radius: 6px !important
+    }
+
+    #sort-btn {
+        padding: 4px 6px !important;
+        font-size: 12px !important;
+        border-radius: 6px !important
+    }
+
+    #sort-btn i {
+        font-size: 14px !important
+    }
+
+    #administrative-list-wrapper .administrative-list-header .text-sm.text-gray-600 {
+        font-size: 11px !important;
+        color: #475569 !important
+    }
 }
 
 /* Administrative list cards mobile tweaks */
-#administrative-list .work-card{padding:12px !important; position:relative; padding-left:12px !important; max-width:100% !important; box-sizing:border-box}
-#administrative-list .work-card .flex.justify-between{gap:10px !important; display:flex !important; align-items:flex-start !important}
-#administrative-list .work-card .flex-1{display:flex !important; flex-direction:column !important; gap:6px !important}
-#administrative-list .work-card .flex-1 > div:nth-child(1){order:1}
-#administrative-list .work-card .flex-1 > div:nth-child(3){order:3}
-#administrative-list .work-card .flex-1 > div:nth-child(2){order:2}
-#administrative-list .work-card .flex-1 .text-sm{font-size:.9rem !important}
-#administrative-list .work-card .text-xs{font-size:.8rem !important}
-#administrative-list .work-card .flex.items-center.gap-2{flex-wrap:nowrap !important}
-#administrative-list .work-card .flex-1 > div:nth-child(1){flex-wrap:wrap !important}
-#administrative-list .work-card .flex-1 > div:nth-child(1) span:nth-of-type(1){font-size:11.5px !important}
-#administrative-list .work-card .flex-1 > div:nth-child(1) span:nth-of-type(2){font-size:12.5px !important; white-space:nowrap !important}
-#administrative-list .work-card .flex-1 > div:nth-child(1) span:nth-of-type(3){flex-basis:100%}
-#administrative-list .work-card .flex.flex-col.gap-1{position:static !important; left:auto !important; top:auto !important; flex-direction:row !important; align-items:center !important; justify-content:flex-start !important; gap:6px !important; margin-top:0 !important}
-#administrative-list .work-card .flex.flex-col.gap-1 button{padding:6px 8px !important}
-#administrative-list .work-card [style*="font-size:15px"]{font-size:14px !important}
-#administrative-list .work-card i.ri-calendar-event-line{font-size:14px !important}
+#administrative-list .work-card {
+    padding: 12px !important;
+    position: relative;
+    padding-left: 12px !important;
+    max-width: 100% !important;
+    box-sizing: border-box
+}
+
+#administrative-list .work-card .flex.justify-between {
+    gap: 10px !important;
+    display: flex !important;
+    align-items: flex-start !important
+}
+
+#administrative-list .work-card .flex-1 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important
+}
+
+#administrative-list .work-card .flex-1>div:nth-child(1) {
+    order: 1
+}
+
+#administrative-list .work-card .flex-1>div:nth-child(3) {
+    order: 3
+}
+
+#administrative-list .work-card .flex-1>div:nth-child(2) {
+    order: 2
+}
+
+#administrative-list .work-card .flex-1 .text-sm {
+    font-size: .9rem !important
+}
+
+#administrative-list .work-card .text-xs {
+    font-size: .8rem !important
+}
+
+#administrative-list .work-card .flex.items-center.gap-2 {
+    flex-wrap: nowrap !important
+}
+
+#administrative-list .work-card .flex-1>div:nth-child(1) {
+    flex-wrap: wrap !important
+}
+
+#administrative-list .work-card .flex-1>div:nth-child(1) span:nth-of-type(1) {
+    font-size: 11.5px !important
+}
+
+#administrative-list .work-card .flex-1>div:nth-child(1) span:nth-of-type(2) {
+    font-size: 12.5px !important;
+    white-space: nowrap !important
+}
+
+#administrative-list .work-card .flex-1>div:nth-child(1) span:nth-of-type(3) {
+    flex-basis: 100%
+}
+
+#administrative-list .work-card .flex.flex-col.gap-1 {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 6px !important;
+    margin-top: 0 !important
+}
+
+#administrative-list .work-card .flex.flex-col.gap-1 button {
+    padding: 6px 8px !important
+}
+
+#administrative-list .work-card [style*="font-size:15px"] {
+    font-size: 14px !important
+}
+
+#administrative-list .work-card i.ri-calendar-event-line {
+    font-size: 14px !important
+}
+
 #administrative-list .work-card i.ri-list-check,
-#administrative-list .work-card i.ri-map-pin-line{font-size:16px !important}
-.client-view .against-separator{display:block}
-@media (max-width:768px){
-.client-view .flex.flex-row.items-start.gap-6{flex-direction:column !important;gap:12px !important}
-.client-view .against-separator{display:none !important}
-.client-view .p-6{padding:12px !important}
-.client-view h3{font-size:1rem !important;margin-bottom:.5rem !important}
-.client-view .w-24, .client-view .md\:w-28{width:7rem !important;min-width:7rem !important}
-.client-view .inline-flex>div{font-size:.9rem !important}
-.client-view .inline-flex>div.flex-1{padding:.5rem .75rem !important}
-.client-view .space-y-4>*+*{margin-top:.5rem !important}
-.client-view .mt-6{margin-top:.75rem !important}
-.client-view #prev-opponent-btn, .client-view #next-opponent-btn{width:36px;height:36px;padding:0 !important;display:inline-flex;align-items:center;justify-content:center;border-radius:8px}
-.client-view .case-card .p-6{padding:12px !important}
-.client-view .case-card .p-4{padding:10px !important}
-.client-view .case-card h4{font-size:1rem !important}
-.client-view .case-card .text-sm{font-size:.8rem !important}
-
-/* Modal edit forms responsive - only for edit forms */
-#modal-container:has(#edit-client-form), 
-#modal-container:has(#edit-single-client-form),
-#modal-container:has(#edit-single-opponent-form),
-#modal-container:has(#edit-opponent-form),
-#modal-container:has(#edit-case-form) {
-    max-width: 100vw !important;
-    width: 100vw !important;
-    margin: 0 !important;
-    border-radius: 0 !important;
-    height: 100vh !important;
+#administrative-list .work-card i.ri-map-pin-line {
+    font-size: 16px !important
 }
 
-#modal:has(#edit-client-form) .flex.items-start.justify-center,
-#modal:has(#edit-single-client-form) .flex.items-start.justify-center,
-#modal:has(#edit-single-opponent-form) .flex.items-start.justify-center,
-#modal:has(#edit-opponent-form) .flex.items-start.justify-center,
-#modal:has(#edit-case-form) .flex.items-start.justify-center {
-    padding: 0 !important;
-    align-items: stretch !important;
+.client-view .against-separator {
+    display: block
 }
 
-#modal-container:has(#edit-client-form) #modal-content,
-#modal-container:has(#edit-single-client-form) #modal-content,
-#modal-container:has(#edit-single-opponent-form) #modal-content,
-#modal-container:has(#edit-opponent-form) #modal-content,
-#modal-container:has(#edit-case-form) #modal-content {
-    padding: 8px !important;
-    height: calc(100vh - 60px) !important;
-    overflow-y: auto !important;
-}
+@media (max-width:768px) {
+    .client-view .flex.flex-row.items-start.gap-6 {
+        flex-direction: column !important;
+        gap: 12px !important
+    }
 
-/* Edit forms styling - only for edit forms */
-#edit-client-form .space-y-6 > * + *,
-#edit-single-client-form .space-y-6 > * + *,
-#edit-single-opponent-form .space-y-6 > * + *,
-#edit-opponent-form .space-y-6 > * + *,
-#edit-case-form .space-y-6 > * + * {
-    margin-top: 12px !important;
-}
+    .client-view .against-separator {
+        display: none !important
+    }
 
-#edit-client-form .grid.grid-cols-1.md\:grid-cols-2,
-#edit-single-client-form .grid.grid-cols-1.md\:grid-cols-2,
-#edit-single-opponent-form .grid.grid-cols-1.md\:grid-cols-2,
-#edit-opponent-form .grid.grid-cols-1.md\:grid-cols-2,
-#edit-case-form .grid.grid-cols-1.md\:grid-cols-2 {
-    grid-template-columns: 1fr !important;
-    gap: 12px !important;
-}
+    .client-view .p-6 {
+        padding: 12px !important
+    }
 
-#edit-client-form .p-6,
-#edit-single-client-form .p-6,
-#edit-single-opponent-form .p-6,
-#edit-opponent-form .p-6,
-#edit-case-form .p-6 {
-    padding: 12px !important;
-}
+    .client-view h3 {
+        font-size: 1rem !important;
+        margin-bottom: .5rem !important
+    }
 
-#edit-client-form .px-8.py-4,
-#edit-single-client-form .px-8.py-4,
-#edit-single-opponent-form .px-8.py-4,
-#edit-opponent-form .px-8.py-4,
-#edit-case-form .px-8.py-4 {
-    padding: 12px 16px !important;
-    font-size: 14px !important;
-}
+    .client-view .w-24,
+    .client-view .md\:w-28 {
+        width: 7rem !important;
+        min-width: 7rem !important
+    }
 
-#edit-client-form .text-xl,
-#edit-single-client-form .text-xl,
-#edit-single-opponent-form .text-xl,
-#edit-opponent-form .text-xl,
-#edit-case-form .text-xl {
-    font-size: 16px !important;
-}
+    .client-view .inline-flex>div {
+        font-size: .9rem !important
+    }
 
-#edit-client-form .text-lg,
-#edit-single-client-form .text-lg,
-#edit-single-opponent-form .text-lg,
-#edit-opponent-form .text-lg,
-#edit-case-form .text-lg {
-    font-size: 15px !important;
-}
+    .client-view .inline-flex>div.flex-1 {
+        padding: .5rem .75rem !important
+    }
 
-/* Input fields in edit forms only */
-#edit-client-form input[type="text"],
-#edit-client-form input[type="number"],
-#edit-client-form select,
-#edit-client-form textarea,
-#edit-single-client-form input[type="text"],
-#edit-single-client-form input[type="number"],
-#edit-single-client-form select,
-#edit-single-client-form textarea,
-#edit-single-opponent-form input[type="text"],
-#edit-single-opponent-form input[type="number"],
-#edit-single-opponent-form select,
-#edit-single-opponent-form textarea,
-#edit-opponent-form input[type="text"],
-#edit-opponent-form input[type="number"],
-#edit-opponent-form select,
-#edit-opponent-form textarea,
-#edit-case-form input[type="text"],
-#edit-case-form input[type="number"],
-#edit-case-form select,
-#edit-case-form textarea {
-    padding: 10px !important;
-    font-size: 14px !important;
-}
+    .client-view .space-y-4>*+* {
+        margin-top: .5rem !important
+    }
 
-/* Form sections in edit forms only */
-#edit-client-form .bg-blue-50,
-#edit-client-form .bg-green-100,
-#edit-client-form .bg-white\/90,
-#edit-client-form .bg-white\/95,
-#edit-single-client-form .bg-blue-50,
-#edit-single-client-form .bg-green-100,
-#edit-single-client-form .bg-white\/90,
-#edit-single-client-form .bg-white\/95,
-#edit-single-opponent-form .bg-blue-50,
-#edit-single-opponent-form .bg-green-100,
-#edit-single-opponent-form .bg-white\/90,
-#edit-single-opponent-form .bg-white\/95,
-#edit-opponent-form .bg-blue-50,
-#edit-opponent-form .bg-green-100,
-#edit-opponent-form .bg-white\/90,
-#edit-opponent-form .bg-white\/95,
-#edit-opponent-form .bg-red-50,
-#edit-opponent-form .bg-red-100,
-#edit-case-form .bg-blue-50,
-#edit-case-form .bg-green-100,
-#edit-case-form .bg-white\/90,
-#edit-case-form .bg-white\/95 {
-    padding: 12px !important;
-    border-radius: 8px !important;
-}
+    .client-view .mt-6 {
+        margin-top: .75rem !important
+    }
 
-/* Buttons container in edit forms only */
-#edit-client-form .flex.gap-4.pt-6,
-#edit-single-client-form .flex.gap-4.pt-6,
-#edit-single-opponent-form .flex.gap-4.pt-6,
-#edit-opponent-form .flex.gap-4.pt-6,
-#edit-case-form .flex.gap-4.pt-6 {
-    flex-direction: column !important;
-    gap: 8px !important;
-    padding-top: 16px !important;
-}
+    .client-view #prev-opponent-btn,
+    .client-view #next-opponent-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0 !important;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px
+    }
 
-#edit-client-form .flex.gap-3.pt-4,
-#edit-single-client-form .flex.gap-3.pt-4,
-#edit-single-opponent-form .flex.gap-3.pt-4,
-#edit-opponent-form .flex.gap-3.pt-4,
-#edit-case-form .flex.gap-3.pt-4 {
-    flex-direction: column !important;
-    gap: 8px !important;
-    padding-top: 12px !important;
-}
+    .client-view .case-card .p-6 {
+        padding: 12px !important
+    }
 
-/* Individual buttons in edit forms only */
-#edit-client-form button,
-#edit-single-client-form button,
-#edit-single-opponent-form button,
-#edit-opponent-form button,
-#edit-case-form button {
-    padding: 12px !important;
-    font-size: 14px !important;
-    border-radius: 8px !important;
-}
+    .client-view .case-card .p-4 {
+        padding: 10px !important
+    }
 
-/* Inline-flex fields responsive for edit forms */
-#edit-client-form .inline-flex,
-#edit-opponent-form .inline-flex {
-    flex-direction: column !important;
-    align-items: stretch !important;
-}
+    .client-view .case-card h4 {
+        font-size: 1rem !important
+    }
 
-#edit-client-form .inline-flex label,
-#edit-opponent-form .inline-flex label {
-    width: 100% !important;
-    min-width: 100% !important;
-    border-radius: 8px 8px 0 0 !important;
-    border-left: 2px solid !important;
-    border-bottom: 0 !important;
-    padding: 8px 12px !important;
-    font-size: 13px !important;
-}
+    .client-view .case-card .text-sm {
+        font-size: .8rem !important
+    }
 
-#edit-client-form .inline-flex input,
-#edit-opponent-form .inline-flex input {
-    border-radius: 0 0 8px 8px !important;
-    border-right: 2px solid !important;
-    border-top: 0 !important;
-    padding: 10px 12px !important;
-    font-size: 14px !important;
-}
+    /* Modal edit forms responsive - only for edit forms */
+    #modal-container:has(#edit-client-form),
+    #modal-container:has(#edit-single-client-form),
+    #modal-container:has(#edit-single-opponent-form),
+    #modal-container:has(#edit-opponent-form),
+    #modal-container:has(#edit-case-form) {
+        max-width: 100vw !important;
+        width: 100vw !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        height: 100vh !important;
+    }
 
-/* Flex buttons responsive */
-#edit-client-form .flex.flex-col.sm\:flex-row,
-#edit-opponent-form .flex.flex-col.sm\:flex-row {
-    flex-direction: column !important;
-    gap: 8px !important;
-}
+    #modal:has(#edit-client-form) .flex.items-start.justify-center,
+    #modal:has(#edit-single-client-form) .flex.items-start.justify-center,
+    #modal:has(#edit-single-opponent-form) .flex.items-start.justify-center,
+    #modal:has(#edit-opponent-form) .flex.items-start.justify-center,
+    #modal:has(#edit-case-form) .flex.items-start.justify-center {
+        padding: 0 !important;
+        align-items: stretch !important;
+    }
 
-#edit-client-form .flex.flex-col.sm\:flex-row button,
-#edit-opponent-form .flex.flex-col.sm\:flex-row button {
-    padding: 12px 16px !important;
-    font-size: 14px !important;
-}
+    #modal-container:has(#edit-client-form) #modal-content,
+    #modal-container:has(#edit-single-client-form) #modal-content,
+    #modal-container:has(#edit-single-opponent-form) #modal-content,
+    #modal-container:has(#edit-opponent-form) #modal-content,
+    #modal-container:has(#edit-case-form) #modal-content {
+        padding: 8px !important;
+        height: calc(100vh - 60px) !important;
+        overflow-y: auto !important;
+    }
+
+    /* Edit forms styling - only for edit forms */
+    #edit-client-form .space-y-6>*+*,
+    #edit-single-client-form .space-y-6>*+*,
+    #edit-single-opponent-form .space-y-6>*+*,
+    #edit-opponent-form .space-y-6>*+*,
+    #edit-case-form .space-y-6>*+* {
+        margin-top: 12px !important;
+    }
+
+    #edit-client-form .grid.grid-cols-1.md\:grid-cols-2,
+    #edit-single-client-form .grid.grid-cols-1.md\:grid-cols-2,
+    #edit-single-opponent-form .grid.grid-cols-1.md\:grid-cols-2,
+    #edit-opponent-form .grid.grid-cols-1.md\:grid-cols-2,
+    #edit-case-form .grid.grid-cols-1.md\:grid-cols-2 {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    #edit-client-form .p-6,
+    #edit-single-client-form .p-6,
+    #edit-single-opponent-form .p-6,
+    #edit-opponent-form .p-6,
+    #edit-case-form .p-6 {
+        padding: 12px !important;
+    }
+
+    #edit-client-form .px-8.py-4,
+    #edit-single-client-form .px-8.py-4,
+    #edit-single-opponent-form .px-8.py-4,
+    #edit-opponent-form .px-8.py-4,
+    #edit-case-form .px-8.py-4 {
+        padding: 12px 16px !important;
+        font-size: 14px !important;
+    }
+
+    #edit-client-form .text-xl,
+    #edit-single-client-form .text-xl,
+    #edit-single-opponent-form .text-xl,
+    #edit-opponent-form .text-xl,
+    #edit-case-form .text-xl {
+        font-size: 16px !important;
+    }
+
+    #edit-client-form .text-lg,
+    #edit-single-client-form .text-lg,
+    #edit-single-opponent-form .text-lg,
+    #edit-opponent-form .text-lg,
+    #edit-case-form .text-lg {
+        font-size: 15px !important;
+    }
+
+    /* Input fields in edit forms only */
+    #edit-client-form input[type="text"],
+    #edit-client-form input[type="number"],
+    #edit-client-form select,
+    #edit-client-form textarea,
+    #edit-single-client-form input[type="text"],
+    #edit-single-client-form input[type="number"],
+    #edit-single-client-form select,
+    #edit-single-client-form textarea,
+    #edit-single-opponent-form input[type="text"],
+    #edit-single-opponent-form input[type="number"],
+    #edit-single-opponent-form select,
+    #edit-single-opponent-form textarea,
+    #edit-opponent-form input[type="text"],
+    #edit-opponent-form input[type="number"],
+    #edit-opponent-form select,
+    #edit-opponent-form textarea,
+    #edit-case-form input[type="text"],
+    #edit-case-form input[type="number"],
+    #edit-case-form select,
+    #edit-case-form textarea {
+        padding: 10px !important;
+        font-size: 14px !important;
+    }
+
+    /* Form sections in edit forms only */
+    #edit-client-form .bg-blue-50,
+    #edit-client-form .bg-green-100,
+    #edit-client-form .bg-white\/90,
+    #edit-client-form .bg-white\/95,
+    #edit-single-client-form .bg-blue-50,
+    #edit-single-client-form .bg-green-100,
+    #edit-single-client-form .bg-white\/90,
+    #edit-single-client-form .bg-white\/95,
+    #edit-single-opponent-form .bg-blue-50,
+    #edit-single-opponent-form .bg-green-100,
+    #edit-single-opponent-form .bg-white\/90,
+    #edit-single-opponent-form .bg-white\/95,
+    #edit-opponent-form .bg-blue-50,
+    #edit-opponent-form .bg-green-100,
+    #edit-opponent-form .bg-white\/90,
+    #edit-opponent-form .bg-white\/95,
+    #edit-opponent-form .bg-red-50,
+    #edit-opponent-form .bg-red-100,
+    #edit-case-form .bg-blue-50,
+    #edit-case-form .bg-green-100,
+    #edit-case-form .bg-white\/90,
+    #edit-case-form .bg-white\/95 {
+        padding: 12px !important;
+        border-radius: 8px !important;
+    }
+
+    /* Buttons container in edit forms only */
+    #edit-client-form .flex.gap-4.pt-6,
+    #edit-single-client-form .flex.gap-4.pt-6,
+    #edit-single-opponent-form .flex.gap-4.pt-6,
+    #edit-opponent-form .flex.gap-4.pt-6,
+    #edit-case-form .flex.gap-4.pt-6 {
+        flex-direction: column !important;
+        gap: 8px !important;
+        padding-top: 16px !important;
+    }
+
+    #edit-client-form .flex.gap-3.pt-4,
+    #edit-single-client-form .flex.gap-3.pt-4,
+    #edit-single-opponent-form .flex.gap-3.pt-4,
+    #edit-opponent-form .flex.gap-3.pt-4,
+    #edit-case-form .flex.gap-3.pt-4 {
+        flex-direction: column !important;
+        gap: 8px !important;
+        padding-top: 12px !important;
+    }
+
+    /* Individual buttons in edit forms only */
+    #edit-client-form button,
+    #edit-single-client-form button,
+    #edit-single-opponent-form button,
+    #edit-opponent-form button,
+    #edit-case-form button {
+        padding: 12px !important;
+        font-size: 14px !important;
+        border-radius: 8px !important;
+    }
+
+    /* Inline-flex fields responsive for edit forms */
+    #edit-client-form .inline-flex,
+    #edit-opponent-form .inline-flex {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+
+    #edit-client-form .inline-flex label,
+    #edit-opponent-form .inline-flex label {
+        width: 100% !important;
+        min-width: 100% !important;
+        border-radius: 8px 8px 0 0 !important;
+        border-left: 2px solid !important;
+        border-bottom: 0 !important;
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+    }
+
+    #edit-client-form .inline-flex input,
+    #edit-opponent-form .inline-flex input {
+        border-radius: 0 0 8px 8px !important;
+        border-right: 2px solid !important;
+        border-top: 0 !important;
+        padding: 10px 12px !important;
+        font-size: 14px !important;
+    }
+
+    /* Flex buttons responsive */
+    #edit-client-form .flex.flex-col.sm\:flex-row,
+    #edit-opponent-form .flex.flex-col.sm\:flex-row {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+
+    #edit-client-form .flex.flex-col.sm\:flex-row button,
+    #edit-opponent-form .flex.flex-col.sm\:flex-row button {
+        padding: 12px 16px !important;
+        font-size: 14px !important;
+    }
 }
 
 /* Accounts client cards responsive (v2) */
@@ -1649,7 +2091,7 @@ input:focus, textarea:focus, select:focus {
 
     /* Block with name and icon */
     .client-group .client-header .flex.items-center.gap-3:first-child {
-       width: 100%;
+        width: 100%;
     }
 
     .client-group .client-header h3 {
@@ -1676,19 +2118,21 @@ input:focus, textarea:focus, select:focus {
         flex-basis: 75px;
         flex-grow: 1;
     }
+
     .client-group .client-header .text-sm {
         font-size: 0.7rem !important;
     }
+
     .client-group .client-header .text-base {
         font-size: 0.9rem !important;
     }
 
     /* The expand icon */
     .client-group .client-header .expand-icon {
-       flex-shrink: 0;
-       margin-left: auto;
+        flex-shrink: 0;
+        margin-left: auto;
     }
-    
+
     .accounts-details {
         padding: 8px !important;
     }
@@ -1733,20 +2177,21 @@ body.form-active .mobile-sidebar-toggle {
         font-size: 0.85rem !important;
     }
 
-    #account-form input, 
+    #account-form input,
     #account-form select,
     #account-form .autocomplete-results {
         width: 100% !important;
         border-radius: 0 0 6px 6px !important;
     }
 
-    #account-form input, #account-form select {
+    #account-form input,
+    #account-form select {
         border-top: none !important;
         text-align: right !important;
         padding: 12px 8px !important;
         font-size: 1rem !important;
     }
-    
+
     #account-form .mt-auto.pt-4 {
         padding-top: 8px !important;
     }
@@ -1758,8 +2203,9 @@ body.form-active .mobile-sidebar-toggle {
 
 /* --- Clerk Papers Responsive Styles --- */
 @media (max-width: 768px) {
+
     /* Remove container spacing in clerk papers view on mobile */
-    .search-right-pane > .bg-white.rounded-xl {
+    .search-right-pane>.bg-white.rounded-xl {
         border: none !important;
         box-shadow: none !important;
         border-radius: 0 !important;
@@ -1798,7 +2244,8 @@ body.form-active .mobile-sidebar-toggle {
     }
 
     #clerk-papers-list {
-        padding: 8px 4px !important; /* Adjust padding for list */
+        padding: 8px 4px !important;
+        /* Adjust padding for list */
     }
 
     /* Client group headers in clerk papers list */
@@ -1850,13 +2297,13 @@ body.form-active .mobile-sidebar-toggle {
     }
 
     /* Stack only the action buttons vertically (do not affect other flex gap-1 blocks) */
-    .paper-card > .flex.items-center.justify-between > .flex.items-center.gap-1 {
+    .paper-card>.flex.items-center.justify-between>.flex.items-center.gap-1 {
         flex-direction: column;
         align-items: flex-end;
         gap: 6px;
     }
 
-        
+
     /* Clerk Paper Form Responsive */
     #clerk-paper-form .grid {
         gap: 10px !important;
@@ -1866,7 +2313,8 @@ body.form-active .mobile-sidebar-toggle {
         flex-direction: row !important;
         align-items: stretch !important;
         gap: 0 !important;
-        direction: rtl !important; /* ensure label appears on the right side */
+        direction: rtl !important;
+        /* ensure label appears on the right side */
     }
 
     #clerk-paper-form label {
@@ -1882,7 +2330,7 @@ body.form-active .mobile-sidebar-toggle {
         margin: 0 !important;
     }
 
-    #clerk-paper-form input, 
+    #clerk-paper-form input,
     #clerk-paper-form .autocomplete-results {
         width: 100% !important;
         border-top-right-radius: 0 !important;
@@ -1895,7 +2343,8 @@ body.form-active .mobile-sidebar-toggle {
     #clerk-paper-form input {
         text-align: right !important;
         padding: 12px 12px !important;
-        font-size: 16px !important; /* Prevent zoom and keep readable */
+        font-size: 16px !important;
+        /* Prevent zoom and keep readable */
     }
 
     #clerk-paper-form .flex-1.relative {
@@ -1903,9 +2352,9 @@ body.form-active .mobile-sidebar-toggle {
         overflow: visible !important;
     }
 
-    #clerk-paper-form .relative > #client-name-toggle,
-    #clerk-paper-form .relative > #paper-type-toggle,
-    #clerk-paper-form .relative > #clerk-office-toggle {
+    #clerk-paper-form .relative>#client-name-toggle,
+    #clerk-paper-form .relative>#paper-type-toggle,
+    #clerk-paper-form .relative>#clerk-office-toggle {
         left: 4px !important;
         right: auto !important;
     }
@@ -1929,12 +2378,14 @@ body.form-active .mobile-sidebar-toggle {
 
 /* General responsive fix for search pages layout */
 @media (max-width: 768px) {
-    .search-layout > .flex {
+    .search-layout>.flex {
         gap: 0 !important;
     }
+
     .search-right-pane {
         width: 100%;
-        flex: 1 1 100%; /* Ensure it takes full width in flex context */
+        flex: 1 1 100%;
+        /* Ensure it takes full width in flex context */
     }
 }
 
@@ -2017,6 +2468,7 @@ body.form-active .mobile-sidebar-toggle {
         font-size: 1rem !important;
     }
 }
+
 #mobile-datepicker-backdrop {
     position: fixed;
     top: 0;
@@ -2059,7 +2511,7 @@ body.form-active .mobile-sidebar-toggle {
         bottom: auto !important;
         margin: 0 !important;
     }
-    
+
     /* Override any conflicting styles for date picker on mobile */
     #custom-date-picker-exp.mobile-date-picker {
         position: fixed !important;
@@ -2083,12 +2535,16 @@ body.form-active .mobile-sidebar-toggle {
 /* Hover and keyboard focus: make the whole card clearly highlighted */
 .menu-card:hover,
 .menu-card:focus-visible {
-    background-color: #e8f0fe !important; /* Light blue */
-    border-color: #93c5fd !important;     /* Blue 300 */
-    color: #1f2937 !important;            /* Dark text for contrast */
+    background-color: #e8f0fe !important;
+    /* Light blue */
+    border-color: #93c5fd !important;
+    /* Blue 300 */
+    color: #1f2937 !important;
+    /* Dark text for contrast */
     transform: none !important;
     box-shadow: none !important;
-    outline: 2px solid #60a5fa;           /* Focus ring for keyboard users */
+    outline: 2px solid #60a5fa;
+    /* Focus ring for keyboard users */
     outline-offset: 2px;
 }
 
@@ -2103,9 +2559,10 @@ body.form-active .mobile-sidebar-toggle {
 }
 
 /* Subtle tweak to the small icon container */
-.menu-card:hover > .w-12.h-12,
-.menu-card:focus-visible > .w-12.h-12 {
-    background-color: rgba(37, 99, 235, 0.08) !important; /* Very light blue tint */
+.menu-card:hover>.w-12.h-12,
+.menu-card:focus-visible>.w-12.h-12 {
+    background-color: rgba(37, 99, 235, 0.08) !important;
+    /* Very light blue tint */
 }
 
 /* Disable the global heavy hover ripple and transforms for these cards */
@@ -2167,18 +2624,25 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 
 /* Desktop-specific enhancements for session date field */
 @media (min-width: 769px) {
+
     #session-date,
     #payment-date,
     #delivery-date,
     #receipt-date {
-        font-size: 16px !important; /* slightly larger on desktop for clarity */
+        font-size: 16px !important;
+        /* slightly larger on desktop for clarity */
         line-height: 1.25 !important;
-        color: #111827 !important; /* gray-900 for strong contrast */
-        font-weight: 700 !important; /* bold for visibility */
-        padding-top: 12px !important; /* match other inputs sm:py-3 */
+        color: #111827 !important;
+        /* gray-900 for strong contrast */
+        font-weight: 700 !important;
+        /* bold for visibility */
+        padding-top: 12px !important;
+        /* match other inputs sm:py-3 */
         padding-bottom: 12px !important;
-        min-height: 44px !important; /* consistent input height */
+        min-height: 44px !important;
+        /* consistent input height */
     }
+
     #session-date::-webkit-datetime-edit,
     #session-date::-webkit-datetime-edit-text,
     #session-date::-webkit-datetime-edit-month-field,
@@ -2254,11 +2718,12 @@ input[type="date"]:disabled {
 /* Mobile responsive adjustments */
 @media (max-width: 768px) {
     input[type="date"] {
-        font-size: 16px !important; /* Prevent zoom on iOS */
+        font-size: 16px !important;
+        /* Prevent zoom on iOS */
         padding: 12px 16px !important;
         border-radius: 10px !important;
     }
-    
+
     input[type="date"]::-webkit-calendar-picker-indicator {
         background-size: 14px 14px !important;
         width: 16px !important;
@@ -2270,19 +2735,26 @@ input[type="date"]:disabled {
 /* Mobile-specific tweak for session date field to maximize visible text */
 @media (max-width: 768px) {
     #session-date {
-        padding-left: 6px !important; /* free a bit more space beside the icon */
-        padding-right: 12px !important; /* tighten right a bit for RTL */
-        font-size: 13.5px !important; /* slight increase for readability */
+        padding-left: 6px !important;
+        /* free a bit more space beside the icon */
+        padding-right: 12px !important;
+        /* tighten right a bit for RTL */
+        font-size: 13.5px !important;
+        /* slight increase for readability */
         line-height: 1.2 !important;
-        color: #000000 !important; /* solid black for high contrast */
-        font-weight: 700 !important; /* bold for visibility */
+        color: #000000 !important;
+        /* solid black for high contrast */
+        font-weight: 700 !important;
+        /* bold for visibility */
     }
+
     #session-date::-webkit-calendar-picker-indicator {
         background-size: 14px 14px !important;
         width: 16px !important;
         height: 16px !important;
         margin-left: 2px !important;
     }
+
     /* Ensure inner date fields also use the smaller size on WebKit */
     #session-date::-webkit-datetime-edit,
     #session-date::-webkit-datetime-edit-text,
@@ -2298,13 +2770,14 @@ input[type="date"]:disabled {
 
 /* Case details responsive layout - عمودين في الهاتف */
 @media (max-width: 768px) {
+
     /* تعديل تخطيط تفاصيل القضية ليكون عمودين في الهاتف */
     .case-details .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-4,
     .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-4 {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 8px !important;
     }
-    
+
     /* تقليل حجم البطاقات في الهاتف لتتناسب مع العمودين */
     .case-details .bg-white.rounded-lg.p-4,
     .bg-white.rounded-lg.p-4.shadow-sm,
@@ -2312,7 +2785,7 @@ input[type="date"]:disabled {
         padding: 8px !important;
         border-radius: 6px !important;
     }
-    
+
     /* تقليل حجم النصوص في البطاقات */
     .case-details .bg-white.rounded-lg.p-4 span,
     .bg-white.rounded-lg.p-4.shadow-sm span,
@@ -2320,26 +2793,26 @@ input[type="date"]:disabled {
         font-size: 0.75rem !important;
         margin-bottom: 4px !important;
     }
-    
+
     .case-details .bg-white.rounded-lg.p-4 p,
     .bg-white.rounded-lg.p-4.shadow-sm p,
     .bg-white.rounded-lg.p-4.shadow-md p {
         font-size: 0.8rem !important;
     }
-    
+
     /* بطاقة الملاحظات تأخذ العمودين كاملين */
     .case-details .bg-white.rounded-lg.p-4.md\:col-span-2.lg\:col-span-2,
     .bg-white.rounded-lg.p-4.shadow-md.md\:col-span-2.lg\:col-span-2 {
         grid-column: span 2 !important;
     }
-    
+
     /* تعديل حجم الأيقونات في البطاقات */
     .case-details .bg-white.rounded-lg.p-4 i,
     .bg-white.rounded-lg.p-4.shadow-sm i,
     .bg-white.rounded-lg.p-4.shadow-md i {
         font-size: 14px !important;
     }
-    
+
     /* تعديل المسافات في البطاقات */
     .case-details .bg-white.rounded-lg.p-4 .flex.items-center.gap-3,
     .bg-white.rounded-lg.p-4.shadow-sm .flex.items-center.gap-3,
@@ -2351,21 +2824,22 @@ input[type="date"]:disabled {
 
 /* Media Query للهواتف فقط - تحسين صفحة new-page */
 @media (max-width: 640px) {
+
     /* تقليل padding في أقسام بيانات الموكل والخصم على الهواتف فقط */
     #party-details-form .flex-1.p-4.md\:p-6 {
         padding: 0.5rem !important;
     }
-    
+
     /* تقليل padding في قسم الأزرار على الهواتف فقط */
     #party-details-actions.p-4 {
         padding: 0.5rem !important;
     }
-    
+
     /* تقليل padding في نموذج تفاصيل القضية على الهواتف فقط */
     #case-details-form .bg-white.rounded-xl.p-4.md\:p-6 {
         padding: 0.5rem !important;
     }
-    
+
     #case-details-form .p-4.bg-blue-50 {
         padding: 0.5rem !important;
     }

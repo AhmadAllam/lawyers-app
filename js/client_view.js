@@ -902,8 +902,9 @@ function attachClientViewListeners(clientId, opponents, sortedCases) {
             } catch (_) { }
 
             try {
-                sessionStorage.removeItem('returnToPage');
-                sessionStorage.removeItem('returnToClientId');
+                // نحدد جهة الرجوع: شاشة تفاصيل الموكل
+                sessionStorage.setItem('returnToPage', 'clientView');
+                sessionStorage.setItem('returnToClientId', String(clientId));
                 sessionStorage.removeItem('openClientDetailsOnSearch');
             } catch (_) { }
 

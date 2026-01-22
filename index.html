@@ -84,8 +84,13 @@
     }
     
     .menu-card:hover {
-      background: linear-gradient(180deg, #bdf0de 0%, #9fe4c9 100%) !important;
-      border-color: #6fcbb0 !important;
+      background: linear-gradient(180deg, #a7f3d0 0%, #6ee7b7 100%) !important;
+      border-color: #34d399 !important;
+    }
+    .menu-card:focus-visible,
+    .menu-card:active {
+      background: linear-gradient(180deg, #a7f3d0 0%, #6ee7b7 100%) !important;
+      border-color: #34d399 !important;
     }
     /* Keep text readable on hover without affecting icon colors */
     .menu-card:hover h3,
@@ -93,6 +98,16 @@
     .menu-card:hover .text-xs,
     .menu-card:hover .text-sm {
       color: #0f172a !important; /* near-white */
+    }
+    .menu-card:focus-visible h3,
+    .menu-card:focus-visible p,
+    .menu-card:focus-visible .text-xs,
+    .menu-card:focus-visible .text-sm,
+    .menu-card:active h3,
+    .menu-card:active p,
+    .menu-card:active .text-xs,
+    .menu-card:active .text-sm {
+      color: #0f172a !important;
     }
     /* Slightly brighten icons on hover without changing their color explicitly */
     .menu-card:hover .material-symbols-outlined {
@@ -192,7 +207,7 @@
 
       /* مربعات مربعة على الهاتف */
       .menu-card { 
-        background: linear-gradient(180deg, #f6fff9 0%, #ecfdf5 100%) !important; 
+        background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%) !important; 
         border:1px solid #9fdcc8 !important; 
         border-radius: 20px !important; 
         box-shadow: 0 8px 20px rgba(0,0,0,0.06) !important; 
@@ -200,7 +215,7 @@
         min-height: auto !important;    /* إلغاء الارتفاعات الكبيرة */
         padding: 14px !important;       /* هوامش أقل لتناسب المربع */
       }
-      .menu-card:hover { background: linear-gradient(180deg, #bdf0de 0%, #9fe4c9 100%) !important; border-color: #6fcbb0 !important; transform: none !important; }
+      .menu-card:hover { background: linear-gradient(180deg, #a7f3d0 0%, #6ee7b7 100%) !important; border-color: #34d399 !important; transform: none !important; }
 
       /* أول زرين يبقيان بحجم أكبر قليلاً ولكن مربّعين أيضاً */
       #menu-grid > .col-span-full > .menu-card { aspect-ratio: 1 / 1; }
@@ -248,13 +263,14 @@
       #mobile-stats .rounded-xl { padding: 3px !important; }
       #mobile-stats .grid > div > .font-semibold { font-size: 11px !important; }
     }
-    nav { background: linear-gradient(180deg, #dff9ed 0%, #c9f2e0 100%) !important; color: #0f172a !important; border: 1px solid #9fdcc8; }
+    nav { background: linear-gradient(180deg, #c3f3dd 0%, #a7e8cc 100%) !important; color: #0f172a !important; border: 1px solid #9fdcc8; }
     main { background-color: transparent !important; }
     nav button:hover { background-color: #dbfdec !important; }
     .md\:hidden header button:hover { background-color: #dbfdec !important; }
     nav .p-4.rounded-xl.md-elevation-1 { background-color: #f6fffb !important; border-color: #9fdcc8 !important; }
     nav .p-3.rounded-xl.shadow-sm { background-color: #f6fffb !important; border-color: #9fdcc8 !important; }
     nav .p-3.rounded-xl { background-color: #f6fffb !important; border-color: #9fdcc8 !important; }
+    nav .p-3.rounded-lg { border: 1px solid rgba(15, 23, 42, 0.14) !important; }
     .p-4.rounded-xl.md-elevation-1 { background-color: #ffffff !important; border: 1px solid #e5e7eb !important; }
     .p-3.rounded-xl.shadow-sm { background-color: #ffffff !important; border: 1px solid #e5e7eb !important; }
     .p-3.rounded-xl { background-color: #ffffff !important; }
@@ -265,7 +281,7 @@
     [style*="#4b5563"] { background-color: #ffffff !important; border-color: #e5e7eb !important; }
     [style*="#374151"] { background-color: #ffffff !important; border-color: #e5e7eb !important; }
     [style*="#1f2937"] { background-color: #f8fafc !important; border-color: #e5e7eb !important; }
-    .menu-card { background: linear-gradient(180deg, #f6fff9 0%, #ecfdf5 100%) !important; border: 1px solid #9fdcc8 !important; }
+    .menu-card { background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%) !important; border: 1px solid #9fdcc8 !important; }
     .menu-card h3, .menu-card p, .menu-card .text-xs, .menu-card .text-sm { color: #0f172a !important; }
     #client-count, #lawsuit-count, #tomorrow-sessions-count, #tomorrow-administrative-count,
     #client-count-mobile, #lawsuit-count-mobile, #tomorrow-sessions-count-mobile, #tomorrow-administrative-count-mobile { color: #0b1324 !important; }

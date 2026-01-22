@@ -181,6 +181,29 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
 
+  let isGitHubApi = false;
+  try {
+    const u = new URL(req.url);
+    const host = String(u.host || '').toLowerCase();
+    if (host === 'api.github.com' || host === 'raw.githubusercontent.com') {
+      isGitHubApi = true;
+    }
+  } catch (_) {}
+
+  // Always bypass cache for GitHub requests to ensure live sync data.
+  if (isGitHubApi) {
+    event.respondWith(
+      (async () => {
+        try {
+          return await fetch(new Request(req, { cache: 'no-store' }));
+        } catch (_) {
+          return await fetch(req);
+        }
+      })()
+    );
+    return;
+  }
+
   let isSameOrigin = false;
   try {
     const u = new URL(req.url);

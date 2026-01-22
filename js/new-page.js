@@ -130,7 +130,12 @@ document.addEventListener('DOMContentLoaded', async function () {
             if (origin === 'search') {
                 const cid = parseInt(sessionStorage.getItem('returnToClientId') || '0', 10);
                 if (cid) stateManager.setSelectedClientId(cid);
+            } else if (origin === 'clientView') {
+                const cid = parseInt(sessionStorage.getItem('returnToClientId') || '0', 10);
+                if (cid) stateManager.setSelectedClientId(cid);
+                else stateManager.setSelectedClientId(null);
             } else {
+                // فتح (موكل/قضية جديدة) من الشاشة الرئيسية: نبدأ بدون موكل مختار
                 stateManager.setSelectedClientId(null);
             }
         } catch (_) { }
@@ -167,11 +172,16 @@ async function loadPartyDetailsForm() {
     }
 
     let __isNewCaseFlow = false;
+    let __isNewCaseFromClientView = false;
     let __hasUserPartiesStash = false;
     try {
         const origin = sessionStorage.getItem('returnToPage') || '';
         const cid = parseInt(sessionStorage.getItem('returnToClientId') || '0', 10);
         __isNewCaseFlow = (origin === 'search' && !!cid && !stateManager.currentCaseId);
+    } catch (_) { }
+    try {
+        const clientViewId = parseInt(sessionStorage.getItem('clientViewSelectedClientId') || '0', 10);
+        __isNewCaseFromClientView = (!!clientViewId && stateManager.selectedClientId === clientViewId && !stateManager.currentCaseId);
     } catch (_) { }
     try {
         const p = stateManager.caseDataStash.parties;
@@ -183,7 +193,7 @@ async function loadPartyDetailsForm() {
     }
 
     try {
-        if (__isNewCaseFlow && !__hasUserPartiesStash) {
+        if ((__isNewCaseFlow || __isNewCaseFromClientView) && !__hasUserPartiesStash) {
             const capEl = document.getElementById('client-capacity');
             if (capEl) capEl.value = '';
 
@@ -616,6 +626,15 @@ function setupBackButton() {
                 if (goBackTo === 'search' && clientId) {
                     e.preventDefault();
                     sessionStorage.removeItem('returnToPage');
+                    sessionStorage.removeItem('returnToClientId');
+                    sessionStorage.setItem('openClientDetailsOnSearch', String(clientId));
+                    window.location.href = 'search.html';
+                    return;
+                }
+                if (goBackTo === 'clientView' && clientId) {
+                    e.preventDefault();
+                    sessionStorage.removeItem('returnToPage');
+                    sessionStorage.removeItem('returnToClientId');
                     sessionStorage.setItem('openClientDetailsOnSearch', String(clientId));
                     window.location.href = 'search.html';
                     return;
