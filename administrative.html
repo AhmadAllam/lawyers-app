@@ -1,61 +1,72 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>إدارة الأعمال الإدارية</title>
 
-    
+
     <link rel="stylesheet" href="css/tailwind.min.css">
 
-    
+
     <link rel="stylesheet" href="css/remixicon.css">
 
-    
+
     <link rel="stylesheet" href="css/style.css">
-    
+
     <link rel="stylesheet" href="css/search-responsive.css?v=3">
     <style>
-      .low-power *, .low-power *::before, .low-power *::after {
-        animation: none !important;
-        transition: none !important;
-        box-shadow: none !important;
-        text-shadow: none !important;
-        filter: none !important;
-        transform: none !important;
-        backdrop-filter: none !important;
-      }
-      /* Hide sidebar toggle on specific screens */
-      .hide-sidebar-toggle .mobile-sidebar-toggle { display: none !important; }
+        .low-power *,
+        .low-power *::before,
+        .low-power *::after {
+            animation: none !important;
+            transition: none !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
+            filter: none !important;
+            transform: none !important;
+            backdrop-filter: none !important;
+        }
+
+        /* Hide sidebar toggle on specific screens */
+        .hide-sidebar-toggle .mobile-sidebar-toggle {
+            display: none !important;
+        }
     </style>
 </head>
-<body class="h-screen overflow-hidden flex flex-col low-power" style="background: linear-gradient(135deg, #334155, #111827, #1e3a8a);">
 
-    
+<body class="h-screen overflow-hidden flex flex-col low-power"
+    style="background: linear-gradient(135deg, #334155, #111827, #1e3a8a);">
+
+
     <header class="fixed top-0 left-0 right-0 z-40 px-2 py-1 bg-blue-900 border-b border-blue-900">
         <div class="grid grid-cols-3 items-center">
-            
+
             <div class="justify-self-start">
-                <button id="back-to-main" class="inline-flex items-center gap-1 px-2 py-1 bg-transparent border border-white/20 rounded-full shadow-sm text-white hover:bg-white/10 text-sm">
+                <button id="back-to-main"
+                    class="inline-flex items-center gap-1 px-2 py-1 bg-transparent border border-white/20 rounded-full shadow-sm text-white hover:bg-white/10 text-sm">
                     <i class="ri-arrow-right-line text-white text-base"></i>
                     <span class="text-white">الرئيسيه</span>
                 </button>
             </div>
-            
-            
+
+
             <div class="justify-self-center">
-                <button id="copyable-title" class="inline-flex items-center gap-1 px-3 py-1 bg-transparent border border-white/20 rounded-full shadow-sm text-white hover:bg-white/10 text-sm font-semibold" title="اضغط للنسخ">
+                <button id="copyable-title"
+                    class="inline-flex items-center gap-1 px-3 py-1 bg-transparent border border-white/20 rounded-full shadow-sm text-white hover:bg-white/10 text-sm font-semibold"
+                    title="اضغط للنسخ">
                     <i class="ri-briefcase-line text-white text-base"></i>
                     <span class="text-sm font-semibold text-white" id="page-title">إدارة الأعمال الإدارية</span>
                 </button>
             </div>
-            
-            
+
+
             <div class="justify-self-end"></div>
         </div>
     </header>
 
-    
+
     <input type="checkbox" id="sidebar-toggle" class="sidebar-toggle-checkbox" />
     <label for="sidebar-toggle" class="mobile-sidebar-toggle" title="القائمة">
         <i class="ri-arrow-left-s-line open-icon"></i>
@@ -77,10 +88,10 @@
         </div>
     </main>
 
-  
+
     <div id="toast-container"></div>
 
-    
+
     <script src="js/state.js"></script>
     <script src="js/db.js"></script>
     <script src="js/toast.js"></script>
@@ -88,7 +99,7 @@
     <script src="js/autocomplete.js"></script>
     <script src="js/modal.js"></script>
     <script src="js/header.js"></script>
-        <script src="js/sessions.js"></script>
+    <script src="js/sessions.js"></script>
     <script src="js/sessions_calendar.js"></script>
     <script src="js/settings.js"></script>
     <script src="js/client_view.js"></script>
@@ -147,4 +158,5 @@
         });
     </script>
 </body>
+
 </html>

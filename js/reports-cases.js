@@ -48,6 +48,18 @@ function __formatReportsCasesDateForDisplay(dateStr) {
     }
 }
 
+let __reportsCasesAllSessions = [];
+let __reportsCasesCurrentSessions = [];
+
+function __getReportsCasesSessionsForAction() {
+    try {
+        if (Array.isArray(__reportsCasesCurrentSessions) && __reportsCasesCurrentSessions.length >= 0) {
+            return __reportsCasesCurrentSessions;
+        }
+    } catch (e) { }
+    return Array.isArray(__reportsCasesAllSessions) ? __reportsCasesAllSessions : [];
+}
+
 async function updateSessionsReportContent(reportName, reportType) {
     const reportContent = document.getElementById('report-content');
 
@@ -56,10 +68,23 @@ async function updateSessionsReportContent(reportName, reportType) {
         await __getReportsCasesDateLocaleSetting();
 
         const sessions = await getAllSessionsCached();
+        __reportsCasesAllSessions = Array.isArray(sessions) ? sessions : [];
+        __reportsCasesCurrentSessions = __reportsCasesAllSessions;
         const cases = await getAllCasesCached();
         const map = {};
-        try { cases.forEach(c => { if (c && c.id != null) map[String(c.id)] = c; }); } catch (e) { }
+        const fileMap = {};
+        try {
+            cases.forEach(c => {
+                if (c && c.id != null) {
+                    const id = String(c.id);
+                    map[id] = c;
+                    const fn = (c.fileNumber != null && String(c.fileNumber).trim() !== '') ? String(c.fileNumber) : '';
+                    fileMap[id] = fn;
+                }
+            });
+        } catch (e) { }
         window.sessionsCasesById = map;
+        window.sessionsFileNumberByCaseId = fileMap;
 
         const colors = { bg: '#f97316', bgHover: '#ea580c', bgLight: '#fff7ed', text: '#ea580c', textLight: '#fdba74' };
 
@@ -105,7 +130,7 @@ async function updateSessionsReportContent(reportName, reportType) {
                 
                 <!-- محتوى التقرير -->
                 <div class="bg-white rounded-lg border border-gray-200 pt-0 pb-6 pl-0 pr-0 relative flex-1 overflow-y-auto" id="sessions-report-content">
-                    ${generateSessionsReportHTML(sessions)}
+                    ${generateSessionsReportHTML(__reportsCasesCurrentSessions)}
                 </div>
             </div>
         `;
@@ -172,6 +197,8 @@ function generateSessionsReportHTML(sessions, sortOrder = 'desc') {
 
         const sessionDate = __formatReportsCasesDateForDisplay(session.sessionDate);
         const caseObj = (window.sessionsCasesById || {})[String(session.caseId)] || null;
+        const fileNumberVal = session.fileNumber || (caseObj ? caseObj.fileNumber : undefined);
+        const fileNumberDisplay = (fileNumberVal != null && String(fileNumberVal).trim() !== '') ? String(fileNumberVal) : 'غير محدد';
         const caseNumberVal = session.caseNumber || (caseObj ? caseObj.caseNumber : undefined);
         const caseYearVal = session.caseYear || (caseObj ? caseObj.caseYear : undefined);
         const caseNumberYear = (caseNumberVal && caseYearVal)
@@ -185,6 +212,9 @@ function generateSessionsReportHTML(sessions, sortOrder = 'desc') {
             <tr class="${rowClass} border-b border-gray-200 hover:bg-gradient-to-l hover:from-orange-100 hover:to-amber-100 transition-all duration-300 hover:shadow-sm">
                 <td class="py-2 px-3 md:py-4 md:px-6 text-center border-l border-gray-200">
                     <div class="font-bold text-sm md:text-lg text-gray-800 hover:text-orange-700 transition-colors duration-200 whitespace-nowrap overflow-hidden" title="${sessionDate}">${sessionDate}</div>
+                </td>
+                <td class="py-2 px-3 md:py-4 md:px-6 text-center border-l border-gray-200">
+                    <div class="font-bold text-sm md:text-base text-gray-800 hover:text-orange-700 transition-colors duration-200 whitespace-nowrap overflow-hidden" title="${fileNumberDisplay}">${fileNumberDisplay}</div>
                 </td>
                 <td class="py-2 px-3 md:py-4 md:px-6 text-center border-l border-gray-200">
                     <div class="font-bold text-sm md:text-base text-gray-800 hover:text-orange-700 transition-colors duration-200 whitespace-normal break-words overflow-hidden" title="${caseNumberYear}">${caseNumberYear}</div>
@@ -206,25 +236,31 @@ function generateSessionsReportHTML(sessions, sortOrder = 'desc') {
                 <table class="w-full border-separate" style="border-spacing: 0; table-layout: fixed;">
                     <thead style="position: sticky; top: 0; z-index: 20;">
                         <tr class="text-white shadow-lg" style="background-color: #ea580c !important;">
-                            <th style="position: sticky; top: 0; z-index: 20; width: 22%; background-color: #ea580c !important; color: white !important; border-color: #f97316 !important; white-space: nowrap; padding: 0.5rem 0.75rem; text-align: center; font-weight: 600; font-size: 0.875rem; border-left: 2px solid #f97316;">
+                            <th style="position: sticky; top: 0; z-index: 20; width: 20%; background-color: #ea580c !important; color: white !important; border-color: #f97316 !important; white-space: nowrap; padding: 0.5rem 0.75rem; text-align: center; font-weight: 600; font-size: 0.875rem; border-left: 2px solid #f97316;">
                                 <div class="flex items-center justify-center gap-2">
                                     <i class="ri-calendar-line text-sm"></i>
                                     <span>تاريخ الجلسة</span>
                                 </div>
                             </th>
-                            <th style="position: sticky; top: 0; z-index: 20; width: 24%; background-color: #ea580c !important; color: white !important; border-color: #f97316 !important; white-space: nowrap; padding: 0.5rem 0.75rem; text-align: center; font-weight: 600; font-size: 0.875rem; border-left: 2px solid #f97316;">
+                            <th style="position: sticky; top: 0; z-index: 20; width: 16%; background-color: #ea580c !important; color: white !important; border-color: #f97316 !important; white-space: nowrap; padding: 0.5rem 0.75rem; text-align: center; font-weight: 600; font-size: 0.875rem; border-left: 2px solid #f97316;">
+                                <div class="flex items-center justify-center gap-2">
+                                    <i class="ri-folder-line text-sm"></i>
+                                    <span>رقم الملف</span>
+                                </div>
+                            </th>
+                            <th style="position: sticky; top: 0; z-index: 20; width: 22%; background-color: #ea580c !important; color: white !important; border-color: #f97316 !important; white-space: nowrap; padding: 0.5rem 0.75rem; text-align: center; font-weight: 600; font-size: 0.875rem; border-left: 2px solid #f97316;">
                                 <div class="flex items-center justify-center gap-2">
                                     <i class="ri-hashtag text-sm"></i>
                                     <span>رقم/سنة القضية</span>
                                 </div>
                             </th>
-                            <th style="position: sticky; top: 0; z-index: 20; width: 24%; background-color: #ea580c !important; color: white !important; border-color: #f97316 !important; white-space: nowrap; padding: 0.5rem 0.75rem; text-align: center; font-weight: 600; font-size: 0.875rem; border-left: 2px solid #f97316;">
+                            <th style="position: sticky; top: 0; z-index: 20; width: 22%; background-color: #ea580c !important; color: white !important; border-color: #f97316 !important; white-space: nowrap; padding: 0.5rem 0.75rem; text-align: center; font-weight: 600; font-size: 0.875rem; border-left: 2px solid #f97316;">
                                 <div class="flex items-center justify-center gap-2">
                                     <i class="ri-file-list-line text-sm"></i>
                                     <span>رقم/سنة الحصر</span>
                                 </div>
                             </th>
-                            <th style="position: sticky; top: 0; z-index: 20; width: 30%; background-color: #ea580c !important; color: white !important; border-color: #f97316 !important; white-space: nowrap; padding: 0.5rem 0.75rem; text-align: center; font-weight: 600; font-size: 0.875rem; border-left: 2px solid #f97316;">
+                            <th style="position: sticky; top: 0; z-index: 20; width: 20%; background-color: #ea580c !important; color: white !important; border-color: #f97316 !important; white-space: nowrap; padding: 0.5rem 0.75rem; text-align: center; font-weight: 600; font-size: 0.875rem; border-left: 2px solid #f97316;">
                                 <div class="flex items-center justify-center gap-2">
                                     <i class="ri-gavel-line text-sm"></i>
                                     <span>القرار</span>
@@ -251,7 +287,7 @@ async function toggleSessionsSort() {
         currentSessionsSortOrder = currentSessionsSortOrder === 'desc' ? 'asc' : 'desc';
 
 
-        const sessions = await getAllSessionsCached();
+        const sessions = __getReportsCasesSessionsForAction();
 
 
         const sortButton = document.querySelector('button[onclick="toggleSessionsSort()"]');
@@ -277,25 +313,30 @@ function filterSessionsReport(searchTerm, sessions) {
 
         const reportContent = document.getElementById('sessions-report-content');
         reportContent.innerHTML = generateSessionsReportHTML(sessions, currentSessionsSortOrder);
+        __reportsCasesCurrentSessions = Array.isArray(sessions) ? sessions : [];
         return;
     }
 
     const filteredSessions = sessions.filter(session => {
         const sessionDate = session.sessionDate || '';
-        const caseObj = (window.sessionsCasesById || {})[session.caseId] || null;
+        const caseIdKey = String(session.caseId);
+        const caseObj = (window.sessionsCasesById || {})[caseIdKey] || null;
         const caseNumberVal = session.caseNumber || (caseObj ? (caseObj.caseNumber || '') : '');
         const caseYearVal = session.caseYear || (caseObj ? (caseObj.caseYear || '') : '');
+        const fileNoVal = session.fileNumber || (window.sessionsFileNumberByCaseId || {})[caseIdKey] || (caseObj ? (caseObj.fileNumber || '') : '');
 
         return (
             (sessionDate && sessionDate.includes(searchTerm)) ||
             (caseNumberVal && caseNumberVal.toString().toLowerCase().includes(searchTerm.toLowerCase())) ||
             (caseYearVal && caseYearVal.toString().includes(searchTerm)) ||
+            (fileNoVal && fileNoVal.toString().toLowerCase().includes(searchTerm.toLowerCase())) ||
             (session.decision && session.decision.toLowerCase().includes(searchTerm.toLowerCase())) ||
             (session.inventoryNumber && session.inventoryNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
             (session.inventoryYear && session.inventoryYear.toString().includes(searchTerm))
         );
     });
 
+    __reportsCasesCurrentSessions = filteredSessions;
     const reportContent = document.getElementById('sessions-report-content');
     reportContent.innerHTML = generateSessionsReportHTML(filteredSessions, currentSessionsSortOrder);
 }
@@ -304,7 +345,7 @@ function filterSessionsReport(searchTerm, sessions) {
 async function printSessionsReport() {
     try {
         await __getReportsCasesDateLocaleSetting();
-        const sessions = await getAllSessionsCached();
+        const sessions = __getReportsCasesSessionsForAction();
         const cases = await getAllCasesCached();
         const map = {};
         try { cases.forEach(c => { if (c && c.id != null) map[String(c.id)] = c; }); } catch (e) { }
@@ -337,6 +378,9 @@ async function printSessionsReport() {
             const decision = session.decision || 'غير محدد';
             const c = map[String(session.caseId)] || null;
 
+            const fn = session.fileNumber || (c ? c.fileNumber : undefined);
+            const fileNo = (fn != null && String(fn).trim() !== '') ? String(fn) : 'غير محدد';
+
             const cn = session.caseNumber || (c ? c.caseNumber : undefined);
             const cy = session.caseYear || (c ? c.caseYear : undefined);
             let caseNY = 'غير محدد';
@@ -358,6 +402,7 @@ async function printSessionsReport() {
             tableRows += `
                 <tr style="background: ${rowBg};">
                     <td style="border: 1px solid #ddd; padding: 6px 6px; text-align: center; font-size: 16px;">${sessionDate}</td>
+                    <td style="border: 1px solid #ddd; padding: 6px 6px; text-align: center; font-size: 16px;">${fileNo}</td>
                     <td style="border: 1px solid #ddd; padding: 6px 6px; text-align: center; font-size: 16px;">${caseNY}</td>
                     <td style="border: 1px solid #ddd; padding: 6px 6px; text-align: center; font-size: 16px;">${invNY}</td>
                     <td style="border: 1px solid #ddd; padding: 6px 6px; text-align: center; font-size: 16px;">${decision}</td>
@@ -378,6 +423,7 @@ async function printSessionsReport() {
                     <thead>
                         <tr>
                             <th style="background-color: #ea580c; color: white; padding: 8px 6px; text-align: center; border: 1px solid #c2410c; font-weight: bold; font-size: 18px;">تاريخ الجلسة</th>
+                            <th style="background-color: #ea580c; color: white; padding: 8px 6px; text-align: center; border: 1px solid #c2410c; font-weight: bold; font-size: 18px;">رقم الملف</th>
                             <th style="background-color: #ea580c; color: white; padding: 8px 6px; text-align: center; border: 1px solid #c2410c; font-weight: bold; font-size: 18px;">رقم-سنة القضية</th>
                             <th style="background-color: #ea580c; color: white; padding: 8px 6px; text-align: center; border: 1px solid #c2410c; font-weight: bold; font-size: 18px;">رقم-سنة الحصر</th>
                             <th style="background-color: #ea580c; color: white; padding: 8px 6px; text-align: center; border: 1px solid #c2410c; font-weight: bold; font-size: 18px;">القرار</th>
@@ -441,7 +487,11 @@ async function printSessionsReport() {
 async function exportSessionsReport() {
     try {
         await __getReportsCasesDateLocaleSetting();
-        const sessions = await getAllSessionsCached();
+        const sessions = __getReportsCasesSessionsForAction();
+
+        const cases = await getAllCasesCached();
+        const map = {};
+        try { (cases || []).forEach(c => { if (c && c.id != null) map[String(c.id)] = c; }); } catch (e) { }
 
 
         let sessionsData = [...sessions];
@@ -524,6 +574,7 @@ async function exportSessionsReport() {
                 <table>
                     <tr>
                         <th style="background-color: #ea580c; color: #FFFFFF; border: 2px solid #f97316; padding: 10px; text-align: center; font-weight: bold; font-size: 21px;">تاريخ الجلسة</th>
+                        <th style="background-color: #ea580c; color: #FFFFFF; border: 2px solid #f97316; padding: 10px; text-align: center; font-weight: bold; font-size: 21px;">رقم الملف</th>
                         <th style="background-color: #ea580c; color: #FFFFFF; border: 2px solid #f97316; padding: 10px; text-align: center; font-weight: bold; font-size: 21px;">رقم/سنة القضية</th>
                         <th style="background-color: #ea580c; color: #FFFFFF; border: 2px solid #f97316; padding: 10px; text-align: center; font-weight: bold; font-size: 21px;">رقم/سنة الحصر</th>
                         <th style="background-color: #ea580c; color: #FFFFFF; border: 2px solid #f97316; padding: 10px; text-align: center; font-weight: bold; font-size: 21px;">القرار</th>
@@ -538,6 +589,8 @@ async function exportSessionsReport() {
             const cn = session.caseNumber || (c ? c.caseNumber : undefined);
             const cy = session.caseYear || (c ? c.caseYear : undefined);
             const caseNY = (cn && cy) ? `${cn} / ${cy}` : (cn || cy || 'غير محدد');
+            const fn = session.fileNumber || (c ? c.fileNumber : undefined);
+            const fileNo = (fn != null && String(fn).trim() !== '') ? String(fn) : 'غير محدد';
             const invNY = (session.inventoryNumber && session.inventoryYear) ? `${session.inventoryNumber} / ${session.inventoryYear}` : (session.inventoryNumber || session.inventoryYear || 'غير محدد');
 
             const dateStyle = session.sessionDate ?
@@ -556,9 +609,14 @@ async function exportSessionsReport() {
                 'style="border: 1px solid #cccccc; padding: 8px; text-align: center; background-color: #FFFFFF; font-size: 18px;"' :
                 'style="border: 1px solid #cccccc; padding: 8px; text-align: center; background-color: #F8F8F8; color: #999999; font-style: italic; font-size: 18px;"';
 
+            const fileNoStyle = (fn != null && String(fn).trim() !== '') ?
+                'style="border: 1px solid #cccccc; padding: 8px; text-align: center; background-color: #FFFFFF; font-size: 18px;"' :
+                'style="border: 1px solid #cccccc; padding: 8px; text-align: center; background-color: #F8F8F8; color: #999999; font-style: italic; font-size: 18px;"';
+
             excelContent += `
                 <tr>
                     <td ${dateStyle}>${sessionDate}</td>
+                    <td ${fileNoStyle}>${fileNo}</td>
                     <td ${caseNYStyle}>${caseNY}</td>
                     <td ${invNYStyle}>${invNY}</td>
                     <td ${decisionStyle}>${decision}</td>
@@ -598,7 +656,7 @@ async function exportSessionsReport() {
 async function exportSessionsReportPDF() {
     try {
         await __getReportsCasesDateLocaleSetting();
-        const sessions = await getAllSessionsCached();
+        const sessions = __getReportsCasesSessionsForAction();
         const cases = await getAllCasesCached();
         const map = {};
         try { cases.forEach(c => { if (c && c.id != null) map[String(c.id)] = c; }); } catch (e) { }
@@ -628,6 +686,9 @@ async function exportSessionsReportPDF() {
             const decision = session.decision || 'غير محدد';
             const c = map[String(session.caseId)] || null;
 
+            const fn = session.fileNumber || (c ? c.fileNumber : undefined);
+            const fileNo = (fn != null && String(fn).trim() !== '') ? String(fn) : 'غير محدد';
+
 
             const cn = session.caseNumber || (c ? c.caseNumber : undefined);
             const cy = session.caseYear || (c ? c.caseYear : undefined);
@@ -651,6 +712,7 @@ async function exportSessionsReportPDF() {
             tableRows += `
                 <tr style="background: ${rowBg};">
                     <td style="border: 1px solid #ddd; padding: 5px 5px; text-align: center; font-size: 9px;">${sessionDate}</td>
+                    <td style="border: 1px solid #ddd; padding: 5px 5px; text-align: center; font-size: 9px;">${fileNo}</td>
                     <td style="border: 1px solid #ddd; padding: 5px 5px; text-align: center; font-size: 9px;">${caseNY}</td>
                     <td style="border: 1px solid #ddd; padding: 5px 5px; text-align: center; font-size: 9px;">${invNY}</td>
                     <td style="border: 1px solid #ddd; padding: 5px 5px; text-align: center; font-size: 9px;">${decision}</td>
@@ -673,6 +735,7 @@ async function exportSessionsReportPDF() {
                     <thead>
                         <tr>
                             <th style="background-color: #ea580c; color: white; padding: 6px 6px; text-align: center; border: 1px solid #c2410c; font-weight: bold; font-size: 10px;">تاريخ الجلسة</th>
+                            <th style="background-color: #ea580c; color: white; padding: 6px 6px; text-align: center; border: 1px solid #c2410c; font-weight: bold; font-size: 10px;">رقم الملف</th>
                             <th style="background-color: #ea580c; color: white; padding: 6px 6px; text-align: center; border: 1px solid #c2410c; font-weight: bold; font-size: 10px;">رقم/سنة القضية</th>
                             <th style="background-color: #ea580c; color: white; padding: 6px 6px; text-align: center; border: 1px solid #c2410c; font-weight: bold; font-size: 10px;">رقم/سنة الحصر</th>
                             <th style="background-color: #ea580c; color: white; padding: 6px 6px; text-align: center; border: 1px solid #c2410c; font-weight: bold; font-size: 10px;">القرار</th>

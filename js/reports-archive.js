@@ -26,6 +26,23 @@ function __formatReportsArchiveDateForDisplay(dateStr, fallback = 'غير محد
     }
 }
 
+let __reportsArchiveAllCases = [];
+let __reportsArchiveAllClients = [];
+let __reportsArchiveCurrentCases = [];
+let __reportsArchiveCurrentClients = [];
+
+function __getReportsArchiveDataForAction() {
+    try {
+        const cases = Array.isArray(__reportsArchiveCurrentCases) ? __reportsArchiveCurrentCases : [];
+        const clients = Array.isArray(__reportsArchiveCurrentClients) ? __reportsArchiveCurrentClients : [];
+        if (cases.length || clients.length) return { cases, clients };
+    } catch (e) { }
+    return {
+        cases: Array.isArray(__reportsArchiveAllCases) ? __reportsArchiveAllCases : [],
+        clients: Array.isArray(__reportsArchiveAllClients) ? __reportsArchiveAllClients : []
+    };
+}
+
 async function updateArchiveReportContent(reportName, reportType) {
     const reportContent = document.getElementById('report-content');
 
@@ -36,6 +53,10 @@ async function updateArchiveReportContent(reportName, reportType) {
         const allCases = await getAllCases();
         const archivedCases = allCases.filter(c => c.isArchived === true);
         const clients = await getAllClients();
+        __reportsArchiveAllCases = Array.isArray(archivedCases) ? archivedCases : [];
+        __reportsArchiveAllClients = Array.isArray(clients) ? clients : [];
+        __reportsArchiveCurrentCases = __reportsArchiveAllCases;
+        __reportsArchiveCurrentClients = __reportsArchiveAllClients;
 
         const colors = { bg: '#06b6d4', bgHover: '#0891b2', bgLight: '#ecfeff', text: '#0891b2', textLight: '#67e8f9' };
 
@@ -81,7 +102,7 @@ async function updateArchiveReportContent(reportName, reportType) {
                 
                 <!-- محتوى التقرير -->
                 <div class="bg-white rounded-lg border border-gray-200 pt-0 pb-6 pl-0 pr-0 relative flex-1 overflow-y-auto" id="archive-report-content">
-                    ${generateArchiveReportHTML(archivedCases, clients)}
+                    ${generateArchiveReportHTML(__reportsArchiveCurrentCases, __reportsArchiveCurrentClients)}
                 </div>
             </div>
         `;
@@ -208,9 +229,7 @@ async function toggleArchiveSort() {
         currentArchiveSortOrder = currentArchiveSortOrder === 'desc' ? 'asc' : 'desc';
 
 
-        const allCases = await getAllCases();
-        const archivedCases = allCases.filter(c => c.isArchived === true);
-        const clients = await getAllClients();
+        const { cases: archivedCases, clients } = __getReportsArchiveDataForAction();
 
 
         const sortButton = document.querySelector('button[onclick="toggleArchiveSort()"]');
@@ -236,6 +255,8 @@ function filterArchiveReport(searchTerm, archivedCases, clients) {
 
         const reportContent = document.getElementById('archive-report-content');
         reportContent.innerHTML = generateArchiveReportHTML(archivedCases, clients, currentArchiveSortOrder);
+        __reportsArchiveCurrentCases = Array.isArray(archivedCases) ? archivedCases : [];
+        __reportsArchiveCurrentClients = Array.isArray(clients) ? clients : [];
         return;
     }
 
@@ -257,6 +278,8 @@ function filterArchiveReport(searchTerm, archivedCases, clients) {
         );
     });
 
+    __reportsArchiveCurrentCases = filteredCases;
+    __reportsArchiveCurrentClients = Array.isArray(clients) ? clients : [];
     const reportContent = document.getElementById('archive-report-content');
     reportContent.innerHTML = generateArchiveReportHTML(filteredCases, clients, currentArchiveSortOrder);
 }
@@ -265,9 +288,7 @@ function filterArchiveReport(searchTerm, archivedCases, clients) {
 async function printArchiveReport() {
     try {
         await __getReportsArchiveDateLocaleSetting();
-        const allCases = await getAllCases();
-        const archivedCases = allCases.filter(c => c.isArchived === true);
-        const clients = await getAllClients();
+        const { cases: archivedCases, clients } = __getReportsArchiveDataForAction();
 
         let casesData = [...archivedCases];
         casesData.sort((a, b) => {
@@ -393,9 +414,7 @@ async function printArchiveReport() {
 
 async function exportArchiveReportExcel() {
     try {
-        const allCases = await getAllCases();
-        const archivedCases = allCases.filter(c => c.isArchived === true);
-        const clients = await getAllClients();
+        const { cases: archivedCases, clients } = __getReportsArchiveDataForAction();
 
 
         let casesData = [...archivedCases];
@@ -546,9 +565,7 @@ async function exportArchiveReportExcel() {
 async function exportArchiveReportPDF() {
     try {
         await __getReportsArchiveDateLocaleSetting();
-        const allCases = await getAllCases();
-        const archivedCases = allCases.filter(c => c.isArchived === true);
-        const clients = await getAllClients();
+        const { cases: archivedCases, clients } = __getReportsArchiveDataForAction();
 
         let casesData = [...archivedCases];
         casesData.sort((a, b) => {

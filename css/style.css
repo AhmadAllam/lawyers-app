@@ -1152,6 +1152,22 @@ select:focus {
         width: 100% !important;
         /* خليه ياخد عرض الكارت للتمركز */
     }
+
+    #sessions-list .session-card .session-client-name,
+    #sessions-list .session-card .session-opponent-name {
+        font-size: 14px !important;
+        line-height: 1.1 !important;
+    }
+
+    #sessions-list .session-card .session-meta {
+        font-size: 14px !important;
+        line-height: 1.2 !important;
+    }
+
+    #sessions-list .session-card .session-meta i {
+        font-size: 14px !important;
+        line-height: 1 !important;
+    }
 }
 
 @media (min-width: 768px) {

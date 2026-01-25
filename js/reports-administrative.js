@@ -4,6 +4,57 @@
 let globalAdministrativeData = [];
 let globalClientsData = [];
 
+let __reportsAdministrativeAllData = [];
+let __reportsAdministrativeAllClients = [];
+let __reportsAdministrativeCurrentData = [];
+let __reportsAdministrativeCurrentClients = [];
+let __reportsAdministrativeLastSearchTerm = '';
+
+function __getReportsAdministrativeDataForAction() {
+    try {
+        const a = Array.isArray(__reportsAdministrativeCurrentData) ? __reportsAdministrativeCurrentData : [];
+        const c = Array.isArray(__reportsAdministrativeCurrentClients) ? __reportsAdministrativeCurrentClients : [];
+        if (a.length || c.length) return { administrative: a, clients: c };
+    } catch (e) { }
+    return {
+        administrative: Array.isArray(__reportsAdministrativeAllData) ? __reportsAdministrativeAllData : [],
+        clients: Array.isArray(__reportsAdministrativeAllClients) ? __reportsAdministrativeAllClients : []
+    };
+}
+
+function __applyAdministrativeSearchAndStatus(baseAdministrative, clients, searchTerm, statusFilter) {
+    const term = String(searchTerm || '').trim().toLowerCase();
+
+    let data = Array.isArray(baseAdministrative) ? baseAdministrative.slice() : [];
+    const cl = Array.isArray(clients) ? clients : [];
+
+    if (term) {
+        data = data.filter(work => {
+            const client = work.clientId ? cl.find(c => c.id === work.clientId) : null;
+            const clientName = client ? String(client.name || '').toLowerCase() : 'عام';
+            const task = work.task ? String(work.task).toLowerCase() : '';
+            const description = work.description ? String(work.description).toLowerCase() : '';
+            const notes = work.notes ? String(work.notes).toLowerCase() : '';
+            return clientName.includes(term) || task.includes(term) || description.includes(term) || notes.includes(term);
+        });
+    }
+
+    if (statusFilter === 'completed') {
+        data = data.filter(work => work.completed === true);
+    } else if (statusFilter === 'pending') {
+        data = data.filter(work => work.completed === false);
+    } else if (statusFilter === 'overdue') {
+        data = data.filter(work => {
+            if (work.completed || !work.dueDate) return false;
+            const today = new Date();
+            const due = new Date(work.dueDate);
+            return due < today;
+        });
+    }
+
+    return { data, clients: cl };
+}
+
 let __reportsAdministrativeDateLocaleCache = null;
 async function __getReportsAdministrativeDateLocaleSetting() {
     if (__reportsAdministrativeDateLocaleCache) return __reportsAdministrativeDateLocaleCache;
@@ -43,6 +94,12 @@ async function updateAdministrativeReportContent(reportName, reportType) {
 
         globalAdministrativeData = administrative;
         globalClientsData = clients;
+
+        __reportsAdministrativeAllData = Array.isArray(administrative) ? administrative : [];
+        __reportsAdministrativeAllClients = Array.isArray(clients) ? clients : [];
+        __reportsAdministrativeLastSearchTerm = '';
+        __reportsAdministrativeCurrentData = __reportsAdministrativeAllData;
+        __reportsAdministrativeCurrentClients = __reportsAdministrativeAllClients;
 
         const colors = { bg: '#6366f1', bgHover: '#4f46e5', bgLight: '#f8fafc', text: '#4f46e5', textLight: '#a5b4fc' };
 
@@ -88,7 +145,7 @@ async function updateAdministrativeReportContent(reportName, reportType) {
                 
                 <!-- محتوى التقرير -->
                 <div class="bg-white rounded-lg border border-gray-200 pt-0 pb-6 pl-0 pr-0 relative flex-1 overflow-y-auto" id="administrative-report-content">
-                    ${generateAdministrativeReportHTML(administrative, clients)}
+                    ${generateAdministrativeReportHTML(__reportsAdministrativeCurrentData, __reportsAdministrativeCurrentClients)}
                 </div>
             </div>
         `;
@@ -347,8 +404,7 @@ async function toggleAdministrativeSort() {
         currentAdministrativeSortOrder = currentAdministrativeSortOrder === 'desc' ? 'asc' : 'desc';
 
 
-        const administrative = await getAllAdministrative();
-        const clients = await getAllClients();
+        const { administrative, clients } = __getReportsAdministrativeDataForAction();
 
 
         const sortButton = document.querySelector('button[onclick="toggleAdministrativeSort()"]');
@@ -370,10 +426,13 @@ async function toggleAdministrativeSort() {
 
 
 function filterAdministrativeReport(searchTerm, administrative, clients) {
+    __reportsAdministrativeLastSearchTerm = String(searchTerm || '');
     if (!searchTerm.trim()) {
 
         const reportContent = document.getElementById('administrative-report-content');
         reportContent.innerHTML = generateAdministrativeReportHTML(administrative, clients, currentAdministrativeSortOrder, currentAdministrativeStatusFilter);
+        __reportsAdministrativeCurrentData = Array.isArray(administrative) ? administrative : [];
+        __reportsAdministrativeCurrentClients = Array.isArray(clients) ? clients : [];
         return;
     }
 
@@ -393,6 +452,8 @@ function filterAdministrativeReport(searchTerm, administrative, clients) {
             notes.includes(searchLower);
     });
 
+    __reportsAdministrativeCurrentData = filteredAdministrative;
+    __reportsAdministrativeCurrentClients = Array.isArray(clients) ? clients : [];
     const reportContent = document.getElementById('administrative-report-content');
     reportContent.innerHTML = generateAdministrativeReportHTML(filteredAdministrative, clients, currentAdministrativeSortOrder, currentAdministrativeStatusFilter);
 }
@@ -404,23 +465,13 @@ async function filterAdministrativeByStatus(status) {
         currentAdministrativeStatusFilter = status;
 
 
-        const administrative = await getAllAdministrative();
-        const clients = await getAllClients();
+        const administrative = Array.isArray(__reportsAdministrativeAllData) ? __reportsAdministrativeAllData : [];
+        const clients = Array.isArray(__reportsAdministrativeAllClients) ? __reportsAdministrativeAllClients : [];
 
 
-        let filteredData = administrative;
-        if (status === 'completed') {
-            filteredData = administrative.filter(work => work.completed === true);
-        } else if (status === 'pending') {
-            filteredData = administrative.filter(work => work.completed === false);
-        } else if (status === 'overdue') {
-            filteredData = administrative.filter(work => {
-                if (work.completed || !work.dueDate) return false;
-                const today = new Date();
-                const due = new Date(work.dueDate);
-                return due < today;
-            });
-        }
+        const res = __applyAdministrativeSearchAndStatus(administrative, clients, __reportsAdministrativeLastSearchTerm, status);
+        __reportsAdministrativeCurrentData = res.data;
+        __reportsAdministrativeCurrentClients = res.clients;
 
 
         document.querySelectorAll('.administrative-stats-grid > div').forEach(card => {
@@ -436,7 +487,7 @@ async function filterAdministrativeByStatus(status) {
 
 
         const reportContent = document.getElementById('administrative-report-content');
-        reportContent.innerHTML = generateAdministrativeReportHTML(administrative, clients, currentAdministrativeSortOrder, status);
+        reportContent.innerHTML = generateAdministrativeReportHTML(__reportsAdministrativeCurrentData, __reportsAdministrativeCurrentClients, currentAdministrativeSortOrder, status);
 
     } catch (error) {
         console.error('Error filtering administrative by status:', error);
@@ -448,7 +499,7 @@ async function filterAdministrativeByStatus(status) {
 async function printAdministrativeReport() {
     try {
 
-        const administrative = await getAllAdministrative();
+        const { administrative } = __getReportsAdministrativeDataForAction();
 
 
         let administrativeData = [...administrative];
@@ -581,8 +632,7 @@ async function printAdministrativeReport() {
 async function exportAdministrativeReport() {
     try {
         await __getReportsAdministrativeDateLocaleSetting();
-        const administrative = await getAllAdministrative();
-        const clients = await getAllClients();
+        const { administrative, clients } = __getReportsAdministrativeDataForAction();
 
         let filteredAdministrative = administrative;
         if (currentAdministrativeStatusFilter === 'completed') {
@@ -728,7 +778,7 @@ async function exportAdministrativeReport() {
 async function exportAdministrativeReportPDF() {
     try {
         await __getReportsAdministrativeDateLocaleSetting();
-        const administrative = await getAllAdministrative();
+        const { administrative } = __getReportsAdministrativeDataForAction();
 
         let administrativeData = [...administrative];
         if (currentAdministrativeStatusFilter === 'completed') {

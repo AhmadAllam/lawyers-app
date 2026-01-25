@@ -128,9 +128,9 @@ function displayClerkPapersModal() {
             }
         </style>
         <div class="search-layout">
-            <div class="flex gap-6 h-[75vh]">
+            <div class="flex flex-col md:flex-row gap-3 md:gap-6">
                 <!-- الجانب الأيمن: شريط البحث والإحصائيات -->
-                <div class="w-1/4 space-y-6 search-left-pane" data-left-pane="clerk">
+                <div class="w-full md:w-1/4 space-y-3 md:space-y-6 search-left-pane" data-left-pane="clerk">
                     <!-- شريط البحث -->
                     <div class="bg-blue-50 p-3 rounded-lg border border-blue-200 shadow-sm">
                         <div class="space-y-2">
@@ -194,9 +194,9 @@ function displayClerkPapersModal() {
                 </div>
 
                 <!-- الجانب الأيسر: قائمة أوراق المحضرين -->
-                <div class="flex-1 min-h-0 search-right-pane">
-                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm h-full min-h-0 overflow-hidden flex flex-col">
-                        <div id="clerk-papers-list" class="space-y-4 overscroll-contain p-3">
+                <div class="w-full flex-1 min-h-0 search-right-pane">
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm min-h-0 overflow-hidden flex flex-col">
+                        <div id="clerk-papers-list" class="space-y-3 md:space-y-4 overscroll-contain p-2 md:p-3">
                             <div class="text-center text-gray-500 py-12 sticky top-0 bg-white">
                                 <i class="ri-loader-4-line animate-spin text-3xl mb-3"></i>
                                 <p class="text-lg">جاري تحميل أوراق المحضرين...</p>
@@ -371,13 +371,11 @@ function displayClerkPapersList(clerkPapers, clients, cases) {
                                 </div>
                                 <div class="flex flex-col">
                                     <h3 class="font-bold text-gray-800 text-xl">${clientData.name}</h3>
+                                    <div class="text-xs font-bold text-blue-700 mt-0.5">
+                                        ${clientPapers.length} ورقة
+                                    </div>
                                 </div>
                             </div>
-                            <span class="inline-flex items-center gap-2 bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 text-sm font-bold px-4 py-2 rounded-full border-2 border-blue-200 shadow-sm">
-                                <i class="ri-file-paper-line text-base"></i>
-                                <span>${clientPapers.length}</span>
-                                <span>ورقة</span>
-                            </span>
                         </div>
                     </div>
                     
@@ -397,41 +395,44 @@ function displayClerkPapersList(clerkPapers, clients, cases) {
 
 function createClerkPaperCard(paper, clientData) {
     return `
-        <div class="paper-card bg-white border border-gray-200 rounded-md p-2 hover:shadow-sm hover:border-blue-300 cursor-pointer">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
-                        <i class="ri-file-paper-line text-sm"></i>
+        <div class="paper-card bg-gray-100 border border-gray-300 rounded-lg p-3 hover:shadow-sm hover:border-blue-300 cursor-pointer">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                <div class="flex items-start gap-3 w-full">
+                    <div class="w-9 h-9 md:w-8 md:h-8 bg-gray-200 text-gray-700 rounded-full flex items-center justify-center shrink-0">
+                        <i class="ri-file-paper-line text-base md:text-sm"></i>
                     </div>
-                    <div class="space-y-1">
-                        <div class="grid grid-cols-2 gap-2 items-stretch">
-                            <div class="bg-blue-100 border border-blue-200 rounded px-2 h-8 w-full flex items-center justify-center gap-1 text-center">
-                                <span class="text-[11px] text-blue-600">رقم</span>
-                                <span class="text-xs font-bold text-blue-800 truncate">${paper.paperNumber || 'غير محدد'}</span>
+                    <div class="space-y-2 w-full">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:flex md:flex-wrap md:justify-start gap-2 items-stretch">
+                            <div class="bg-gray-100 border border-gray-300 rounded px-2 h-10 md:h-8 w-full md:w-44 flex items-center justify-center gap-1 text-center">
+                                <span class="text-[11px] text-gray-700">رقم</span>
+                                <span class="text-sm md:text-xs font-bold text-gray-900 truncate">${paper.paperNumber || 'غير محدد'}</span>
                             </div>
-                            <div class="bg-purple-100 border border-purple-200 rounded px-2 h-8 w-full flex items-center justify-center gap-1 text-center">
-                                <span class="text-[11px] text-purple-600">نوع</span>
-                                <span class="text-xs font-bold text-purple-800 truncate">${paper.paperType || 'غير محدد'}</span>
+                            <div class="bg-gray-100 border border-gray-300 rounded px-2 h-10 md:h-8 w-full md:w-44 flex items-center justify-center gap-1 text-center">
+                                <span class="text-[11px] text-gray-700">نوع</span>
+                                <span class="text-sm md:text-xs font-bold text-gray-900 truncate">${paper.paperType || 'غير محدد'}</span>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-2 items-stretch">
-                            <div class="bg-emerald-100 border border-emerald-200 rounded px-2 h-8 w-full flex items-center justify-center gap-1 text-center">
-                                <span class="text-[11px] text-emerald-600">تسليم</span>
-                                <span class="text-xs font-bold text-emerald-800 truncate">${__formatClerkPapersDateForDisplay(paper.deliveryDate)}</span>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:flex md:flex-wrap md:justify-start gap-2 items-stretch">
+                            <div class="bg-gray-100 border border-gray-300 rounded px-2 h-10 md:h-8 w-full md:w-44 flex items-center justify-center gap-1 text-center">
+                                <span class="text-[11px] text-gray-700">تسليم</span>
+                                <span class="text-sm md:text-xs font-bold text-gray-900 truncate">${__formatClerkPapersDateForDisplay(paper.deliveryDate)}</span>
                             </div>
-                            <div class="bg-amber-100 border border-amber-200 rounded px-2 h-8 w-full flex items-center justify-center gap-1 text-center">
-                                <span class="text-[11px] text-amber-600">استلام</span>
-                                <span class="text-xs font-bold text-amber-800 truncate">${__formatClerkPapersDateForDisplay(paper.receiptDate)}</span>
+                            <div class="bg-gray-100 border border-gray-300 rounded px-2 h-10 md:h-8 w-full md:w-44 flex items-center justify-center gap-1 text-center">
+                                <span class="text-[11px] text-gray-700">استلام</span>
+                                <span class="text-sm md:text-xs font-bold text-gray-900 truncate">${__formatClerkPapersDateForDisplay(paper.receiptDate)}</span>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center gap-1">
-                    <button onclick="editClerkPaper(${paper.id})" class="p-1.5 bg-blue-100 text-blue-600 rounded hover:bg-blue-200">
-                        <i class="ri-pencil-line text-xs"></i>
+
+                <div class="flex w-full md:w-auto flex-row md:flex-col items-center md:items-end justify-center md:justify-end gap-2 md:gap-1.5 mt-3 pt-2 border-t border-gray-200 md:mt-0 md:pt-0 md:border-0 md:mr-2">
+                    <button onclick="editClerkPaper(${paper.id})" class="flex items-center justify-center gap-1 px-2 py-1.5 w-24 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md transition-colors">
+                        <i class="ri-pencil-line text-sm"></i>
+                        <span class="text-xs font-bold">تعديل</span>
                     </button>
-                    <button onclick="deleteClerkPaper(${paper.id})" class="p-1.5 bg-red-100 text-red-600 rounded hover:bg-red-200">
-                        <i class="ri-delete-bin-line text-xs"></i>
+                    <button onclick="deleteClerkPaper(${paper.id})" class="flex items-center justify-center gap-1 px-2 py-1.5 w-24 bg-red-100 hover:bg-red-200 text-red-700 rounded-md transition-colors">
+                        <i class="ri-delete-bin-line text-sm"></i>
+                        <span class="text-xs font-bold">حذف</span>
                     </button>
                 </div>
             </div>

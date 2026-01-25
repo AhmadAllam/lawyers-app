@@ -13,6 +13,426 @@ async function __getAccountsDateLocaleSetting() {
     return locale;
 }
 
+async function showInlineAddPaymentRow(accountId) {
+    try {
+        const editorEl = document.getElementById('inline-payment-editor');
+        if (!editorEl) {
+            showToast('تعذر إضافة دفعة هنا', 'error');
+            return;
+        }
+
+        const account = await getById('accounts', accountId);
+        if (!account) {
+            showToast('لم يتم العثور على الحساب', 'error');
+            return;
+        }
+
+        const payments = await getAccountPaymentsByAccountId(accountId);
+        const alreadyPaid = __sumPayments(payments);
+        const totalFees = parseFloat(account.totalFees || 0) || 0;
+
+        editorEl.innerHTML = `
+            <div class="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+                <div class="font-bold text-green-800 mb-3 text-base">إضافة دفعة جديدة</div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">المبلغ</label>
+                        <input type="number" id="inline-payment-amount" step="0.01" min="0" class="w-full px-4 py-3 text-base bg-white border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 font-bold" placeholder="مثال: 1000">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">التاريخ</label>
+                        <input type="text" id="inline-payment-date" class="w-full px-4 py-3 text-base bg-white border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 font-bold" placeholder="مثال: 15/12/2025">
+                    </div>
+                </div>
+                <div class="flex gap-2 justify-end mt-4">
+                    <button type="button" id="inline-payment-cancel" class="px-4 py-2 bg-gray-500 text-white rounded-md font-semibold">إلغاء</button>
+                    <button type="button" id="inline-payment-save" class="px-4 py-2 bg-green-600 text-white rounded-md font-semibold">حفظ</button>
+                </div>
+            </div>
+        `;
+
+        const amountEl = document.getElementById('inline-payment-amount');
+        const dateEl = document.getElementById('inline-payment-date');
+        const cancelBtn = document.getElementById('inline-payment-cancel');
+        const saveBtn = document.getElementById('inline-payment-save');
+
+        const applyLocaleFormatting = async () => {
+            try {
+                if (!dateEl) return;
+                const raw = (dateEl.value || '').trim();
+                if (!raw) return;
+                const d = __parseAccountsDateString(raw);
+                if (!d) return;
+                const locale = await __getAccountsDateLocaleSetting();
+                dateEl.value = d.toLocaleDateString(locale);
+            } catch (_) { }
+        };
+        if (dateEl) dateEl.addEventListener('blur', () => { applyLocaleFormatting(); });
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                editorEl.innerHTML = '';
+            });
+        }
+
+        if (saveBtn) {
+            saveBtn.addEventListener('click', async () => {
+                const amount = parseFloat(amountEl?.value || 0) || 0;
+                const rawDate = dateEl?.value || '';
+                const paymentDate = __normalizeDateToISO(rawDate);
+
+                if (!(amount > 0) || !Number.isFinite(amount)) {
+                    showToast('اكتب مبلغ صحيح', 'error');
+                    return;
+                }
+                if (totalFees > 0 && (alreadyPaid + amount) > totalFees) {
+                    showToast('الدفعة هتخلي إجمالي الدفعات أكبر من إجمالي الأتعاب', 'error');
+                    return;
+                }
+
+                await addAccountPayment({
+                    accountId,
+                    clientId: account.clientId || null,
+                    caseId: account.caseId || null,
+                    amount,
+                    paymentDate: (paymentDate && String(paymentDate).trim() !== '') ? paymentDate : '',
+                    createdAt: new Date().toISOString()
+                });
+
+                await refreshAccountComputedFields(accountId);
+                try { await renderPaymentsList(accountId); } catch (_) { }
+                editorEl.innerHTML = '';
+
+                loadAllAccounts();
+                updateAccountsStats();
+                showToast('تم إضافة الدفعة', 'success');
+            });
+        }
+    } catch (_) {
+        showToast('حدث خطأ في إضافة الدفعة', 'error');
+    }
+}
+
+function __openPopup(title, html) {
+    const modal = document.getElementById('modal');
+    const titleEl = document.getElementById('modal-popup-title');
+    const contentEl = document.getElementById('modal-popup-content');
+    const closeBtn = document.getElementById('modal-popup-close-button');
+    if (!modal || !titleEl || !contentEl) {
+        alert('تعذر فتح النافذة');
+        return;
+    }
+    titleEl.textContent = title || '';
+    contentEl.innerHTML = html || '';
+    modal.classList.remove('hidden');
+    const close = () => {
+        modal.classList.add('hidden');
+    };
+    if (closeBtn) {
+        const newBtn = closeBtn.cloneNode(true);
+        closeBtn.parentNode.replaceChild(newBtn, closeBtn);
+        newBtn.addEventListener('click', close);
+    }
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) close();
+    }, { once: true });
+}
+
+function __closePopup() {
+    const modal = document.getElementById('modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function renderPaymentsList(accountId) {
+    const listEl = document.getElementById('payments-list');
+    if (!listEl) return;
+    let payments = [];
+    try {
+        payments = await getAccountPaymentsByAccountId(accountId);
+    } catch (_) {
+        payments = [];
+    }
+    const sorted = (payments || []).slice().sort((a, b) => {
+        const aKey = String(a?.paymentDate || a?.createdAt || '');
+        const bKey = String(b?.paymentDate || b?.createdAt || '');
+        const dcmp = bKey.localeCompare(aKey);
+        if (dcmp !== 0) return dcmp;
+        return (parseInt(b?.id || 0, 10) || 0) - (parseInt(a?.id || 0, 10) || 0);
+    });
+    if (sorted.length === 0) {
+        listEl.innerHTML = `<div class="text-sm text-gray-500">لا توجد دفعات</div>`;
+        return;
+    }
+
+    listEl.innerHTML = `
+        <div class="space-y-2">
+            ${sorted.map((p, idx) => {
+                const amt = parseFloat(p?.amount || 0) || 0;
+                const dateText = formatDate(p?.paymentDate || p?.createdAt);
+                return `
+                    <div class="flex items-center justify-between gap-2 bg-white border-2 border-gray-200 rounded-lg px-4 py-3 hover:bg-gray-50">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-600 shrink-0">${idx + 1}</div>
+                            <div class="min-w-0">
+                                <div class="text-base font-bold text-gray-900 truncate">${amt.toLocaleString()} جنيه</div>
+                                <div class="text-sm text-gray-600 truncate">${dateText}</div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 shrink-0">
+                            <button type="button" class="edit-payment-btn px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 font-semibold" data-payment-id="${p.id}">تعديل</button>
+                            <button type="button" class="delete-payment-btn px-3 py-2 text-sm bg-red-100 text-red-700 rounded-md hover:bg-red-200 font-semibold" data-payment-id="${p.id}">حذف</button>
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+
+    listEl.querySelectorAll('.edit-payment-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const pid = parseInt(btn.dataset.paymentId, 10);
+            if (!Number.isFinite(pid)) return;
+            await displayEditPaymentForm(accountId, pid);
+        });
+    });
+    listEl.querySelectorAll('.delete-payment-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const pid = parseInt(btn.dataset.paymentId, 10);
+            if (!Number.isFinite(pid)) return;
+            await handleDeletePayment(accountId, pid);
+        });
+    });
+}
+
+async function handleDeletePayment(accountId, paymentId) {
+    try {
+        const ok = window.safeConfirm ? await safeConfirm('حذف الدفعة؟') : confirm('حذف الدفعة؟');
+        if (!ok) return;
+        if (typeof deleteAccountPayment !== 'function') {
+            showToast('تعذر حذف الدفعة', 'error');
+            return;
+        }
+        await deleteAccountPayment(paymentId);
+        await refreshAccountComputedFields(accountId);
+        try { await renderPaymentsList(accountId); } catch (_) { }
+        loadAllAccounts();
+        updateAccountsStats();
+        showToast('تم حذف الدفعة', 'success');
+    } catch (_) {
+        showToast('حدث خطأ في حذف الدفعة', 'error');
+    }
+}
+
+async function displayEditPaymentForm(accountId, paymentId) {
+    try {
+        const payments = await getAccountPaymentsByAccountId(accountId);
+        const target = (payments || []).find(p => parseInt(p?.id || 0, 10) === paymentId);
+        if (!target) {
+            showToast('لم يتم العثور على الدفعة', 'error');
+            return;
+        }
+
+        const account = await getById('accounts', accountId);
+        const totalFees = parseFloat(account?.totalFees || 0) || 0;
+
+        const oldAmount = parseFloat(target.amount || 0) || 0;
+        const oldDate = target.paymentDate || '';
+
+        const existingTotal = __sumPayments(payments);
+        const maxAllowedAfterEdit = (totalFees > 0) ? (totalFees - (existingTotal - oldAmount)) : null;
+
+        __openPopup('تعديل دفعة', `
+            <form id="edit-payment-form" class="space-y-4">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">المبلغ</label>
+                        <input type="number" id="edit-payment-amount" step="0.01" min="0" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg font-bold" value="${oldAmount}" required>
+                        ${maxAllowedAfterEdit != null ? `<div class="text-xs text-gray-500 mt-1">أقصى مبلغ مسموح: ${Math.max(0, maxAllowedAfterEdit).toLocaleString()}</div>` : ''}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">التاريخ</label>
+                        <input type="text" id="edit-payment-date" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg font-bold" value="${oldDate}">
+                    </div>
+                </div>
+
+                <div class="flex gap-2 justify-end">
+                    <button type="button" id="cancel-edit-payment" class="px-4 py-2 bg-gray-500 text-white rounded-md font-semibold">إلغاء</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md font-semibold">حفظ</button>
+                </div>
+            </form>
+        `);
+
+        const cancelBtn = document.getElementById('cancel-edit-payment');
+        if (cancelBtn) cancelBtn.addEventListener('click', __closePopup);
+
+        const form = document.getElementById('edit-payment-form');
+        if (!form) return;
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const amount = parseFloat(document.getElementById('edit-payment-amount')?.value || 0) || 0;
+            const rawDate = document.getElementById('edit-payment-date')?.value || '';
+            const paymentDate = __normalizeDateToISO(rawDate);
+
+            if (!(amount > 0) || !Number.isFinite(amount)) {
+                showToast('اكتب مبلغ صحيح', 'error');
+                return;
+            }
+
+            if (totalFees > 0) {
+                const newTotal = (existingTotal - oldAmount) + amount;
+                if (newTotal > totalFees) {
+                    showToast('التعديل هيخلي إجمالي الدفعات أكبر من إجمالي الأتعاب', 'error');
+                    return;
+                }
+            }
+
+            if (typeof updateAccountPayment !== 'function') {
+                showToast('تعذر تعديل الدفعة', 'error');
+                return;
+            }
+
+            await updateAccountPayment({
+                ...target,
+                id: target.id,
+                amount,
+                paymentDate: (paymentDate && String(paymentDate).trim() !== '') ? paymentDate : '',
+                updatedAt: new Date().toISOString()
+            });
+
+            await refreshAccountComputedFields(accountId);
+            try { await renderPaymentsList(accountId); } catch (_) { }
+            loadAllAccounts();
+            updateAccountsStats();
+            __closePopup();
+            showToast('تم تعديل الدفعة', 'success');
+        });
+    } catch (_) {
+        showToast('حدث خطأ في تعديل الدفعة', 'error');
+    }
+}
+
+async function refreshAccountComputedFields(accountId) {
+    try {
+        const account = await getById('accounts', accountId);
+        if (!account) return;
+        const payments = await getAccountPaymentsByAccountId(accountId);
+        const paid = __sumPayments(payments);
+        const expenses = parseFloat(account.expenses || 0) || 0;
+        const profit = paid - expenses;
+        const latest = __getLatestPaymentDate(payments);
+        await updateAccount({
+            ...account,
+            id: accountId,
+            paidFees: paid,
+            remaining: profit,
+            paymentDate: latest || account.paymentDate || '',
+            updatedAt: new Date().toISOString()
+        });
+
+        const remainingEl = document.getElementById('remaining');
+        const totalFeesEl = document.getElementById('total-fees');
+        if (remainingEl) {
+            remainingEl.value = profit;
+            remainingEl.dataset.paidFees = String(paid);
+        }
+        if (totalFeesEl) {
+            totalFeesEl.dataset.paidFees = String(paid);
+        }
+    } catch (_) { }
+}
+
+async function displayAddPaymentForm(accountId) {
+    try {
+        const account = await getById('accounts', accountId);
+        if (!account) {
+            showToast('لم يتم العثور على الحساب', 'error');
+            return;
+        }
+        const payments = await getAccountPaymentsByAccountId(accountId);
+        const alreadyPaid = __sumPayments(payments);
+        const totalFees = parseFloat(account.totalFees || 0) || 0;
+
+        __openPopup('إضافة دفعة', `
+            <form id="add-payment-form" class="space-y-4">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">المبلغ</label>
+                        <input type="number" id="payment-amount" step="0.01" min="0" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg font-bold" placeholder="مثال: 1000" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">التاريخ</label>
+                        <input type="text" id="payment-date" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg font-bold" placeholder="مثال: 15/12/2025">
+                    </div>
+                </div>
+
+                <div class="flex gap-2 justify-end">
+                    <button type="button" id="cancel-add-payment" class="px-4 py-2 bg-gray-500 text-white rounded-md font-semibold">إلغاء</button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md font-semibold">حفظ</button>
+                </div>
+            </form>
+        `);
+
+        const cancelBtn = document.getElementById('cancel-add-payment');
+        if (cancelBtn) cancelBtn.addEventListener('click', __closePopup);
+
+        const dateInput = document.getElementById('payment-date');
+        try {
+            if (dateInput) {
+                const locale = await __getAccountsDateLocaleSetting();
+                dateInput.addEventListener('blur', () => {
+                    try {
+                        const d = __parseAccountsDateString(dateInput.value);
+                        if (d) dateInput.value = d.toLocaleDateString(locale);
+                    } catch (_) { }
+                });
+            }
+        } catch (_) { }
+
+        const form = document.getElementById('add-payment-form');
+        if (!form) return;
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const amount = parseFloat(document.getElementById('payment-amount')?.value || 0) || 0;
+            const rawDate = document.getElementById('payment-date')?.value || '';
+            const paymentDate = __normalizeDateToISO(rawDate);
+            if (!(amount > 0)) {
+                showToast('اكتب مبلغ صحيح', 'error');
+                return;
+            }
+            if (amount <= 0 || !Number.isFinite(amount)) {
+                showToast('اكتب مبلغ صحيح', 'error');
+                return;
+            }
+            if (totalFees > 0 && (alreadyPaid + amount) > totalFees) {
+                showToast('الدفعة هتخلي إجمالي الدفعات أكبر من إجمالي الأتعاب', 'error');
+                return;
+            }
+
+            await addAccountPayment({
+                accountId,
+                clientId: account.clientId || null,
+                caseId: account.caseId || null,
+                amount,
+                paymentDate: (paymentDate && String(paymentDate).trim() !== '') ? paymentDate : '',
+                createdAt: new Date().toISOString()
+            });
+
+            await refreshAccountComputedFields(accountId);
+            try { await renderPaymentsList(accountId); } catch (_) { }
+            __closePopup();
+
+            loadAllAccounts();
+            updateAccountsStats();
+            showToast('تم إضافة الدفعة', 'success');
+        });
+    } catch (_) {
+        showToast('حدث خطأ في إضافة الدفعة', 'error');
+    }
+}
+
 function __parseAccountsDateString(dateStr) {
     try {
         const s = String(dateStr || '').trim();
@@ -33,6 +453,57 @@ function __parseAccountsDateString(dateStr) {
         return Number.isFinite(d.getTime()) ? d : null;
     } catch (_) {
         return null;
+    }
+}
+
+function __normalizeDateToISO(dateStr) {
+    try {
+        const raw = String(dateStr || '').trim();
+        if (!raw) return '';
+        if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+        const m = raw.match(/^(\d{1,2})\D+(\d{1,2})\D+(\d{2,4})$/);
+        if (m) {
+            let d = parseInt(m[1], 10), mo = parseInt(m[2], 10), y = parseInt(m[3], 10);
+            if (m[3].length === 2) { y = y < 50 ? 2000 + y : 1900 + y; }
+            const dt = new Date(y, mo - 1, d);
+            if (dt.getFullYear() === y && dt.getMonth() === (mo - 1) && dt.getDate() === d) {
+                const p = n => n.toString().padStart(2, '0');
+                return `${y}-${p(mo)}-${p(d)}`;
+            }
+        }
+        const dt = new Date(raw);
+        if (!Number.isFinite(dt.getTime())) return raw;
+        return dt.toISOString().split('T')[0];
+    } catch (_) {
+        return String(dateStr || '').trim();
+    }
+}
+
+function __sumPayments(payments) {
+    try {
+        let sum = 0;
+        for (const p of (payments || [])) {
+            sum += parseFloat(p && p.amount != null ? p.amount : 0) || 0;
+        }
+        return sum;
+    } catch (_) {
+        return 0;
+    }
+}
+
+function __getLatestPaymentDate(payments) {
+    try {
+        let latest = '';
+        for (const p of (payments || [])) {
+            const d = String(p && p.paymentDate != null ? p.paymentDate : '').trim();
+            const c = String(p && p.createdAt != null ? p.createdAt : '').trim();
+            const key = d || c;
+            if (!key) continue;
+            if (!latest || key > latest) latest = key;
+        }
+        return latest;
+    } catch (_) {
+        return '';
     }
 }
 
@@ -126,16 +597,16 @@ function displayAccountsModal() {
                                         <i class="ri-subtract-line text-white text-xs"></i>
                                     </div>
                                     <div class="text-sm font-bold text-red-700 mb-0.5" id="total-expenses">0</div>
-                                    <div class="text-xs font-medium text-red-800">المصروفات</div>
+                                    <div class="text-xs font-medium text-red-800">إجمالي المصروفات</div>
                                 </div>
 
                                 <!-- إجمالي الأرباح -->
-                                <div class="bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg p-2 border border-purple-300 text-center shadow-sm hover:shadow-md transition-shadow">
-                                    <div class="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-1">
+                                <div class="bg-gradient-to-br from-green-100 to-green-200 rounded-lg p-2 border border-green-300 text-center shadow-sm hover:shadow-md transition-shadow">
+                                    <div class="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-1">
                                         <i class="ri-time-line text-white text-xs"></i>
                                     </div>
-                                    <div class="text-sm font-bold text-purple-700 mb-0.5" id="total-remaining">0</div>
-                                    <div class="text-xs font-medium text-purple-800">الأرباح</div>
+                                    <div class="text-sm font-bold text-green-700 mb-0.5" id="total-remaining">0</div>
+                                    <div class="text-xs font-medium text-green-800">صافي الربح</div>
                                 </div>
                             </div>
                         </div>
@@ -249,6 +720,23 @@ async function loadAllAccounts() {
 
         const allClients = await getAllClients();
         const allCases = await getAllCases();
+
+        let allPayments = [];
+        try {
+            if (typeof getAll === 'function') {
+                allPayments = await getAll('accountPayments');
+            }
+        } catch (e) {
+            allPayments = [];
+        }
+
+        const paymentsByAccountId = new Map();
+        for (const p of (allPayments || [])) {
+            const aid = p && p.accountId != null ? parseInt(p.accountId, 10) : null;
+            if (!Number.isFinite(aid)) continue;
+            if (!paymentsByAccountId.has(aid)) paymentsByAccountId.set(aid, []);
+            paymentsByAccountId.get(aid).push(p);
+        }
         const clientsMap = new Map(allClients.map(c => [c.id, c]));
         const casesMap = new Map(allCases.map(c => [c.id, c]));
 
@@ -266,19 +754,23 @@ async function loadAllAccounts() {
                     client: client,
                     accounts: [],
                     totalFees: 0,
-                    totalExpenses: 0,
-                    totalRemaining: 0
+                    totalPaid: 0
                 };
             }
 
             clientGroups[client.id].accounts.push({
                 ...account,
-                caseRecord: caseRecord
+                caseRecord: caseRecord,
+                __payments: paymentsByAccountId.get(account.id) || []
             });
 
-            clientGroups[client.id].totalFees += account.paidFees || 0;
-            clientGroups[client.id].totalExpenses += account.expenses || 0;
-            clientGroups[client.id].totalRemaining += account.remaining || 0;
+            const paid = __sumPayments(paymentsByAccountId.get(account.id) || []);
+            const expenses = parseFloat(account.expenses || 0) || 0;
+            const totalFees = parseFloat(account.totalFees || 0) || 0;
+            const profit = paid - expenses;
+
+            clientGroups[client.id].totalFees += totalFees;
+            clientGroups[client.id].totalPaid += paid;
         }
 
         let html = '';
@@ -291,33 +783,44 @@ async function loadAllAccounts() {
                     <!-- رأس الموكل - قابل للنقر -->
                     <div class="client-header cursor-pointer p-4 hover:bg-gray-50 transition-colors duration-200" data-client-id="${client.id}">
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-3 flex-1">
                                 <div class="w-12 h-12 bg-gradient-to-br from-green-600 to-green-700 rounded-full flex items-center justify-center shadow-md">
                                     <i class="ri-user-line text-white text-lg"></i>
                                 </div>
                                 <div>
-                                    <h3 class="text-xl font-bold text-gray-800 mb-1">${client.name}</h3>
-                                    <p class="text-sm text-gray-500">${group.accounts.length} حساب</p>
+                                    <h3 class="text-xl font-bold text-gray-800">${client.name}</h3>
+                                    <div class="flex items-center gap-2 flex-wrap mt-1 text-xs font-bold md:hidden">
+                                        <span class="inline-flex items-center gap-1 text-gray-600">
+                                            <i class="ri-folder-2-line text-xs"></i>
+                                            <span>${group.accounts.length} حساب</span>
+                                        </span>
+                                        <span class="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md">
+                                            <i class="ri-money-dollar-circle-line text-xs"></i>
+                                            <span>${group.totalFees.toLocaleString()}</span>
+                                        </span>
+                                        <span class="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2 py-0.5 rounded-md">
+                                            <i class="ri-hand-coin-line text-xs"></i>
+                                            <span>${(group.totalPaid || 0).toLocaleString()}</span>
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-4">
-                                <!-- الإحصائيات المحسنة -->
+
+                            <div class="expand-icon transition-transform duration-300 ml-2 flex items-center justify-center md:hidden">
+                                <i class="ri-arrow-down-s-line text-xl text-gray-400 hover:text-gray-600"></i>
+                            </div>
+                            <div class="hidden md:flex items-center gap-4">
                                 <div class="flex items-center gap-3">
+                                    <div class="text-center bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+                                        <p class="text-sm text-blue-600 font-medium">الأتعاب</p>
+                                        <p class="text-base font-bold text-blue-700">${group.totalFees.toLocaleString()}</p>
+                                    </div>
                                     <div class="text-center bg-green-50 px-3 py-2 rounded-lg border border-green-200">
-                                        <p class="text-sm text-green-600 font-medium">الأتعاب</p>
-                                        <p class="text-base font-bold text-green-700">${group.totalFees.toLocaleString()}</p>
-                                    </div>
-                                    <div class="text-center bg-red-50 px-3 py-2 rounded-lg border border-red-200">
-                                        <p class="text-sm text-red-600 font-medium">المصروفات</p>
-                                        <p class="text-base font-bold text-red-700">${group.totalExpenses.toLocaleString()}</p>
-                                    </div>
-                                    <div class="text-center bg-purple-50 px-3 py-2 rounded-lg border border-purple-200">
-                                        <p class="text-sm text-purple-600 font-medium">الأرباح</p>
-                                        <p class="text-base font-bold text-purple-700">${group.totalRemaining.toLocaleString()}</p>
+                                        <p class="text-sm text-green-600 font-medium">المدفوع</p>
+                                        <p class="text-base font-bold text-green-700">${(group.totalPaid || 0).toLocaleString()}</p>
                                     </div>
                                 </div>
-                                <!-- أيقونة التوسيع/الطي -->
-                                <div class="expand-icon transition-transform duration-300 ml-2">
+                                <div class="expand-icon transition-transform duration-300 ml-2 flex items-center justify-center">
                                     <i class="ri-arrow-down-s-line text-xl text-gray-400 hover:text-gray-600"></i>
                                 </div>
                             </div>
@@ -329,38 +832,87 @@ async function loadAllAccounts() {
                         <div class="space-y-2">
                             ${group.accounts.map(account => `
                                 <div class="account-item bg-white border border-gray-200 rounded-lg p-3 hover:shadow-sm hover:border-green-300 transition-all cursor-pointer" data-account-id="${account.id}">
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex-1">
+                                    <!-- Mobile layout -->
+                                    <div class="md:hidden">
+                                        <div class="space-y-2">
+                                            <div class="flex items-start gap-2">
+                                                <div class="w-7 h-7 bg-green-100 rounded-full flex items-center justify-center shrink-0">
+                                                    <i class="ri-wallet-3-line text-green-600 text-xs"></i>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <p class="font-bold text-gray-800 text-sm break-words">${account.caseRecord ? `القضيه رقم ${account.caseRecord.caseNumber} لسنة ${account.caseRecord.caseYear}` : 'غير معروفة'}</p>
+                                                </div>
+                                            </div>
+
+                                            <div class="account-item-static flex items-center justify-between bg-gray-100 px-3 py-2 rounded-md cursor-default">
+                                                <div class="flex items-center gap-2 min-w-0">
+                                                    <i class="ri-calendar-line text-gray-600 text-xs"></i>
+                                                    <span class="text-xs font-bold text-gray-700">تاريخ الدفع</span>
+                                                </div>
+                                                <span class="text-xs font-bold text-gray-700">${formatDate(__getLatestPaymentDate(account.__payments))}</span>
+                                            </div>
+
+                                            <div class="account-item-static flex items-center justify-between bg-blue-100 px-3 py-2 rounded-md cursor-default">
+                                                <div class="flex items-center gap-2 min-w-0">
+                                                    <i class="ri-money-dollar-circle-line text-blue-600 text-xs"></i>
+                                                    <span class="text-xs font-bold text-blue-700">الأتعاب</span>
+                                                </div>
+                                                <span class="text-xs font-bold text-blue-700">${(parseFloat(account.totalFees || 0) || 0).toLocaleString()}</span>
+                                            </div>
+                                            <div class="account-item-static flex items-center justify-between bg-green-100 px-3 py-2 rounded-md cursor-default">
+                                                <div class="flex items-center gap-2 min-w-0">
+                                                    <i class="ri-hand-coin-line text-green-600 text-xs"></i>
+                                                    <span class="text-xs font-bold text-green-700">المدفوع</span>
+                                                </div>
+                                                <span class="text-xs font-bold text-green-700">${(__sumPayments(account.__payments) || 0).toLocaleString()}</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex justify-center gap-2 mt-3 pt-2 border-t border-gray-200">
+                                            <button class="edit-account-btn flex items-center gap-1 px-3 py-2 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 transition-colors" data-account-id="${account.id}" title="تعديل">
+                                                <i class="ri-edit-line text-sm"></i>
+                                                <span class="text-xs font-bold">تعديل</span>
+                                            </button>
+                                            <button class="delete-account-btn flex items-center gap-1 px-3 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition-colors" data-account-id="${account.id}" title="حذف">
+                                                <i class="ri-delete-bin-line text-sm"></i>
+                                                <span class="text-xs font-bold">حذف</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Desktop layout (keep) -->
+                                    <div class="hidden md:flex items-center justify-between">
+                                        <div class="flex-1 account-item-static">
                                             <div class="flex items-center gap-3 mb-2">
                                                 <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
                                                     <i class="ri-wallet-3-line text-green-600 text-xs"></i>
                                                 </div>
                                                 <div>
-                                                    <p class="font-bold text-gray-800 text-sm">قضية رقم: ${account.caseRecord ? `${account.caseRecord.caseNumber}/${account.caseRecord.caseYear}` : 'غير معروفة'}</p>
-                                                    <p class="text-xs text-gray-500">${formatDate(account.paymentDate)}</p>
+                                                    <p class="font-bold text-gray-800 text-sm">${account.caseRecord ? `القضيه رقم ${account.caseRecord.caseNumber} لسنة ${account.caseRecord.caseYear}` : 'غير معروفة'}</p>
+                                                    <p class="text-xs text-gray-500">${formatDate(__getLatestPaymentDate(account.__payments))}</p>
                                                 </div>
                                             </div>
                                             <div class="flex items-center gap-2">
+                                                <div class="flex items-center gap-1 bg-blue-100 px-2 py-1 rounded-md">
+                                                    <i class="ri-money-dollar-circle-line text-blue-600 text-xs"></i>
+                                                    <span class="text-xs font-bold text-blue-700">الأتعاب:</span>
+                                                    <span class="text-xs font-bold text-blue-700">${(parseFloat(account.totalFees || 0) || 0).toLocaleString()}</span>
+                                                </div>
                                                 <div class="flex items-center gap-1 bg-green-100 px-2 py-1 rounded-md">
-                                                    <i class="ri-money-dollar-circle-line text-green-600 text-xs"></i>
-                                                    <span class="text-xs font-bold text-green-700">${(account.paidFees || 0).toLocaleString()}</span>
-                                                </div>
-                                                <div class="flex items-center gap-1 bg-red-100 px-2 py-1 rounded-md">
-                                                    <i class="ri-file-list-line text-red-600 text-xs"></i>
-                                                    <span class="text-xs font-bold text-red-700">${(account.expenses || 0).toLocaleString()}</span>
-                                                </div>
-                                                <div class="flex items-center gap-1 bg-purple-100 px-2 py-1 rounded-md">
-                                                    <i class="ri-time-line text-purple-600 text-xs"></i>
-                                                    <span class="text-xs font-bold text-purple-700">${(account.remaining || 0).toLocaleString()}</span>
+                                                    <i class="ri-hand-coin-line text-green-600 text-xs"></i>
+                                                    <span class="text-xs font-bold text-green-700">المدفوع:</span>
+                                                    <span class="text-xs font-bold text-green-700">${(__sumPayments(account.__payments) || 0).toLocaleString()}</span>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="flex items-center gap-1">
-                                            <button class="edit-account-btn p-1.5 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 transition-colors" data-account-id="${account.id}" title="تعديل">
+                                            <button class="edit-account-btn flex items-center gap-1 px-2 py-1.5 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 transition-colors" data-account-id="${account.id}" title="تعديل">
                                                 <i class="ri-edit-line text-xs"></i>
+                                                <span class="text-xs font-bold">تعديل</span>
                                             </button>
-                                            <button class="delete-account-btn p-1.5 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition-colors" data-account-id="${account.id}" title="حذف">
+                                            <button class="delete-account-btn flex items-center gap-1 px-2 py-1.5 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition-colors" data-account-id="${account.id}" title="حذف">
                                                 <i class="ri-delete-bin-line text-xs"></i>
+                                                <span class="text-xs font-bold">حذف</span>
                                             </button>
                                         </div>
                                     </div>
@@ -417,20 +969,17 @@ function attachAccountCardListeners() {
     document.querySelectorAll('.account-item').forEach(item => {
         item.addEventListener('click', async (e) => {
             if (e.target.closest('.edit-account-btn') || e.target.closest('.delete-account-btn')) return;
+            if (e.target.closest('.account-item-static')) return;
+            return;
+        });
+    });
 
-            const accountId = parseInt(item.dataset.accountId);
 
-
-            try {
-                const accounts = await getAllAccounts();
-                const account = accounts.find(a => a.id === accountId);
-                if (account && account.clientId) {
-                    sessionStorage.setItem('expandedClientId', account.clientId);
-                }
-            } catch (error) {
-            }
-
-            displayEditAccountForm(accountId);
+    document.querySelectorAll('.add-payment-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const accountId = parseInt(btn.dataset.accountId);
+            displayAddPaymentForm(accountId);
         });
     });
 
@@ -535,6 +1084,22 @@ async function displayFilteredAccounts(accounts) {
 
     const allClients = await getAllClients();
     const allCases = await getAllCases();
+
+    let allPayments = [];
+    try {
+        if (typeof getAll === 'function') {
+            allPayments = await getAll('accountPayments');
+        }
+    } catch (e) {
+        allPayments = [];
+    }
+    const paymentsByAccountId = new Map();
+    for (const p of (allPayments || [])) {
+        const aid = p && p.accountId != null ? parseInt(p.accountId, 10) : null;
+        if (!Number.isFinite(aid)) continue;
+        if (!paymentsByAccountId.has(aid)) paymentsByAccountId.set(aid, []);
+        paymentsByAccountId.get(aid).push(p);
+    }
     const clientsMap = new Map(allClients.map(c => [c.id, c]));
     const casesMap = new Map(allCases.map(c => [c.id, c]));
 
@@ -552,19 +1117,24 @@ async function displayFilteredAccounts(accounts) {
                 client: client,
                 accounts: [],
                 totalFees: 0,
-                totalExpenses: 0,
-                totalRemaining: 0
+                totalPaid: 0
             };
         }
 
+        const payList = paymentsByAccountId.get(account.id) || [];
+        const paid = __sumPayments(payList);
+        const expenses = parseFloat(account.expenses || 0) || 0;
+        const totalFees = parseFloat(account.totalFees || 0) || 0;
+        const profit = paid - expenses;
+
         clientGroups[client.id].accounts.push({
             ...account,
-            caseRecord: caseRecord
+            caseRecord: caseRecord,
+            __payments: payList
         });
 
-        clientGroups[client.id].totalFees += account.paidFees || 0;
-        clientGroups[client.id].totalExpenses += account.expenses || 0;
-        clientGroups[client.id].totalRemaining += account.remaining || 0;
+        clientGroups[client.id].totalFees += totalFees;
+        clientGroups[client.id].totalPaid += paid;
     }
 
     let html = '';
@@ -582,30 +1152,41 @@ async function displayFilteredAccounts(accounts) {
                                 <i class="ri-user-line text-white text-lg"></i>
                             </div>
                             <div>
-                                <h3 class="text-xl font-bold text-gray-800 mb-1">${client.name}</h3>
-                                <p class="text-sm text-gray-500">${group.accounts.length} حساب</p>
+                                <h3 class="text-xl font-bold text-gray-800">${client.name}</h3>
+                                <div class="flex items-center gap-2 flex-wrap mt-1 text-xs font-bold md:hidden">
+                                    <span class="inline-flex items-center gap-1 text-gray-600">
+                                        <i class="ri-folder-2-line text-xs"></i>
+                                        <span>${group.accounts.length} حساب</span>
+                                    </span>
+                                    <span class="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md">
+                                        <i class="ri-money-dollar-circle-line text-xs"></i>
+                                        <span>${group.totalFees.toLocaleString()}</span>
+                                    </span>
+                                    <span class="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2 py-0.5 rounded-md">
+                                        <i class="ri-hand-coin-line text-xs"></i>
+                                        <span>${(group.totalPaid || 0).toLocaleString()}</span>
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                        <div class="flex items-center gap-4">
-                            <!-- الإحصائيات المحسنة -->
+                        <div class="hidden md:flex items-center gap-4">
                             <div class="flex items-center gap-3">
+                                <div class="text-center bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+                                    <p class="text-sm text-blue-600 font-medium">الأتعاب</p>
+                                    <p class="text-base font-bold text-blue-700">${group.totalFees.toLocaleString()}</p>
+                                </div>
                                 <div class="text-center bg-green-50 px-3 py-2 rounded-lg border border-green-200">
-                                    <p class="text-sm text-green-600 font-medium">الأتعاب</p>
-                                    <p class="text-base font-bold text-green-700">${group.totalFees.toLocaleString()}</p>
-                                </div>
-                                <div class="text-center bg-red-50 px-3 py-2 rounded-lg border border-red-200">
-                                    <p class="text-sm text-red-600 font-medium">المصروفات</p>
-                                    <p class="text-base font-bold text-red-700">${group.totalExpenses.toLocaleString()}</p>
-                                </div>
-                                <div class="text-center bg-purple-50 px-3 py-2 rounded-lg border border-purple-200">
-                                    <p class="text-sm text-purple-600 font-medium">الأرباح</p>
-                                    <p class="text-base font-bold text-purple-700">${group.totalRemaining.toLocaleString()}</p>
+                                    <p class="text-sm text-green-600 font-medium">المدفوع</p>
+                                    <p class="text-base font-bold text-green-700">${(group.totalPaid || 0).toLocaleString()}</p>
                                 </div>
                             </div>
-                            <!-- أيقونة التوسيع/الطي -->
-                            <div class="expand-icon transition-transform duration-300 ml-2">
+                            <div class="expand-icon transition-transform duration-300 ml-2 flex items-center justify-center">
                                 <i class="ri-arrow-down-s-line text-xl text-gray-400 hover:text-gray-600"></i>
                             </div>
+                        </div>
+
+                        <div class="expand-icon transition-transform duration-300 ml-2 flex items-center justify-center md:hidden">
+                            <i class="ri-arrow-down-s-line text-xl text-gray-400 hover:text-gray-600"></i>
                         </div>
                     </div>
                 </div>
@@ -615,7 +1196,47 @@ async function displayFilteredAccounts(accounts) {
                     <div class="space-y-2">
                         ${group.accounts.map(account => `
                             <div class="account-item bg-white border border-gray-200 rounded-lg p-3 hover:shadow-sm hover:border-green-300 transition-all cursor-pointer" data-account-id="${account.id}">
-                                <div class="flex items-center justify-between">
+                                <!-- Mobile layout -->
+                                <div class="md:hidden">
+                                    <div class="flex items-start gap-2">
+                                        <div class="w-7 h-7 bg-green-100 rounded-full flex items-center justify-center shrink-0">
+                                            <i class="ri-wallet-3-line text-green-600 text-xs"></i>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="font-bold text-gray-800 text-sm break-words">قضية رقم: ${account.caseRecord ? `${account.caseRecord.caseNumber}/${account.caseRecord.caseYear}` : 'غير معروفة'}</p>
+                                            <p class="text-xs text-gray-500 mt-0.5">${formatDate(__getLatestPaymentDate(account.__payments))}</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-2 mt-2">
+                                        <div class="flex items-center justify-center gap-1 bg-blue-100 px-2 py-1 rounded-md">
+                                            <i class="ri-money-dollar-circle-line text-blue-600 text-xs"></i>
+                                            <span class="text-xs font-bold text-blue-700">${(parseFloat(account.totalFees || 0) || 0).toLocaleString()}</span>
+                                        </div>
+                                        <div class="flex items-center justify-center gap-1 bg-green-100 px-2 py-1 rounded-md">
+                                            <i class="ri-hand-coin-line text-green-600 text-xs"></i>
+                                            <span class="text-xs font-bold text-green-700">${(__sumPayments(account.__payments) || 0).toLocaleString()}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex justify-center gap-2 mt-3 pt-2 border-t border-gray-200">
+                                        <button class="add-payment-btn flex items-center gap-1 px-3 py-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors" data-account-id="${account.id}" title="إضافة دفعة">
+                                            <i class="ri-add-line text-sm"></i>
+                                            <span class="text-xs font-bold">دفعة</span>
+                                        </button>
+                                        <button class="edit-account-btn flex items-center gap-1 px-3 py-2 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 transition-colors" data-account-id="${account.id}" title="تعديل">
+                                            <i class="ri-edit-line text-sm"></i>
+                                            <span class="text-xs font-bold">تعديل</span>
+                                        </button>
+                                        <button class="delete-account-btn flex items-center gap-1 px-3 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition-colors" data-account-id="${account.id}" title="حذف">
+                                            <i class="ri-delete-bin-line text-sm"></i>
+                                            <span class="text-xs font-bold">حذف</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Desktop layout (keep) -->
+                                <div class="hidden md:flex items-center justify-between">
                                     <div class="flex-1">
                                         <div class="flex items-center gap-3 mb-2">
                                             <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
@@ -623,30 +1244,32 @@ async function displayFilteredAccounts(accounts) {
                                             </div>
                                             <div>
                                                 <p class="font-bold text-gray-800 text-sm">قضية رقم: ${account.caseRecord ? `${account.caseRecord.caseNumber}/${account.caseRecord.caseYear}` : 'غير معروفة'}</p>
-                                                <p class="text-xs text-gray-500">${formatDate(account.paymentDate)}</p>
+                                                <p class="text-xs text-gray-500">${formatDate(__getLatestPaymentDate(account.__payments))}</p>
                                             </div>
                                         </div>
                                         <div class="flex items-center gap-2">
+                                            <div class="flex items-center gap-1 bg-blue-100 px-2 py-1 rounded-md">
+                                                <i class="ri-money-dollar-circle-line text-blue-600 text-xs"></i>
+                                                <span class="text-xs font-bold text-blue-700">${(parseFloat(account.totalFees || 0) || 0).toLocaleString()}</span>
+                                            </div>
                                             <div class="flex items-center gap-1 bg-green-100 px-2 py-1 rounded-md">
-                                                <i class="ri-money-dollar-circle-line text-green-600 text-xs"></i>
-                                                <span class="text-xs font-bold text-green-700">${(account.paidFees || 0).toLocaleString()}</span>
-                                            </div>
-                                            <div class="flex items-center gap-1 bg-red-100 px-2 py-1 rounded-md">
-                                                <i class="ri-file-list-line text-red-600 text-xs"></i>
-                                                <span class="text-xs font-bold text-red-700">${(account.expenses || 0).toLocaleString()}</span>
-                                            </div>
-                                            <div class="flex items-center gap-1 bg-purple-100 px-2 py-1 rounded-md">
-                                                <i class="ri-time-line text-purple-600 text-xs"></i>
-                                                <span class="text-xs font-bold text-purple-700">${(account.remaining || 0).toLocaleString()}</span>
+                                                <i class="ri-hand-coin-line text-green-600 text-xs"></i>
+                                                <span class="text-xs font-bold text-green-700">${(__sumPayments(account.__payments) || 0).toLocaleString()}</span>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-1">
-                                        <button class="edit-account-btn p-1.5 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 transition-colors" data-account-id="${account.id}" title="تعديل">
-                                            <i class="ri-edit-line text-xs"></i>
+                                        <button class="add-payment-btn flex items-center gap-1 px-2 py-1.5 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors" data-account-id="${account.id}" title="إضافة دفعة">
+                                            <i class="ri-add-line text-xs"></i>
+                                            <span class="text-xs font-bold">دفعة</span>
                                         </button>
-                                        <button class="delete-account-btn p-1.5 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition-colors" data-account-id="${account.id}" title="حذف">
+                                        <button class="edit-account-btn flex items-center gap-1 px-2 py-1.5 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 transition-colors" data-account-id="${account.id}" title="تعديل">
+                                            <i class="ri-edit-line text-xs"></i>
+                                            <span class="text-xs font-bold">تعديل</span>
+                                        </button>
+                                        <button class="delete-account-btn flex items-center gap-1 px-2 py-1.5 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition-colors" data-account-id="${account.id}" title="حذف">
                                             <i class="ri-delete-bin-line text-xs"></i>
+                                            <span class="text-xs font-bold">حذف</span>
                                         </button>
                                     </div>
                                 </div>
@@ -673,14 +1296,34 @@ async function updateAccountsStats() {
     try {
         const accounts = await getAllAccounts();
 
+        let allPayments = [];
+        try {
+            if (typeof getAll === 'function') {
+                allPayments = await getAll('accountPayments');
+            }
+        } catch (e) {
+            allPayments = [];
+        }
+        const paymentsByAccountId = new Map();
+        for (const p of (allPayments || [])) {
+            const aid = p && p.accountId != null ? parseInt(p.accountId, 10) : null;
+            if (!Number.isFinite(aid)) continue;
+            if (!paymentsByAccountId.has(aid)) paymentsByAccountId.set(aid, []);
+            paymentsByAccountId.get(aid).push(p);
+        }
+
         let totalFees = 0;
         let totalExpenses = 0;
         let totalRemaining = 0;
 
         accounts.forEach(account => {
-            totalFees += parseFloat(account.paidFees || 0);
-            totalExpenses += parseFloat(account.expenses || 0);
-            totalRemaining += parseFloat(account.remaining || 0);
+            const tf = parseFloat(account.totalFees || 0) || 0;
+            const ex = parseFloat(account.expenses || 0) || 0;
+            const paid = __sumPayments(paymentsByAccountId.get(account.id) || []);
+            const profit = paid - ex;
+            totalFees += tf;
+            totalExpenses += ex;
+            totalRemaining += profit;
         });
 
 
@@ -705,11 +1348,14 @@ function displayAddAccountForm() {
 async function displayAccountForm(accountId = null) {
     document.body.classList.add('form-active');
     try {
-        const isEdit = accountId !== null;
+        const normalizedAccountId = (accountId === null || accountId === undefined || accountId === '')
+            ? null
+            : parseInt(accountId, 10);
+        const isEdit = Number.isFinite(normalizedAccountId);
         let account = null;
 
         if (isEdit) {
-            account = await getById('accounts', accountId);
+            account = await getById('accounts', normalizedAccountId);
             if (!account) {
                 showToast('لم يتم العثور على الحساب', 'error');
                 return;
@@ -727,6 +1373,19 @@ async function displayAccountForm(accountId = null) {
         modalContainer.classList.remove('max-w-5xl', 'max-w-7xl', 'mx-4');
         modalContainer.classList.add('w-full');
         modalContent.classList.remove('search-modal-content');
+
+        let editPayments = [];
+        if (isEdit) {
+            try {
+                if (typeof getAccountPaymentsByAccountId === 'function') {
+                    editPayments = await getAccountPaymentsByAccountId(normalizedAccountId);
+                }
+            } catch (_) {
+                editPayments = [];
+            }
+        }
+        const editPaid = isEdit ? __sumPayments(editPayments) : 0;
+        const editProfit = isEdit ? (editPaid - (parseFloat(account?.expenses || 0) || 0)) : 0;
 
         modalContent.innerHTML = `
             <div class="w-full h-full p-2">
@@ -750,9 +1409,9 @@ async function displayAccountForm(accountId = null) {
                             <!-- القضية -->
                             <div>
                                 <div class="flex items-stretch">
-                                    <label for="case-display" class="px-3 py-2 border-2 border-green-300 bg-green-50 text-sm font-bold text-green-800 shrink-0 w-28 md:w-32 text-right rounded-r-lg">القضية</label>
+                                    <label for="case-display" class="px-3 py-2 border-2 border-gray-300 bg-gray-100 text-sm font-bold text-gray-700 shrink-0 w-28 md:w-32 text-right rounded-r-lg">القضية</label>
                                     <div class="flex-1 relative -mr-px">
-                                        <input type="text" id="case-display" autocomplete="off" class="w-full px-4 py-3 text-base bg-white border-2 border-green-300 rounded-l-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 font-bold placeholder:text-sm placeholder:font-normal placeholder:text-gray-400" value="" placeholder="قضية الموكل (اختياري)">
+                                        <input type="text" id="case-display" autocomplete="off" class="w-full px-4 py-3 text-base bg-white border-2 border-gray-300 rounded-l-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 font-bold placeholder:text-sm placeholder:font-normal placeholder:text-gray-400" value="" placeholder="قضية الموكل (اختياري)">
                                         <button type="button" id="case-toggle" class="absolute inset-y-0 left-0 flex items-center px-2 text-gray-500 hover:text-gray-700"><i class="ri-arrow-down-s-line"></i></button>
                                         <div id="case-dropdown" class="autocomplete-results hidden"></div>
                                         <input type="hidden" id="case-select" value="${account ? account.caseId || '' : ''}">
@@ -761,27 +1420,8 @@ async function displayAccountForm(accountId = null) {
                             </div>
                         </div>
                         
-                        <!-- السطر الثاني: تاريخ الدفع والملاحظات -->
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <!-- تاريخ الدفع -->
-                            <div>
-                                <div class="flex items-stretch">
-                                    <label for="payment-date" class="px-3 py-2 border-2 border-gray-300 bg-gray-100 text-sm font-bold text-gray-700 shrink-0 w-28 md:w-32 text-right rounded-r-lg">تاريخ الدفع</label>
-                                    <input type="text" id="payment-date" class="flex-1 px-4 py-3 text-base bg-white border-2 border-gray-300 rounded-l-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 -mr-px font-bold" value="${account ? account.paymentDate : ''}" placeholder="مثال: 15/12/2025">
-                                </div>
-                            </div>
-                            
-                            <!-- الملاحظات -->
-                            <div>
-                                <div class="flex items-stretch">
-                                    <label for="notes" class="px-3 py-2 border-2 border-gray-300 bg-gray-100 text-sm font-bold text-gray-700 shrink-0 w-28 md:w-32 text-right rounded-r-lg">ملاحظات</label>
-                                    <input type="text" id="notes" class="flex-1 px-4 py-3 text-base bg-white border-2 border-gray-300 rounded-l-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 -mr-px font-bold" 
-                                           value="${account ? account.notes || '' : ''}" placeholder="اكتب ملاحظاتك هنا...">
-                                </div>
-                            </div>
-                        </div>
                         
-                        <!-- السطر الثالث: الاتعاب والمدفوع -->
+                        <!-- السطر الثاني: الأتعاب والمصروفات -->
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <!-- أتعاب القضية -->
                             <div>
@@ -791,51 +1431,39 @@ async function displayAccountForm(accountId = null) {
                                            value="${account ? account.totalFees || '' : ''}" placeholder="مثال: 5000" required>
                                 </div>
                             </div>
-                            
-                            <!-- المسدد -->
-                            <div>
-                                <div class="flex items-stretch">
-                                    <label for="paid-fees" class="px-3 py-2 border-2 border-gray-300 bg-gray-100 text-sm font-bold text-gray-700 shrink-0 w-28 md:w-32 text-right rounded-r-lg">المسدد</label>
-                                    <input type="number" id="paid-fees" step="0.01" min="0" class="flex-1 px-4 py-3 text-base bg-white border-2 border-gray-300 rounded-l-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 -mr-px font-bold"
-                                           value="${account ? account.paidFees || '' : ''}" placeholder="مثال: 3000" required>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- السطر الرابع: المتبقي والمصروفات -->
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <!-- المستحق -->
-                            <div>
-                                <div class="flex items-stretch">
-                                    <label for="unpaid" class="px-3 py-2 border-2 border-gray-300 bg-gray-100 text-sm font-bold text-gray-700 shrink-0 w-28 md:w-32 text-right rounded-r-lg">المستحق</label>
-                                    <input type="number" id="unpaid" step="0.01" min="0" readonly class="flex-1 px-4 py-3 text-base bg-gray-100 border-2 border-gray-300 rounded-l-lg -mr-px font-bold"
-                                           value="${account ? ((account.totalFees || 0) - (account.paidFees || 0)) : ''}" placeholder="يحسب تلقائياً" title="المبلغ المستحق (لم يتم تحصيله بعد)">
-                                </div>
-                            </div>
-                            
+
                             <!-- المصروفات -->
                             <div>
                                 <div class="flex items-stretch">
-                                    <label for="expenses" class="px-3 py-2 border-2 border-gray-300 bg-gray-100 text-sm font-bold text-gray-700 shrink-0 w-28 md:w-32 text-right rounded-r-lg">المصروفات</label>
+                                    <label for="expenses" class="px-3 py-2 border-2 border-gray-300 bg-gray-100 text-sm font-bold text-gray-700 shrink-0 w-28 md:w-32 text-right rounded-r-lg">مصروفاتى</label>
                                     <input type="number" id="expenses" step="0.01" min="0" class="flex-1 px-4 py-3 text-base bg-white border-2 border-gray-300 rounded-l-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 -mr-px font-bold"
                                            value="${account ? account.expenses || '' : ''}" placeholder="مثال: 500">
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- السطر الخامس: الأرباح -->
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <!-- الأرباح -->
+
+                        <div class="bg-white border border-gray-200 rounded-lg p-3">
+                            <div class="flex items-center justify-between gap-3 flex-wrap">
+                                <div class="font-bold text-gray-800">الدفعات</div>
+                                <button type="button" id="add-payment-in-form" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-semibold">+ إضافة دفعة</button>
+                            </div>
+
+                            ${isEdit ? `<div id="inline-payment-editor" class="mt-3"></div><div id="payments-list" class="mt-3 space-y-2"></div>` : `
+                                <div class="mt-3">
+                                    <div id="draft-payments" class="space-y-2"></div>
+                                </div>
+                            `}
+                        </div>
+
+                        <!-- آخر سطر: صافي الربح -->
+                        <div class="grid grid-cols-1 gap-4">
                             <div>
                                 <div class="flex items-stretch">
-                                    <label for="remaining" class="px-3 py-2 border-2 border-gray-300 bg-gray-100 text-sm font-bold text-gray-700 shrink-0 w-28 md:w-32 text-right rounded-r-lg">الأرباح</label>
+                                    <label for="remaining" class="px-3 py-2 border-2 border-gray-300 bg-gray-100 text-sm font-bold text-gray-700 shrink-0 w-28 md:w-32 text-right rounded-r-lg">صافي الربح</label>
                                     <input type="number" id="remaining" step="0.01" min="0" readonly class="flex-1 px-4 py-3 text-base bg-gray-100 border-2 border-gray-300 rounded-l-lg -mr-px font-bold"
-                                           value="${account ? account.remaining || '' : ''}" placeholder="يحسب تلقائياً">
+                                           value="${isEdit ? (editProfit || 0) : 0}" data-paid-fees="${isEdit ? (editPaid || 0) : 0}" placeholder="يحسب تلقائياً">
                                 </div>
                             </div>
-                            
-                            <!-- مساحة فارغة للتوازن -->
-                            <div></div>
                         </div>
                         
                         <!-- أزرار الحفظ والإلغاء -->
@@ -978,42 +1606,87 @@ async function displayAccountForm(accountId = null) {
         } catch (_) { }
 
         (function () {
-            const inputIds = ['client-name', 'case-display', 'payment-date', 'paid-fees', 'expenses', 'unpaid', 'remaining', 'notes'];
+            const inputIds = ['client-name', 'case-display', 'expenses', 'remaining', 'total-fees'];
             inputIds.forEach(id => {
                 const el = document.getElementById(id);
                 if (!el) return;
                 el.classList.add('min-h-[48px]', 'font-semibold', 'text-gray-900');
                 el.className = el.className.replace(/py-\d+/g, 'py-3');
             });
-            const labelIds = ['client-name', 'case-display', 'payment-date', 'paid-fees', 'expenses', 'unpaid', 'remaining', 'notes'];
+            const labelIds = ['client-name', 'case-display', 'expenses', 'remaining', 'total-fees'];
             labelIds.forEach(f => {
                 const lab = document.querySelector(`label[for="${f}"]`);
                 if (!lab) return;
+                lab.classList.add('min-h-[48px]');
                 lab.className = lab.className.replace(/py-\d+/g, 'py-3');
             });
         })();
 
-        try {
-            const dateInput = document.getElementById('payment-date');
-            const applyLocaleFormattingToInput = async () => {
-                try {
-                    if (!dateInput) return;
-                    const raw = (dateInput.value || '').trim();
-                    if (!raw) return;
-                    const d = __parseAccountsDateString(raw);
-                    if (!d) return;
+
+        attachAccountFormListeners(normalizedAccountId);
+
+        if (isEdit) {
+            try {
+                await renderPaymentsList(normalizedAccountId);
+            } catch (_) { }
+        } else {
+            try {
+                const addBtn = document.getElementById('add-payment-in-form');
+                const draftRoot = document.getElementById('draft-payments');
+                const addDraftRow = async () => {
+                    if (!draftRoot) return;
                     const locale = await __getAccountsDateLocaleSetting();
-                    dateInput.value = d.toLocaleDateString(locale);
-                } catch (_) { }
-            };
-            if (dateInput) {
-                setTimeout(() => { applyLocaleFormattingToInput(); }, 0);
-                dateInput.addEventListener('blur', () => { applyLocaleFormattingToInput(); });
-            }
-        } catch (_) { }
-
-
-        attachAccountFormListeners(accountId);
+                    const rowId = 'dp_' + Math.random().toString(16).slice(2);
+                    const html = `
+                        <div class="draft-payment-row grid grid-cols-1 lg:grid-cols-12 gap-2 bg-gray-50 border border-gray-200 rounded-md p-2" data-row-id="${rowId}">
+                            <div class="lg:col-span-5">
+                                <input type="number" class="draft-payment-amount w-full px-3 py-2 border border-gray-300 rounded-md font-bold" placeholder="مبلغ الدفعة" step="0.01" min="0">
+                            </div>
+                            <div class="lg:col-span-5">
+                                <input type="text" class="draft-payment-date w-full px-3 py-2 border border-gray-300 rounded-md font-bold" placeholder="تاريخ الدفعة">
+                            </div>
+                            <div class="lg:col-span-2 flex justify-end">
+                                <button type="button" class="remove-draft-payment px-3 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200">حذف</button>
+                            </div>
+                        </div>
+                    `;
+                    draftRoot.insertAdjacentHTML('beforeend', html);
+                    const rowEl = draftRoot.querySelector(`[data-row-id="${rowId}"]`);
+                    const dateEl = rowEl?.querySelector('.draft-payment-date');
+                    const applyLocaleFormatting = async () => {
+                        try {
+                            if (!dateEl) return;
+                            const raw = (dateEl.value || '').trim();
+                            if (!raw) return;
+                            const d = __parseAccountsDateString(raw);
+                            if (!d) return;
+                            dateEl.value = d.toLocaleDateString(locale);
+                        } catch (_) { }
+                    };
+                    if (dateEl) {
+                        dateEl.addEventListener('blur', () => { applyLocaleFormatting(); });
+                    }
+                    const recalc = () => {
+                        try {
+                            const remainingEl = document.getElementById('remaining');
+                            if (!remainingEl) return;
+                            const amounts = Array.from(document.querySelectorAll('.draft-payment-amount'))
+                                .map(x => parseFloat(x.value || 0) || 0);
+                            const sum = amounts.reduce((a, b) => a + b, 0);
+                            remainingEl.dataset.paidFees = String(sum);
+                            const exp = parseFloat(document.getElementById('expenses')?.value || 0) || 0;
+                            remainingEl.value = (sum - exp);
+                        } catch (_) { }
+                    };
+                    rowEl?.querySelector('.draft-payment-amount')?.addEventListener('input', recalc);
+                    rowEl?.querySelector('.draft-payment-date')?.addEventListener('input', recalc);
+                    rowEl?.querySelector('.remove-draft-payment')?.addEventListener('click', () => { rowEl.remove(); recalc(); });
+                    recalc();
+                };
+                if (addBtn) addBtn.addEventListener('click', (e) => { e.preventDefault(); addDraftRow(); });
+                await addDraftRow();
+            } catch (_) { }
+        }
 
 
         if (account && account.clientId) {
@@ -1026,35 +1699,27 @@ async function displayAccountForm(accountId = null) {
 }
 
 
-function attachAccountFormListeners(accountId) {
+function attachAccountFormListeners(accountId = null) {
+    const clientInput = document.getElementById('client-name');
     const clientSelect = document.getElementById('client-select');
     const caseSelect = document.getElementById('case-select');
     const form = document.getElementById('account-form');
     const cancelBtn = document.getElementById('cancel-account-btn');
-    const paidFeesInput = document.getElementById('paid-fees');
     const expensesInput = document.getElementById('expenses');
     const remainingInput = document.getElementById('remaining');
-    const unpaidInput = document.getElementById('unpaid');
 
-    // حساب الأرباح (الأتعاب - المصروفات)
+    if (!form) return;
+
+    const addPaymentInFormBtn = document.getElementById('add-payment-in-form');
+
+    // صافي الربح = إجمالي الدفعات - المصروفات
     function calculateRemaining() {
-        const totalFeesInput = document.getElementById('total-fees');
-        const totalFees = parseFloat(totalFeesInput.value) || 0;
-        const expenses = parseFloat(expensesInput.value) || 0;
-        const remaining = totalFees - expenses;
+        const paidFees = parseFloat(remainingInput?.dataset?.paidFees || 0) || 0;
+        const expenses = parseFloat(expensesInput?.value || 0) || 0;
+        const remaining = paidFees - expenses;
 
-        remainingInput.value = remaining >= 0 ? remaining : 0;
-    }
-
-    // حساب المتبقي (الأتعاب - المدفوع)
-    function calculateUnpaid() {
-        const totalFeesInput = document.getElementById('total-fees');
-        const totalFees = parseFloat(totalFeesInput.value) || 0;
-        const paidFees = parseFloat(paidFeesInput.value) || 0;
-        const unpaid = totalFees - paidFees;
-
-        if (unpaidInput) {
-            unpaidInput.value = unpaid >= 0 ? unpaid : 0;
+        if (remainingInput) {
+            remainingInput.value = remaining;
         }
     }
 
@@ -1062,29 +1727,31 @@ function attachAccountFormListeners(accountId) {
     if (document.getElementById('total-fees')) {
         document.getElementById('total-fees').addEventListener('input', () => {
             calculateRemaining();
-            calculateUnpaid();
         });
     }
 
-    paidFeesInput.addEventListener('input', () => {
-        calculateRemaining();
-        calculateUnpaid();
-    });
+    if (expensesInput) {
+        expensesInput.addEventListener('input', calculateRemaining);
+    }
 
-    expensesInput.addEventListener('input', calculateRemaining);
+    if (addPaymentInFormBtn && Number.isFinite(parseInt(accountId, 10))) {
+        addPaymentInFormBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            showInlineAddPaymentRow(parseInt(accountId, 10));
+        });
+    }
 
 
-    clientSelect.addEventListener('change', async (e) => {
-        const clientId = parseInt(e.target.value);
-        if (clientId) {
-            await loadCasesForClient(clientId);
-        } else {
-            caseSelect.value = '';
-            const caseInput = document.getElementById('case-display');
-            if (caseInput) caseInput.value = '';
-        }
-    });
-
+    if (clientSelect) {
+        clientSelect.addEventListener('change', async (e) => {
+            const clientId = parseInt(e.target.value);
+            if (clientId) {
+                await loadCasesForClient(clientId);
+            } else {
+                clearCaseSelection();
+            }
+        });
+    }
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1092,15 +1759,15 @@ function attachAccountFormListeners(accountId) {
     });
 
 
-    cancelBtn.addEventListener('click', () => {
-
-        const clientSelect = document.getElementById('client-select');
-        const selectedClientId = clientSelect.value;
-        if (selectedClientId) {
-            sessionStorage.setItem('expandedClientId', selectedClientId);
-        }
-        navigateBack();
-    });
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+            const selectedClientId = clientSelect?.value;
+            if (selectedClientId) {
+                sessionStorage.setItem('expandedClientId', selectedClientId);
+            }
+            navigateBack();
+        });
+    }
 }
 
 
@@ -1128,7 +1795,27 @@ async function loadCasesForClient(clientId, selectedCaseId = null) {
 
 async function handleSaveAccount(accountId) {
     try {
-        let clientId = parseInt(document.getElementById('client-select').value);
+        try {
+            if (typeof initDB === 'function') {
+                await initDB();
+            }
+        } catch (_) { }
+
+        const normalizedAccountId = (accountId === null || accountId === undefined || accountId === '')
+            ? null
+            : parseInt(accountId, 10);
+        const isEdit = Number.isFinite(normalizedAccountId);
+
+        const clientSelectEl = document.getElementById('client-select');
+        const totalFeesEl = document.getElementById('total-fees');
+        const expensesEl = document.getElementById('expenses');
+        const caseSelectEl = document.getElementById('case-select');
+        if (!clientSelectEl || !totalFeesEl || !expensesEl) {
+            showToast('حدث خطأ في النموذج', 'error');
+            return;
+        }
+
+        let clientId = parseInt(clientSelectEl.value);
         const clientNameInput = document.getElementById('client-name');
         const clientName = clientNameInput ? clientNameInput.value.trim() : '';
         if ((!clientId || isNaN(clientId)) && clientName) {
@@ -1138,41 +1825,93 @@ async function handleSaveAccount(accountId) {
                 if (hiddenClient) hiddenClient.value = String(clientId);
             } catch (e) { }
         }
-        const caseId = parseInt(document.getElementById('case-select').value);
-        const rawPaymentDate = document.getElementById('payment-date').value;
-        const paymentDate = (function (s) { const m = s && s.trim().match(/^(\d{1,2})\D+(\d{1,2})\D+(\d{2,4})$/); if (m) { let d = parseInt(m[1], 10), mo = parseInt(m[2], 10), y = parseInt(m[3], 10); if (m[3].length === 2) { y = y < 50 ? 2000 + y : 1900 + y; } const dt = new Date(y, mo - 1, d); if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === d) { const p = n => n.toString().padStart(2, '0'); return `${y}-${p(mo)}-${p(d)}`; } } return s; })(rawPaymentDate);
-        const totalFees = parseFloat(document.getElementById('total-fees').value) || 0;
-        const paidFees = parseFloat(document.getElementById('paid-fees').value) || 0;
-        const expenses = parseFloat(document.getElementById('expenses').value) || 0;
-        const remaining = parseFloat(document.getElementById('remaining').value) || 0;
-        const notes = document.getElementById('notes').value.trim();
+        const caseId = parseInt(caseSelectEl?.value);
+        const totalFees = parseFloat(totalFeesEl.value) || 0;
+        const expenses = parseFloat(expensesEl.value) || 0;
+
+        let paidFees = 0;
+        try {
+            if (isEdit && typeof getAccountPaymentsByAccountId === 'function') {
+                const payments = await getAccountPaymentsByAccountId(normalizedAccountId);
+                paidFees = __sumPayments(payments);
+            }
+        } catch (_) { }
+
+        let paymentsDraft = [];
+        if (!isEdit) {
+            const rows = Array.from(document.querySelectorAll('.draft-payment-row'));
+            paymentsDraft = rows.map(r => {
+                const amt = parseFloat(r.querySelector('.draft-payment-amount')?.value || 0) || 0;
+                const rawDate = r.querySelector('.draft-payment-date')?.value || '';
+                const dt = __normalizeDateToISO(rawDate);
+                return { amount: amt, paymentDate: dt };
+            }).filter(p => (p.amount > 0) || (p.paymentDate && String(p.paymentDate).trim() !== ''));
+        }
+
+        const draftPaid = !isEdit ? paymentsDraft.reduce((s, p) => s + (parseFloat(p.amount || 0) || 0), 0) : paidFees;
+        const remaining = draftPaid - expenses;
 
         if (!clientId) {
             showToast('يرجى اختيار الموكل', 'error');
             return;
         }
 
+        if (totalFees > 0 && paidFees > totalFees) {
+            showToast('إجمالي الدفعات أكبر من إجمالي الأتعاب، راجع الدفعات أو زوّد إجمالي الأتعاب', 'error');
+            return;
+        }
+
+        if (!isEdit) {
+            if (totalFees > 0 && draftPaid > totalFees) {
+                showToast('إجمالي الدفعات أكبر من إجمالي الأتعاب، راجع الدفعات أو زوّد إجمالي الأتعاب', 'error');
+                return;
+            }
+        }
+
         const accountData = {
             clientId,
             caseId: (isNaN(caseId) ? null : caseId),
-            paymentDate,
             totalFees,
             paidFees,
             expenses,
             remaining,
-            notes,
             updatedAt: new Date().toISOString()
         };
 
-        if (accountId) {
+        if (isEdit) {
 
-            accountData.id = accountId;
+            accountData.id = normalizedAccountId;
             await updateAccount(accountData);
             showToast('تم تحديث الحساب بنجاح', 'success');
         } else {
 
             accountData.createdAt = new Date().toISOString();
-            await addAccount(accountData);
+            const newId = await addAccount(accountData);
+
+            if (paymentsDraft.length > 0) {
+                for (const p of paymentsDraft) {
+                    if (!(parseFloat(p.amount || 0) > 0)) continue;
+                    await addAccountPayment({
+                        accountId: newId,
+                        clientId,
+                        caseId: (isNaN(caseId) ? null : caseId),
+                        amount: parseFloat(p.amount || 0) || 0,
+                        paymentDate: p.paymentDate,
+                        createdAt: new Date().toISOString()
+                    });
+                }
+                const latest = paymentsDraft.map(x => x.paymentDate).filter(Boolean).sort().slice(-1)[0] || '';
+                const paid = draftPaid;
+                const profit = paid - expenses;
+                await updateAccount({
+                    ...accountData,
+                    id: newId,
+                    paidFees: paid,
+                    remaining: profit,
+                    paymentDate: latest,
+                    updatedAt: new Date().toISOString()
+                });
+            }
             showToast('تم إضافة الحساب بنجاح', 'success');
         }
 
@@ -1180,7 +1919,9 @@ async function handleSaveAccount(accountId) {
         navigateBack();
 
     } catch (error) {
-        showToast('حدث خطأ في حفظ الحساب', 'error');
+        try { console.error(error); } catch (_) { }
+        const msg = (error && error.message) ? String(error.message) : '';
+        showToast(msg ? `حدث خطأ في حفظ الحساب: ${msg}` : 'حدث خطأ في حفظ الحساب', 'error');
     }
 }
 
@@ -1193,6 +1934,14 @@ async function displayAccountDetails(accountId) {
             showToast('لم يتم العثور على الحساب', 'error');
             return;
         }
+
+        let payments = [];
+        try {
+            payments = await getAccountPaymentsByAccountId(accountId);
+        } catch (_) {
+            payments = [];
+        }
+        const latestPaymentKey = __getLatestPaymentDate(payments);
 
         const allClients = await getAllClients();
         const allCases = await getAllCases();
@@ -1228,7 +1977,7 @@ async function displayAccountDetails(accountId) {
                             
                             <div class="bg-white p-4 rounded-lg border border-gray-200">
                                 <label class="block text-sm font-medium text-gray-600 mb-2">تاريخ الدفع</label>
-                                <p class="text-lg font-bold text-gray-800">${formatDate(account.paymentDate)}</p>
+                                <p class="text-lg font-bold text-gray-800">${formatDate(account.paymentDate || latestPaymentKey)}</p>
                             </div>
                         </div>
                         
@@ -1239,31 +1988,27 @@ async function displayAccountDetails(accountId) {
                                 <p class="text-2xl font-bold text-blue-600">${account.totalFees || 0} جنيه</p>
                             </div>
                             
-                            <div class="bg-white p-4 rounded-lg border border-green-200">
-                                <label class="block text-sm font-medium text-gray-600 mb-2">الأتعاب المدفوع</label>
-                                <p class="text-2xl font-bold text-green-600">${account.paidFees || 0} جنيه</p>
-                            </div>
-                            
                             <div class="bg-white p-4 rounded-lg border border-red-200">
                                 <label class="block text-sm font-medium text-gray-600 mb-2">المصروفات</label>
                                 <p class="text-2xl font-bold text-red-600">${account.expenses || 0} جنيه</p>
                             </div>
                             
                             <div class="bg-white p-4 rounded-lg border border-purple-200">
-                                <label class="block text-sm font-medium text-gray-600 mb-2">الأرباح</label>
+                                <label class="block text-sm font-medium text-gray-600 mb-2">صافي الربح</label>
                                 <p class="text-2xl font-bold text-purple-600">${account.remaining || 0} جنيه</p>
                             </div>
                         </div>
                     </div>
-                    
-                    ${account.notes ? `
-                        <div class="mt-6">
-                            <div class="bg-white p-4 rounded-lg border border-gray-200">
-                                <label class="block text-sm font-medium text-gray-600 mb-2">ملاحظات</label>
-                                <p class="text-gray-800">${account.notes}</p>
-                            </div>
+
+                    <div class="mt-6 bg-white p-4 rounded-lg border border-gray-200">
+                        <div class="flex items-center justify-between gap-3 mb-3">
+                            <div class="text-lg font-bold text-gray-800">الدفعات</div>
+                            <button id="add-payment-details-btn" type="button" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-semibold" data-account-id="${accountId}">+ إضافة دفعة</button>
                         </div>
-                    ` : ''}
+                        <div id="payments-list" class="space-y-2"></div>
+                    </div>
+                    
+                    
                     
                     <div class="flex gap-4 justify-center mt-8">
                         <button id="edit-account-details-btn" class="px-8 py-3 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-bold transition-all shadow-md hover:shadow-lg transform hover:scale-105" data-account-id="${accountId}">
@@ -1276,6 +2021,20 @@ async function displayAccountDetails(accountId) {
                 </div>
             </div>
         `;
+
+
+        try {
+            await renderPaymentsList(accountId);
+        } catch (_) { }
+
+        const addPayBtn = document.getElementById('add-payment-details-btn');
+        if (addPayBtn) {
+            addPayBtn.addEventListener('click', async () => {
+                try {
+                    await displayAddPaymentForm(accountId);
+                } catch (_) { }
+            });
+        }
 
 
         document.getElementById('edit-account-details-btn').addEventListener('click', () => {

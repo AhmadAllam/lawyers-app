@@ -451,9 +451,10 @@ async function loadAllClientsWithCases() {
                 `;
             }
             return `
-                <button class="archive-toggle-btn ${baseColor} text-white w-8 h-8 rounded-full transition-all"
+                <button class="archive-toggle-btn ${baseColor} text-white rounded-full transition-all flex items-center justify-center gap-2 px-3 py-2"
                         data-case-id="${caseRecord.id}" data-is-archived="${isArchived}" title="${isArchived ? 'إلغاء الأرشفة' : 'أرشفة'}">
                     <i class="${isArchived ? 'ri-inbox-unarchive-fill' : 'ri-archive-fill'} text-xs"></i>
+                    <span class="font-bold text-xs">${isArchived ? 'إلغاء الأرشفة' : 'أرشفة'}</span>
                 </button>
             `;
         };
@@ -722,9 +723,10 @@ async function performClientsSearch(query) {
                 `;
             }
             return `
-                <button class="archive-toggle-btn ${baseColor} text-white w-8 h-8 rounded-full transition-all"
+                <button class="archive-toggle-btn ${baseColor} text-white rounded-full transition-all flex items-center justify-center gap-2 px-3 py-2"
                         data-case-id="${caseRecord.id}" data-is-archived="${isArchived}" title="${isArchived ? 'إلغاء الأرشفة' : 'أرشفة'}">
                     <i class="${isArchived ? 'ri-inbox-unarchive-fill' : 'ri-archive-fill'} text-xs"></i>
+                    <span class="font-bold text-xs">${isArchived ? 'إلغاء الأرشفة' : 'أرشفة'}</span>
                 </button>
             `;
         };
@@ -909,9 +911,10 @@ async function performCasesListSearch(query) {
                 `;
             }
             return `
-                <button class="archive-toggle-btn ${baseColor} text-white w-8 h-8 rounded-full transition-all"
+                <button class="archive-toggle-btn ${baseColor} text-white rounded-full transition-all flex items-center justify-center gap-2 px-3 py-2"
                         data-case-id="${caseRecord.id}" data-is-archived="${isArchived}" title="${isArchived ? 'إلغاء الأرشفة' : 'أرشفة'}">
                     <i class="${isArchived ? 'ri-inbox-unarchive-fill' : 'ri-archive-fill'} text-xs"></i>
+                    <span class="font-bold text-xs">${isArchived ? 'إلغاء الأرشفة' : 'أرشفة'}</span>
                 </button>
             `;
         };
@@ -1060,9 +1063,10 @@ async function loadAllCasesList() {
                 `;
             }
             return `
-                <button class="archive-toggle-btn ${baseColor} text-white w-8 h-8 rounded-full transition-all"
+                <button class="archive-toggle-btn ${baseColor} text-white rounded-full transition-all flex items-center justify-center gap-2 px-3 py-2"
                         data-case-id="${caseRecord.id}" data-is-archived="${isArchived}" title="${isArchived ? 'إلغاء الأرشفة' : 'أرشفة'}">
                     <i class="${isArchived ? 'ri-inbox-unarchive-fill' : 'ri-archive-fill'} text-xs"></i>
+                    <span class="font-bold text-xs">${isArchived ? 'إلغاء الأرشفة' : 'أرشفة'}</span>
                 </button>
             `;
         };

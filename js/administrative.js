@@ -34,7 +34,7 @@ class AdministrativeManager {
         this.currentDate = new Date();
         this.administrative = [];
         this.selectedDate = null;
-        this.viewMode = 'calendar';
+        this.viewMode = this.getDefaultViewMode();
         this.filteredDate = null;
         this.filterType = null;
         this.sortOrder = 'desc';
@@ -44,7 +44,7 @@ class AdministrativeManager {
 
 
         this.savedState = {
-            viewMode: 'calendar',
+            viewMode: this.viewMode,
             sortOrder: 'desc',
             filteredDate: null,
             filterType: null,
@@ -133,14 +133,26 @@ class AdministrativeManager {
             const savedStateStr = sessionStorage.getItem('administrativeState');
             if (savedStateStr) {
                 const savedState = JSON.parse(savedStateStr);
-                this.viewMode = savedState.viewMode || 'calendar';
+                this.viewMode = savedState.viewMode || this.getDefaultViewMode();
                 this.sortOrder = savedState.sortOrder || 'desc';
                 this.filteredDate = savedState.filteredDate || null;
                 this.filterType = savedState.filterType || null;
                 this.selectedDate = savedState.selectedDate || null;
                 this.savedState = savedState;
+            } else {
+                this.viewMode = this.getDefaultViewMode();
             }
         } catch (error) {
+        }
+    }
+
+    getDefaultViewMode() {
+        try {
+            const mq = (typeof window !== 'undefined' && window.matchMedia) ? window.matchMedia('(max-width: 768px)') : null;
+            const isMobile = (mq && mq.matches) || (typeof window !== 'undefined' && window.innerWidth && window.innerWidth <= 768);
+            return isMobile ? 'list' : 'calendar';
+        } catch (_) {
+            return 'calendar';
         }
     }
 
@@ -806,6 +818,10 @@ class AdministrativeManager {
             };
             const handle = () => {
                 const raw = newDateSearch.value;
+                if (!raw || !raw.trim()) {
+                    this.clearFilter();
+                    return;
+                }
                 const norm = normalize(raw);
                 if (norm) {
                     newDateSearch.value = norm;
@@ -1069,18 +1085,22 @@ class AdministrativeManager {
                             <span class="text-xs md:text-sm text-gray-500 font-semibold">تاريخ الإنجاز</span>
                             <span class="text-sm md:text-sm text-gray-900 font-bold">${dueDate}</span>
                         </div>
-                        <div class="flex flex-wrap items-center leading-tight gap-1 md:gap-1" style="order:4">
+                        <div class="flex items-start leading-tight gap-1 md:gap-1" style="order:4">
                             <i class="ri-list-check text-indigo-500 text-sm md:text-base ml-1"></i>
-                            <span class="text-xs md:text-sm text-gray-500 font-semibold">العمل المطلوب</span>
-                            <span class="text-sm md:text-sm text-gray-900 font-bold break-words">${task}</span>
+                            <span class="text-xs md:text-sm text-gray-500 font-semibold shrink-0">العمل المطلوب</span>
+                            <span class="text-sm md:text-sm text-gray-900 font-bold flex-1 min-w-0 break-words">${task}</span>
                         </div>
                     </div>
                     <div class="flex w-full md:w-auto flex-row md:flex-col gap-1.5 order-last md:order-none mt-2 md:mt-0 justify-center md:justify-end">
-                        <button class="edit-work-btn px-2 py-1 md:px-2.5 md:py-1.5 text-blue-500 hover:bg-blue-50 rounded-md transition-colors" data-work-id="${work.id}" title="تعديل العمل">
-                            <i class="ri-pencil-line text-xs md:text-sm"></i>
+                        <button class="edit-work-btn flex items-center gap-2 px-2 py-1 md:px-5 md:py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors" data-work-id="${work.id}" title="تعديل العمل">
+                            <i class="ri-pencil-line text-xs md:text-xl"></i>
+                            <span class="text-[11px] leading-none md:hidden whitespace-nowrap">تعديل</span>
+                            <span class="hidden md:inline text-sm font-bold">تعديل</span>
                         </button>
-                        <button class="delete-work-btn px-2 py-1 md:px-2.5 md:py-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors" data-work-id="${work.id}" title="حذف العمل">
-                            <i class="ri-delete-bin-line text-xs md:text-sm"></i>
+                        <button class="delete-work-btn flex items-center gap-2 px-2 py-1 md:px-5 md:py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors" data-work-id="${work.id}" title="حذف العمل">
+                            <i class="ri-delete-bin-line text-xs md:text-xl"></i>
+                            <span class="text-[11px] leading-none md:hidden whitespace-nowrap">حذف</span>
+                            <span class="hidden md:inline text-sm font-bold">حذف</span>
                         </button>
                     </div>
                 </div>
@@ -1626,4 +1646,37 @@ document.addEventListener('administrativeSaved', async () => {
         await globalAdministrativeManager.loadAllAdministrative();
         globalAdministrativeManager.updateContent();
     }
+});
+// Auto-open admin work from notification
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const aId = sessionStorage.getItem('temp_open_admin_id');
+        if (aId) {
+            sessionStorage.removeItem('temp_open_admin_id');
+            if (typeof initDB === 'function') await initDB();
+
+            setTimeout(async () => {
+                try {
+                    const wid = parseInt(aId, 10);
+                    const work = await getById('administrative', wid);
+                    if (work) {
+                        if (typeof displayAdministrativeForm === 'function') {
+                            displayAdministrativeForm(wid);
+                        } else if (typeof editAdministrativeWork === 'function') {
+                            editAdministrativeWork(wid);
+                        } else if (typeof globalAdministrativeManager !== 'undefined') {
+                            globalAdministrativeManager.viewMode = 'calendar';
+                            globalAdministrativeManager.selectedDate = work.dueDate;
+                            globalAdministrativeManager.currentDate = new Date(work.dueDate);
+                            globalAdministrativeManager.updateContent();
+                            setTimeout(() => {
+                                const dayEl = document.querySelector(`div[data-date="${work.dueDate}"]`);
+                                if (dayEl) dayEl.click();
+                            }, 500);
+                        }
+                    }
+                } catch (e) { console.error(e); }
+            }, 800);
+        }
+    } catch (e) { console.error(e); }
 });

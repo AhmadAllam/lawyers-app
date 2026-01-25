@@ -4,17 +4,17 @@ class SessionsCalendar {
         this.currentDate = new Date();
         this.sessions = [];
         this.selectedDate = null;
-        this.viewMode = 'calendar'; 
-        this.filteredDate = null; 
-        this.filterType = null; 
-        this.sortOrder = 'desc'; 
-        this.lastToastDate = null; 
+        this.viewMode = this.getDefaultViewMode();
+        this.filteredDate = null;
+        this.filterType = null;
+        this.sortOrder = 'desc';
+        this.lastToastDate = null;
 
         this.dateLocale = 'ar-EG';
 
-        
+
         this.savedState = {
-            viewMode: 'calendar',
+            viewMode: this.viewMode,
             sortOrder: 'desc',
             filteredDate: null,
             filterType: null,
@@ -47,11 +47,11 @@ class SessionsCalendar {
                     const v = await getSetting('dateLocale');
                     if (v === 'ar-EG' || v === 'en-GB') this.dateLocale = v;
                 }
-            } catch (_) {}
+            } catch (_) { }
             await this.loadAllSessions();
-            this.restoreState(); 
-            
-            
+            this.restoreState();
+
+
             this.render();
         } catch (error) {
             showToast('حدث خطأ في تحميل الجلسات', 'error');
@@ -70,39 +70,51 @@ class SessionsCalendar {
         }
     }
 
-    
+
     saveState() {
         this.savedState = {
             viewMode: this.viewMode,
-            
+
             filteredDate: this.filteredDate,
             filterType: this.filterType,
             selectedDate: this.selectedDate
         };
 
-        
+
         sessionStorage.setItem('sessionsCalendarState', JSON.stringify(this.savedState));
     }
 
-    
+
     restoreState() {
         try {
             const savedStateStr = sessionStorage.getItem('sessionsCalendarState');
             if (savedStateStr) {
                 const savedState = JSON.parse(savedStateStr);
-                this.viewMode = savedState.viewMode || 'calendar';
-                
+                this.viewMode = savedState.viewMode || this.getDefaultViewMode();
+
                 this.sortOrder = 'desc';
                 this.filteredDate = savedState.filteredDate || null;
                 this.filterType = savedState.filterType || null;
                 this.selectedDate = savedState.selectedDate || null;
                 this.savedState = savedState;
+            } else {
+                this.viewMode = this.getDefaultViewMode();
             }
         } catch (error) {
         }
     }
 
-    
+    getDefaultViewMode() {
+        try {
+            const mq = (typeof window !== 'undefined' && window.matchMedia) ? window.matchMedia('(max-width: 768px)') : null;
+            const isMobile = (mq && mq.matches) || (typeof window !== 'undefined' && window.innerWidth && window.innerWidth <= 768);
+            return isMobile ? 'list' : 'calendar';
+        } catch (_) {
+            return 'calendar';
+        }
+    }
+
+
     clearSavedState() {
         sessionStorage.removeItem('sessionsCalendarState');
     }
@@ -153,7 +165,7 @@ class SessionsCalendar {
                     const tb = (typeof b.__ts === 'number') ? b.__ts : -Infinity;
                     return tb - ta;
                 });
-            } catch(_) {}
+            } catch (_) { }
 
         } catch (error) {
             this.sessions = [];
@@ -170,7 +182,7 @@ class SessionsCalendar {
         modalContent.classList.remove('px-4');
         modalContent.classList.add('px-0');
 
-        
+
         modalContainer.classList.remove('max-w-5xl', 'max-w-7xl', 'mx-4');
         modalContainer.classList.add('w-full');
 
@@ -282,7 +294,7 @@ class SessionsCalendar {
         if (detailsPanel) { detailsPanel.remove(); }
         this.attachEventListeners();
 
-        
+
         if (this.viewMode === 'list') {
             setTimeout(() => {
                 this.setupSessionsListScrollBox?.();
@@ -349,7 +361,7 @@ class SessionsCalendar {
         if (noDecisionElement) noDecisionElement.textContent = noDecisionSessions;
     }
 
-    
+
     getNow() {
         try {
             const raw = localStorage.getItem('onlineTimeOffsetMs');
@@ -362,8 +374,8 @@ class SessionsCalendar {
     }
 
     async syncTimeOffset() {
-        
-        
+
+
         const endpoints = [
             'http://worldclockapi.com/api/json/utc/now',
             'https://timeapi.io/api/Time/current/zone?timeZone=UTC',
@@ -389,7 +401,7 @@ class SessionsCalendar {
 
                 clearTimeout(timeoutId);
                 const t1 = Date.now();
-                
+
                 let serverMs = null;
                 try {
                     const ct = res.headers.get('date');
@@ -406,16 +418,16 @@ class SessionsCalendar {
                     } catch (e) { }
                 }
                 if (serverMs) {
-                    
+
                     const rtt = (t1 - t0) / 2;
-                    const approxNow = serverMs + rtt; 
+                    const approxNow = serverMs + rtt;
                     const localNow = Date.now();
                     const offset = approxNow - localNow;
                     try { localStorage.setItem('onlineTimeOffsetMs', String(offset)); } catch (e) { }
                     return offset;
                 }
             } catch (e) {
-                
+
             }
         }
         return null;
@@ -426,22 +438,22 @@ class SessionsCalendar {
         const month = this.currentDate.getMonth();
         const today = this.getNow();
 
-        
+
         const monthNames = [
             'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
             'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
         ];
 
-        
+
         const dayNames = ['سبت', 'أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة'];
 
-        
+
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
         const daysInMonth = lastDay.getDate();
 
-        
-        
+
+
         const nativeStart = firstDay.getDay();
         let startingDayOfWeek = (nativeStart + 1) % 7;
 
@@ -470,7 +482,7 @@ class SessionsCalendar {
                 <div class="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
         `;
 
-        
+
         dayNames.forEach(day => {
             calendarHTML += `
                 <div class="p-2 text-center text-xs font-semibold text-gray-600 border-l border-gray-200 last:border-l-0">
@@ -481,12 +493,12 @@ class SessionsCalendar {
 
         calendarHTML += `</div><div class="grid grid-cols-7 gap-0">`;
 
-        
+
         for (let i = 0; i < startingDayOfWeek; i++) {
             calendarHTML += `<div class="h-20 border-l border-b border-gray-200 bg-gray-50"></div>`;
         }
 
-        
+
         for (let day = 1; day <= daysInMonth; day++) {
             const currentDateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
             const sessionsForDay = this.getSessionsForDate(currentDateStr);
@@ -510,11 +522,11 @@ class SessionsCalendar {
             }
 
             if (sessionsForDay.length > 0) {
-                
+
                 dayClasses += ' bg-gradient-to-br from-green-100 to-green-200 border-green-300';
                 dayNumberStyle = 'text-xs font-bold text-green-800 mb-1';
 
-                
+
                 dayContent = `
                     <div class="flex items-center justify-center h-full">
                         <div class="bg-white bg-opacity-90 rounded-lg px-2 py-1 shadow-md border">
@@ -678,11 +690,11 @@ class SessionsCalendar {
     }
 
     attachEventListeners() {
-        
+
         document.getElementById('calendar-view-btn')?.addEventListener('click', () => {
             if (this.viewMode !== 'calendar') {
                 this.viewMode = 'calendar';
-                
+
                 this.filteredDate = null;
                 document.getElementById('date-search').value = '';
                 this.updateContent();
@@ -693,14 +705,14 @@ class SessionsCalendar {
         document.getElementById('list-view-btn')?.addEventListener('click', () => {
             if (this.viewMode !== 'list') {
                 this.viewMode = 'list';
-                
-                
+
+
                 this.updateContent();
                 if (typeof closeMobileSidebar === 'function') closeMobileSidebar();
             }
         });
 
-        
+
         document.getElementById('prev-month')?.addEventListener('click', () => {
             this.currentDate.setMonth(this.currentDate.getMonth() - 1);
             this.updateContent();
@@ -711,7 +723,7 @@ class SessionsCalendar {
             this.updateContent();
         });
 
-        
+
         document.getElementById('sync-time-btn')?.addEventListener('click', async (e) => {
             const btn = e.currentTarget;
             const icon = btn.querySelector('i');
@@ -738,7 +750,7 @@ class SessionsCalendar {
             }
         });
 
-        
+
         const dateSearch = document.getElementById('date-search');
         const dateSearchBtn = document.getElementById('date-search-btn');
         const self = this;
@@ -777,20 +789,20 @@ class SessionsCalendar {
                 const norm = normalize(raw);
                 if (norm) {
                     newDateSearch.value = norm;
-                    if (typeof closeMobileSidebar === 'function') closeMobileSidebar(); 
+                    if (typeof closeMobileSidebar === 'function') closeMobileSidebar();
                     self.searchByDate(norm, { silent: true });
                 }
             };
             newDateSearch.addEventListener('change', handle);
             newDateSearch.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handle(); } });
 
-            
+
             if (dateSearchBtn) {
                 dateSearchBtn.addEventListener('click', handle);
             }
         }
 
-        
+
         const clearBtn = document.getElementById('clear-filter-btn');
         if (clearBtn) {
             clearBtn.replaceWith(clearBtn.cloneNode(true));
@@ -801,10 +813,10 @@ class SessionsCalendar {
         }
 
 
-        
+
         const sortBtn = document.getElementById('sort-btn');
         if (sortBtn) {
-            
+
             sortBtn.replaceWith(sortBtn.cloneNode(true));
             const newSortBtn = document.getElementById('sort-btn');
             newSortBtn.addEventListener('click', () => {
@@ -812,13 +824,13 @@ class SessionsCalendar {
             });
         }
 
-        
+
         const todayStatsBtn = document.getElementById('today-stats-btn');
         if (todayStatsBtn) {
             const newBtn = todayStatsBtn.cloneNode(true);
             todayStatsBtn.parentNode.replaceChild(newBtn, todayStatsBtn);
             newBtn.addEventListener('click', () => {
-                if (typeof closeMobileSidebar === 'function') closeMobileSidebar(); 
+                if (typeof closeMobileSidebar === 'function') closeMobileSidebar();
                 this.showTodaySessions();
             });
         }
@@ -828,7 +840,7 @@ class SessionsCalendar {
             const newBtn = tomorrowStatsBtn.cloneNode(true);
             tomorrowStatsBtn.parentNode.replaceChild(newBtn, tomorrowStatsBtn);
             newBtn.addEventListener('click', () => {
-                if (typeof closeMobileSidebar === 'function') closeMobileSidebar(); 
+                if (typeof closeMobileSidebar === 'function') closeMobileSidebar();
                 this.showTomorrowSessions();
             });
         }
@@ -838,7 +850,7 @@ class SessionsCalendar {
             const newBtn = weekStatsBtn.cloneNode(true);
             weekStatsBtn.parentNode.replaceChild(newBtn, weekStatsBtn);
             newBtn.addEventListener('click', () => {
-                if (typeof closeMobileSidebar === 'function') closeMobileSidebar(); 
+                if (typeof closeMobileSidebar === 'function') closeMobileSidebar();
                 this.showWeekSessions();
             });
         }
@@ -848,7 +860,7 @@ class SessionsCalendar {
             const newBtn = monthStatsBtn.cloneNode(true);
             monthStatsBtn.parentNode.replaceChild(newBtn, monthStatsBtn);
             newBtn.addEventListener('click', () => {
-                if (typeof closeMobileSidebar === 'function') closeMobileSidebar(); 
+                if (typeof closeMobileSidebar === 'function') closeMobileSidebar();
                 this.showMonthSessions();
             });
         }
@@ -858,23 +870,23 @@ class SessionsCalendar {
             const newBtn = noDecisionsStatsBtn.cloneNode(true);
             noDecisionsStatsBtn.parentNode.replaceChild(newBtn, noDecisionsStatsBtn);
             newBtn.addEventListener('click', () => {
-                if (typeof closeMobileSidebar === 'function') closeMobileSidebar(); 
+                if (typeof closeMobileSidebar === 'function') closeMobileSidebar();
                 this.showNoDecisionsSessions();
             });
         }
 
-        
+
         document.querySelectorAll('[data-date]').forEach(dayElement => {
             dayElement.addEventListener('click', (e) => {
                 const date = e.currentTarget.dataset.date;
-                
+
                 const dateInput = document.getElementById('date-search');
                 if (dateInput) dateInput.value = date;
                 this.selectDate(date);
             });
         });
 
-        
+
         if (this.viewMode === 'list') {
             const listEl = document.getElementById('sessions-list');
             if (listEl && !listEl.__delegatedBound) {
@@ -911,7 +923,7 @@ class SessionsCalendar {
             contentContainer.innerHTML = this.viewMode === 'calendar' ? this.renderCalendar() : this.renderSessionsList();
             this.attachEventListeners();
             if (this.viewMode === 'list') {
-                
+
                 setTimeout(() => {
                     this.setupSessionsListScrollBox?.();
                     if (this.__filterFn) this.computeFilteredCountAsync?.(this.__baseList, this.__filterFn);
@@ -925,7 +937,7 @@ class SessionsCalendar {
 
         this.scheduleUpdateStatistics?.();
 
-        
+
         const calendarBtn = document.getElementById('calendar-view-btn');
         const listBtn = document.getElementById('list-view-btn');
 
@@ -934,140 +946,140 @@ class SessionsCalendar {
             listBtn.className = `flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${this.viewMode === 'list' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:text-gray-800'}`;
         }
 
-        
+
         const detailsPanel = document.getElementById('session-details');
         if (detailsPanel) {
             detailsPanel.classList.add('hidden');
         }
 
-        
+
     }
 
     searchByDate(dateStr, options = {}) {
         const { silent = false } = options;
-        
+
         const isNewSearch = this.lastToastDate !== dateStr;
 
         const sessionsForDate = this.getSessionsForDate(dateStr);
 
-        
-        this.filteredDate = dateStr;
-        this.filterType = null; 
 
-        
+        this.filteredDate = dateStr;
+        this.filterType = null;
+
+
         this.viewMode = 'list';
         this.selectedDate = dateStr;
-        this.saveState(); 
+        this.saveState();
         this.updateContent();
 
-        
+
         if (!silent && isNewSearch) {
-            this.lastToastDate = dateStr; 
-            
-            
+            this.lastToastDate = dateStr;
+
+
         }
     }
 
     clearFilter() {
         this.filteredDate = null;
-        this.filterType = null; 
+        this.filterType = null;
         this.selectedDate = null;
-        this.lastToastDate = null; 
+        this.lastToastDate = null;
         document.getElementById('date-search').value = '';
-        this.saveState(); 
+        this.saveState();
         this.updateContent();
-        
+
     }
 
     showTodaySessions() {
-        
+
         const today = this.getNow();
         const todayStr = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
 
-        
+
         const dateInput = document.getElementById('date-search');
         if (dateInput) {
             dateInput.value = todayStr;
         }
 
-        
+
         this.filterType = null;
 
-        
+
         this.searchByDate(todayStr, { silent: true });
     }
 
     showTomorrowSessions() {
-        
+
         const today = this.getNow();
         const tomorrow = new Date(today);
         tomorrow.setDate(today.getDate() + 1);
         const tomorrowStr = `${tomorrow.getFullYear()}-${(tomorrow.getMonth() + 1).toString().padStart(2, '0')}-${tomorrow.getDate().toString().padStart(2, '0')}`;
 
-        
+
         const dateInput = document.getElementById('date-search');
         if (dateInput) {
             dateInput.value = tomorrowStr;
         }
 
-        
+
         this.filterType = null;
 
-        
+
         this.searchByDate(tomorrowStr, { silent: true });
     }
 
     showWeekSessions() {
-        
+
         const dateInput = document.getElementById('date-search');
         if (dateInput) {
             dateInput.value = '';
         }
 
-        
+
         this.filteredDate = null;
         this.viewMode = 'list';
         this.selectedDate = null;
-        this.filterType = 'week'; 
+        this.filterType = 'week';
         this.saveState();
         this.updateContent();
     }
 
     showMonthSessions() {
-        
+
         const dateInput = document.getElementById('date-search');
         if (dateInput) {
             dateInput.value = '';
         }
 
-        
+
         this.filteredDate = null;
         this.viewMode = 'list';
         this.selectedDate = null;
-        this.filterType = 'month'; 
+        this.filterType = 'month';
         this.saveState();
         this.updateContent();
     }
 
     showNoDecisionsSessions() {
-        
+
         const dateInput = document.getElementById('date-search');
         if (dateInput) {
             dateInput.value = '';
         }
 
-        
+
         this.filteredDate = null;
         this.viewMode = 'list';
         this.selectedDate = null;
-        this.filterType = 'no-decisions'; 
+        this.filterType = 'no-decisions';
         this.saveState();
         this.updateContent();
     }
 
 
     toggleSort() {
-        
+
         if (this.sortOrder === 'desc') {
             this.sortOrder = 'asc';
         } else if (this.sortOrder === 'asc') {
@@ -1076,7 +1088,7 @@ class SessionsCalendar {
             this.sortOrder = 'desc';
         }
 
-        
+
         const sortBtn = document.getElementById('sort-btn');
         if (sortBtn) {
             const span = sortBtn.querySelector('span');
@@ -1085,7 +1097,7 @@ class SessionsCalendar {
             if (icon) icon.className = `${this.getSortButtonIcon()} text-gray-600`;
         }
 
-        
+
         if (this.viewMode === 'list') {
             const contentContainer = document.getElementById('calendar-content');
             if (contentContainer) {
@@ -1099,7 +1111,7 @@ class SessionsCalendar {
             }
         }
 
-        
+
     }
 
     selectDate(dateStr) {
@@ -1156,7 +1168,7 @@ class SessionsCalendar {
         });
     }
 
-    
+
     setupSessionsListScrollBox() {
         try {
             const wrapper = document.getElementById('sessions-list-wrapper');
@@ -1170,7 +1182,7 @@ class SessionsCalendar {
 
             wrapper.style.height = targetH + 'px';
             wrapper.style.minHeight = '0px';
-            list.style.maxHeight = (targetH - 48) + 'px'; 
+            list.style.maxHeight = (targetH - 48) + 'px';
             list.style.overflowY = 'auto';
 
             if (mainEl) {
@@ -1178,7 +1190,7 @@ class SessionsCalendar {
             }
         } catch (e) { }
 
-        
+
         if (!this.__sessionsListResizeBound) {
             this.__sessionsListResizeBound = true;
             window.addEventListener('resize', () => this.setupSessionsListScrollBox());
@@ -1204,41 +1216,72 @@ class SessionsCalendar {
         return `
             <div class="session-card bg-white border border-gray-300 rounded-lg p-2 md:p-3 shadow-sm hover:shadow-md hover:border-blue-400 transition-all">
                 <div class="flex flex-col md:flex-row justify-between items-start gap-2 md:gap-3">
-                    <div class="flex-1 w-full space-y-2">
-                        <div class="flex flex-col md:flex-row md:items-center md:flex-nowrap items-start gap-0.5 md:gap-2">
-                            <div class="flex items-center gap-1.5 md:gap-2 shrink-0">
-                                <i class="ri-user-3-line text-blue-600 text-base md:text-lg"></i>
-                                <span class="text-sm md:text-base font-bold text-blue-700">${clientName}</span>
+                    <div class="flex-1 w-full">
+                        <!-- Mobile layout (keep current) -->
+                        <div class="md:hidden space-y-1.5">
+                            <div class="flex flex-col items-start gap-0.5">
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                    <i class="ri-user-3-line text-blue-600 text-base"></i>
+                                    <span class="session-client-name text-base font-bold text-blue-700 leading-tight">${clientName}</span>
+                                </div>
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                    <i class="ri-user-3-line text-red-600 text-base"></i>
+                                    <span class="session-opponent-name text-base font-bold text-red-600 leading-tight">${opponentName}</span>
+                                </div>
                             </div>
-                            <span class="text-xs md:text-sm text-gray-500 font-semibold md:mx-1 whitespace-nowrap shrink-0">ضد</span>
-                            <div class="flex items-center gap-1.5 md:gap-2 shrink-0">
-                                <i class="ri-user-3-line text-red-600 text-base md:hidden"></i>
-                                <span class="text-sm md:text-base font-bold text-red-600">${opponentName}</span>
+                            <div class="session-meta text-gray-700">
+                                <div class="grid grid-cols-2 gap-x-3 gap-y-1">
+                                    <div class="inline-flex items-center min-w-0"><i class="ri-briefcase-line text-gray-500 ml-1"></i><span>القضية:</span>&nbsp;<strong>${caseNo} / ${caseYear}</strong></div>
+                                    <div class="inline-flex items-center min-w-0"><i class="ri-archive-line text-gray-500 ml-1"></i><span>الحصر:</span>&nbsp;<strong>${invCombo}</strong></div>
+                                    <div class="inline-flex items-center min-w-0"><i class="ri-calendar-event-line text-gray-500 ml-1"></i><span>التاريخ:</span>&nbsp;<strong>${sessionDate}</strong></div>
+                                    <div class="inline-flex items-center min-w-0"><i class="ri-list-ordered text-gray-500 ml-1"></i><span>الرول:</span>&nbsp;<strong>${roll}</strong></div>
+                                </div>
+                                <div class="mt-1 inline-flex items-start min-w-0 leading-tight"><i class="ri-file-text-line text-gray-500 ml-1 mt-0.5"></i><span>القرار:</span>&nbsp;<strong class="min-w-0 break-words">${decision}</strong></div>
                             </div>
                         </div>
-                        <div class="flex flex-wrap items-center text-xs md:text-sm text-gray-700 gap-1">
-                            <span class="inline-flex items-center min-w-0 md:min-w-[140px]"><i class="ri-briefcase-line text-gray-500 ml-1"></i>القضية: <strong>${caseNo} / ${caseYear}</strong></span>
-                            <span class="hidden md:inline text-gray-300 mx-2">|</span>
-                            <span class="inline-flex items-center"><i class="ri-archive-line text-gray-500 ml-1"></i>الحصر: <strong>${invCombo}</strong></span>
-                        </div>
-                        <div class="flex flex-wrap items-center text-xs md:text-sm text-gray-700 gap-1">
-                            <span class="inline-flex items-center min-w-0 md:min-w-[140px]"><i class="ri-calendar-event-line text-gray-500 ml-1"></i>التاريخ: <strong>${sessionDate}</strong></span>
-                            <span class="hidden md:inline text-gray-300 mx-2">|</span>
-                            <span class="inline-flex items-center"><i class="ri-list-ordered text-gray-500 ml-1"></i>الرول: <strong>${roll}</strong></span>
-                        </div>
-                        <div class="flex flex-wrap items-center text-xs md:text-sm text-gray-700">
-                            <span class="inline-flex items-center min-w-0 md:min-w-[140px]"><i class="ri-file-text-line text-gray-500 ml-1"></i>القرار: <strong>${decision}</strong></span>
+
+                        <!-- Desktop layout (old) -->
+                        <div class="hidden md:block space-y-2">
+                            <div class="flex items-center flex-nowrap gap-2">
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <i class="ri-user-3-line text-blue-600 text-lg"></i>
+                                    <span class="text-base font-bold text-blue-700">${clientName}</span>
+                                </div>
+                                <span class="text-sm text-gray-500 font-semibold whitespace-nowrap shrink-0">ضد</span>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <span class="text-base font-bold text-red-600">${opponentName}</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center text-sm text-gray-700 gap-1">
+                                <span class="inline-flex items-center min-w-0 min-w-[140px]"><i class="ri-briefcase-line text-gray-500 ml-1"></i>القضية: <strong>${caseNo} / ${caseYear}</strong></span>
+                                <span class="text-gray-300 mx-2">|</span>
+                                <span class="inline-flex items-center"><i class="ri-archive-line text-gray-500 ml-1"></i>الحصر: <strong>${invCombo}</strong></span>
+                            </div>
+                            <div class="flex flex-wrap items-center text-sm text-gray-700 gap-1">
+                                <span class="inline-flex items-center min-w-0 min-w-[140px]"><i class="ri-calendar-event-line text-gray-500 ml-1"></i>التاريخ: <strong>${sessionDate}</strong></span>
+                                <span class="text-gray-300 mx-2">|</span>
+                                <span class="inline-flex items-center"><i class="ri-list-ordered text-gray-500 ml-1"></i>الرول: <strong>${roll}</strong></span>
+                            </div>
+                            <div class="flex flex-wrap items-center text-sm text-gray-700">
+                                <span class="inline-flex items-center min-w-0 min-w-[140px]"><i class="ri-file-text-line text-gray-500 ml-1"></i>القرار: <strong>${decision}</strong></span>
+                            </div>
                         </div>
                     </div>
                     <div class="flex w-full md:w-auto flex-row md:flex-col gap-1.5 order-last md:order-none mt-2 md:mt-0 justify-end">
-                        <button class="view-case-btn px-2 py-1 md:px-2.5 md:py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors" data-session-id="${session.id}" title="عرض بيانات القضية">
-                            <i class="ri-eye-line text-xs md:text-sm"></i>
+                        <button class="view-case-btn flex items-center gap-2 px-2 py-1 md:px-5 md:py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors" data-session-id="${session.id}" title="عرض بيانات القضية">
+                            <i class="ri-eye-line text-xs md:text-xl"></i>
+                            <span class="text-[11px] leading-none md:hidden whitespace-nowrap">اطلاع</span>
+                            <span class="hidden md:inline text-sm font-bold">عرض</span>
                         </button>
-                        <button class="edit-session-btn px-2 py-1 md:px-2.5 md:py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors" data-session-id="${session.id}" title="تعديل الجلسة">
-                            <i class="ri-pencil-line text-xs md:text-sm"></i>
+                        <button class="edit-session-btn flex items-center gap-2 px-2 py-1 md:px-5 md:py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors" data-session-id="${session.id}" title="تعديل الجلسة">
+                            <i class="ri-pencil-line text-xs md:text-xl"></i>
+                            <span class="text-[11px] leading-none md:hidden whitespace-nowrap">تعديل</span>
+                            <span class="hidden md:inline text-sm font-bold">تعديل</span>
                         </button>
-                        <button class="delete-session-btn px-2 py-1 md:px-2.5 md:py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors" data-session-id="${session.id}" title="حذف الجلسة">
-                            <i class="ri-delete-bin-line text-xs md:text-sm"></i>
+                        <button class="delete-session-btn flex items-center gap-2 px-2 py-1 md:px-5 md:py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors" data-session-id="${session.id}" title="حذف الجلسة">
+                            <i class="ri-delete-bin-line text-xs md:text-xl"></i>
+                            <span class="text-[11px] leading-none md:hidden whitespace-nowrap">حذف</span>
+                            <span class="hidden md:inline text-sm font-bold">حذف</span>
                         </button>
                     </div>
                 </div>
@@ -1265,7 +1308,7 @@ class SessionsCalendar {
                     }
                 });
             }
-        } catch (_) {}
+        } catch (_) { }
     }
 
     appendNextBatch(batchOverride) {
@@ -1290,7 +1333,7 @@ class SessionsCalendar {
                     requestAnimationFrame(() => {
                         listEl.insertAdjacentHTML('beforeend', html);
                     });
-                
+
                     this.__renderedCount = end;
                 }
             } else {
@@ -1344,35 +1387,35 @@ class SessionsCalendar {
                 }
             };
             setTimeout(loop, 0);
-        } catch (_) {}
+        } catch (_) { }
     }
 
-    
+
 
     async viewCaseData(sessionId) {
         try {
-            
+
             const sessionData = await getById('sessions', sessionId);
             if (!sessionData || !sessionData.caseId) {
                 showToast('لم يتم العثور على بيانات القضية', 'error');
                 return;
             }
 
-            
+
             const caseData = await getById('cases', sessionData.caseId);
             if (!caseData || !caseData.clientId) {
                 showToast('لم يتم العثور على بيانات القضية أو الموكل', 'error');
                 return;
             }
 
-            
+
             const clientData = await getById('clients', caseData.clientId);
             if (!clientData) {
                 showToast('لم يتم العثور على بيانات الموكل', 'error');
                 return;
             }
 
-            
+
             navigateTo(displayClientViewForm, caseData.clientId);
 
         } catch (error) {
@@ -1382,7 +1425,7 @@ class SessionsCalendar {
     }
 
     editSession(sessionId, sessionData) {
-        
+
         this.saveState();
         try {
             window.location.href = `session-edit.html?sessionId=${sessionId}`;
@@ -1394,7 +1437,7 @@ class SessionsCalendar {
         if (!ok) return;
         try {
             await deleteRecord('sessions', sessionId);
-            await this.loadAllSessions(); 
+            await this.loadAllSessions();
             this.render();
             showToast('تم حذف الجلسة بنجاح', 'success');
         } catch (error) {
@@ -1416,7 +1459,7 @@ async function displaySessionsCalendar() {
 
 
 document.addEventListener('sessionSaved', async () => {
-    
+
     const modalTitle = document.getElementById('modal-title');
     if (modalTitle && modalTitle.textContent === 'إدارة الجلسات' && globalSessionsCalendar) {
         await globalSessionsCalendar.loadAllSessions();

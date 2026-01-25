@@ -12,7 +12,7 @@ function initDB() {
     if (dbInitPromise) return dbInitPromise;
     dbInitPromise = new Promise((resolve, reject) => {
         const openRequest = (attemptRepair) => {
-            const request = indexedDB.open('LawyerAppDB', 22);
+            const request = indexedDB.open('LawyerAppDB', 23);
 
             request.onupgradeneeded = (event) => {
                 const dbInstance = event.target.result;
@@ -111,14 +111,22 @@ function initDB() {
                 accountsStore.createIndex('clientId', 'clientId', { unique: false });
                 accountsStore.createIndex('caseId', 'caseId', { unique: false });
                 accountsStore.createIndex('paymentDate', 'paymentDate', { unique: false });
+
+                if (!dbInstance.objectStoreNames.contains('administrative')) {
+                    const administrativeStore = dbInstance.createObjectStore('administrative', { keyPath: 'id', autoIncrement: true });
+                    administrativeStore.createIndex('clientId', 'clientId', { unique: false });
+                    administrativeStore.createIndex('dueDate', 'dueDate', { unique: false });
+                    administrativeStore.createIndex('completed', 'completed', { unique: false });
+                }
             }
 
 
-            if (!dbInstance.objectStoreNames.contains('administrative')) {
-                const administrativeStore = dbInstance.createObjectStore('administrative', { keyPath: 'id', autoIncrement: true });
-                administrativeStore.createIndex('clientId', 'clientId', { unique: false });
-                administrativeStore.createIndex('dueDate', 'dueDate', { unique: false });
-                administrativeStore.createIndex('completed', 'completed', { unique: false });
+            if (!dbInstance.objectStoreNames.contains('accountPayments')) {
+                const paymentsStore = dbInstance.createObjectStore('accountPayments', { keyPath: 'id', autoIncrement: true });
+                paymentsStore.createIndex('accountId', 'accountId', { unique: false });
+                paymentsStore.createIndex('clientId', 'clientId', { unique: false });
+                paymentsStore.createIndex('caseId', 'caseId', { unique: false });
+                paymentsStore.createIndex('paymentDate', 'paymentDate', { unique: false });
             }
 
 
@@ -193,6 +201,13 @@ function initDB() {
                         } catch (e) { }
                     }
                 }, 100);
+
+
+                setTimeout(async () => {
+                    try {
+                        await migrateAccountsToPayments();
+                    } catch (e) { }
+                }, 200);
 
                 resolve(db);
             };
@@ -956,6 +971,77 @@ function addAccount(accountData) {
     });
 }
 
+
+function addAccountPayment(paymentData) {
+    return new Promise((resolve, reject) => {
+        if (!db) return reject("DB not initialized");
+        if (!db.objectStoreNames.contains('accountPayments')) return reject(new Error('AccountPaymentsStoreMissing'));
+        const transaction = db.transaction(['accountPayments'], 'readwrite');
+        const objectStore = transaction.objectStore('accountPayments');
+        const request = objectStore.add(paymentData);
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
+}
+
+function getAccountPaymentsByAccountId(accountId) {
+    return new Promise((resolve, reject) => {
+        if (!db) return reject("DB not initialized");
+        if (!db.objectStoreNames.contains('accountPayments')) return resolve([]);
+        const transaction = db.transaction(['accountPayments'], 'readonly');
+        const objectStore = transaction.objectStore('accountPayments');
+        const index = objectStore.index('accountId');
+        const request = index.getAll(accountId);
+        request.onsuccess = (event) => resolve(event.target.result || []);
+        request.onerror = (event) => reject(event.target.error);
+    });
+}
+
+function updateAccountPayment(paymentData) {
+    return new Promise((resolve, reject) => {
+        if (!db) return reject("DB not initialized");
+        if (!db.objectStoreNames.contains('accountPayments')) return reject(new Error('AccountPaymentsStoreMissing'));
+        const transaction = db.transaction(['accountPayments'], 'readwrite');
+        const objectStore = transaction.objectStore('accountPayments');
+        const request = objectStore.put(paymentData);
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
+}
+
+function deleteAccountPayment(paymentId) {
+    return new Promise((resolve, reject) => {
+        if (!db) return reject("DB not initialized");
+        if (!db.objectStoreNames.contains('accountPayments')) return resolve();
+        const transaction = db.transaction(['accountPayments'], 'readwrite');
+        const objectStore = transaction.objectStore('accountPayments');
+        const request = objectStore.delete(paymentId);
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
+}
+
+function deleteAccountPaymentsByAccountId(accountId) {
+    return new Promise((resolve, reject) => {
+        if (!db) return reject("DB not initialized");
+        if (!db.objectStoreNames.contains('accountPayments')) return resolve();
+        const transaction = db.transaction(['accountPayments'], 'readwrite');
+        const objectStore = transaction.objectStore('accountPayments');
+        const index = objectStore.index('accountId');
+        const req = index.openCursor(IDBKeyRange.only(accountId));
+        req.onsuccess = (e) => {
+            const cursor = e.target.result;
+            if (cursor) {
+                try { cursor.delete(); } catch (_) { }
+                cursor.continue();
+            } else {
+                resolve();
+            }
+        };
+        req.onerror = (e) => reject(e.target.error);
+    });
+}
+
 function getAllAccounts() {
     return new Promise((resolve, reject) => {
         if (!db) return reject("DB not initialized");
@@ -981,12 +1067,73 @@ function updateAccount(accountData) {
 function deleteAccount(accountId) {
     return new Promise((resolve, reject) => {
         if (!db) return reject("DB not initialized");
-        const transaction = db.transaction(['accounts'], 'readwrite');
-        const objectStore = transaction.objectStore('accounts');
-        const request = objectStore.delete(accountId);
+        let tx;
+        try {
+            if (db.objectStoreNames && db.objectStoreNames.contains('accountPayments')) {
+                tx = db.transaction(['accounts', 'accountPayments'], 'readwrite');
+            } else {
+                tx = db.transaction(['accounts'], 'readwrite');
+            }
+        } catch (e) {
+            tx = db.transaction(['accounts'], 'readwrite');
+        }
+
+        const accountsStore = tx.objectStore('accounts');
+
+        try {
+            if (tx.objectStoreNames && tx.objectStoreNames.contains('accountPayments')) {
+                const paymentsStore = tx.objectStore('accountPayments');
+                const index = paymentsStore.index('accountId');
+                const req = index.openCursor(IDBKeyRange.only(accountId));
+                req.onsuccess = (e) => {
+                    const cursor = e.target.result;
+                    if (cursor) {
+                        try { cursor.delete(); } catch (_) { }
+                        cursor.continue();
+                    }
+                };
+            }
+        } catch (_) { }
+
+        const request = accountsStore.delete(accountId);
         request.onsuccess = (event) => resolve(event.target.result);
         request.onerror = (event) => reject(event.target.error);
     });
+}
+
+
+async function migrateAccountsToPayments() {
+    try {
+        if (!db) return;
+        if (!db.objectStoreNames.contains('accounts')) return;
+        if (!db.objectStoreNames.contains('accountPayments')) return;
+        try {
+            const already = await getSetting('migrated_accounts_payments_v1');
+            if (already === true || already === 'true') return;
+        } catch (e) { }
+
+        const accounts = await getAllAccounts();
+        for (const acc of (accounts || [])) {
+            const accountId = acc && acc.id != null ? acc.id : null;
+            if (!accountId) continue;
+            const existing = await getAccountPaymentsByAccountId(accountId);
+            if (Array.isArray(existing) && existing.length > 0) continue;
+            const amount = parseFloat(acc.paidFees || 0);
+            const date = (acc.paymentDate != null && String(acc.paymentDate).trim() !== '') ? String(acc.paymentDate) : new Date().toISOString().split('T')[0];
+            if (amount > 0) {
+                await addAccountPayment({
+                    accountId,
+                    clientId: acc.clientId || null,
+                    caseId: acc.caseId || null,
+                    amount,
+                    paymentDate: date,
+                    createdAt: new Date().toISOString()
+                });
+            }
+        }
+
+        try { await setSetting('migrated_accounts_payments_v1', 'true'); } catch (e) { }
+    } catch (e) { }
 }
 
 

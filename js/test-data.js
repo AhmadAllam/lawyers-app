@@ -779,6 +779,164 @@ window.__LAW_APP_TEST_DATA = {
         "updatedAt": "2026-01-05T13:10:00.000Z"
       }
     ],
+    "accountPayments": [
+      {
+        "id": 1,
+        "accountId": 1,
+        "clientId": 1,
+        "caseId": 1,
+        "amount": 2000,
+        "paymentDate": "2026-01-03",
+        "createdAt": "2026-01-03T10:00:00.000Z",
+        "updatedAt": "2026-01-03T10:00:00.000Z"
+      },
+      {
+        "id": 2,
+        "accountId": 1,
+        "clientId": 1,
+        "caseId": 1,
+        "amount": 3000,
+        "paymentDate": "",
+        "createdAt": "2026-01-06T09:15:00.000Z",
+        "updatedAt": "2026-01-06T09:15:00.000Z"
+      },
+
+      {
+        "id": 3,
+        "accountId": 2,
+        "clientId": 1,
+        "caseId": 2,
+        "amount": 5000,
+        "paymentDate": "2026-01-05",
+        "createdAt": "2026-01-05T11:20:00.000Z",
+        "updatedAt": "2026-01-05T11:20:00.000Z"
+      },
+      {
+        "id": 4,
+        "accountId": 2,
+        "clientId": 1,
+        "caseId": 2,
+        "amount": 4000,
+        "paymentDate": "2026-01-09",
+        "createdAt": "2026-01-09T12:30:00.000Z",
+        "updatedAt": "2026-01-09T12:30:00.000Z"
+      },
+      {
+        "id": 5,
+        "accountId": 2,
+        "clientId": 1,
+        "caseId": 2,
+        "amount": 3000,
+        "paymentDate": "",
+        "createdAt": "2026-01-11T09:40:00.000Z",
+        "updatedAt": "2026-01-11T09:40:00.000Z"
+      },
+
+      {
+        "id": 6,
+        "accountId": 3,
+        "clientId": 2,
+        "caseId": 4,
+        "amount": 3000,
+        "paymentDate": "2026-01-04",
+        "createdAt": "2026-01-04T08:10:00.000Z",
+        "updatedAt": "2026-01-04T08:10:00.000Z"
+      },
+      {
+        "id": 7,
+        "accountId": 3,
+        "clientId": 2,
+        "caseId": 4,
+        "amount": 3000,
+        "paymentDate": "2026-01-07",
+        "createdAt": "2026-01-07T08:40:00.000Z",
+        "updatedAt": "2026-01-07T08:40:00.000Z"
+      },
+
+      {
+        "id": 8,
+        "accountId": 4,
+        "clientId": 3,
+        "caseId": 6,
+        "amount": 10000,
+        "paymentDate": "2026-01-04",
+        "createdAt": "2026-01-04T16:00:00.000Z",
+        "updatedAt": "2026-01-04T16:00:00.000Z"
+      },
+      {
+        "id": 9,
+        "accountId": 4,
+        "clientId": 3,
+        "caseId": 6,
+        "amount": 5000,
+        "paymentDate": "2026-01-08",
+        "createdAt": "2026-01-08T10:00:00.000Z",
+        "updatedAt": "2026-01-08T10:00:00.000Z"
+      },
+
+      {
+        "id": 10,
+        "accountId": 5,
+        "clientId": 4,
+        "caseId": 7,
+        "amount": 2500,
+        "paymentDate": "2026-01-12",
+        "createdAt": "2026-01-12T12:10:00.000Z",
+        "updatedAt": "2026-01-12T12:10:00.000Z"
+      },
+      {
+        "id": 11,
+        "accountId": 5,
+        "clientId": 4,
+        "caseId": 7,
+        "amount": 1500,
+        "paymentDate": "",
+        "createdAt": "2026-01-14T09:45:00.000Z",
+        "updatedAt": "2026-01-14T09:45:00.000Z"
+      },
+
+      {
+        "id": 12,
+        "accountId": 6,
+        "clientId": 5,
+        "caseId": 8,
+        "amount": 4000,
+        "paymentDate": "2026-01-10",
+        "createdAt": "2026-01-10T10:05:00.000Z",
+        "updatedAt": "2026-01-10T10:05:00.000Z"
+      },
+      {
+        "id": 13,
+        "accountId": 6,
+        "clientId": 5,
+        "caseId": 8,
+        "amount": 3000,
+        "paymentDate": "",
+        "createdAt": "2026-01-16T11:20:00.000Z",
+        "updatedAt": "2026-01-16T11:20:00.000Z"
+      },
+
+      {
+        "id": 14,
+        "accountId": 7,
+        "clientId": 6,
+        "caseId": 9,
+        "amount": 6000,
+        "paymentDate": "2026-01-02",
+        "createdAt": "2026-01-02T15:10:00.000Z",
+        "updatedAt": "2026-01-02T15:10:00.000Z"
+      },
+      {
+        "id": 15,
+        "accountId": 7,
+        "clientId": 6,
+        "caseId": 9,
+        "amount": 6000,
+        "paymentDate": "2026-01-05",
+        "createdAt": "2026-01-05T13:10:00.000Z",
+        "updatedAt": "2026-01-05T13:10:00.000Z"
+      }
+    ],
     "expertSessions": [
       {
         "id": 1,

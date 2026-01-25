@@ -49,6 +49,23 @@ function __formatReportsExpertSessionsDateForDisplay(dateStr) {
     }
 }
 
+let __reportsExpertAllSessions = [];
+let __reportsExpertAllClients = [];
+let __reportsExpertCurrentSessions = [];
+let __reportsExpertCurrentClients = [];
+
+function __getReportsExpertSessionsDataForAction() {
+    try {
+        const s = Array.isArray(__reportsExpertCurrentSessions) ? __reportsExpertCurrentSessions : [];
+        const c = Array.isArray(__reportsExpertCurrentClients) ? __reportsExpertCurrentClients : [];
+        if (s.length || c.length) return { sessions: s, clients: c };
+    } catch (e) { }
+    return {
+        sessions: Array.isArray(__reportsExpertAllSessions) ? __reportsExpertAllSessions : [],
+        clients: Array.isArray(__reportsExpertAllClients) ? __reportsExpertAllClients : []
+    };
+}
+
 async function updateExpertSessionsReportContent(reportName, reportType) {
     const reportContent = document.getElementById('report-content');
 
@@ -58,6 +75,11 @@ async function updateExpertSessionsReportContent(reportName, reportType) {
 
         const expertSessions = await getAllExpertSessions();
         const clients = await getAllClients();
+
+        __reportsExpertAllSessions = Array.isArray(expertSessions) ? expertSessions : [];
+        __reportsExpertAllClients = Array.isArray(clients) ? clients : [];
+        __reportsExpertCurrentSessions = __reportsExpertAllSessions;
+        __reportsExpertCurrentClients = __reportsExpertAllClients;
 
         const colors = { bg: '#ec4899', bgHover: '#db2777', bgLight: '#fdf2f8', text: '#db2777', textLight: '#f9a8d4' };
 
@@ -103,7 +125,7 @@ async function updateExpertSessionsReportContent(reportName, reportType) {
                 
                 <!-- محتوى التقرير -->
                 <div class="bg-white rounded-lg border border-gray-200 pt-0 pb-6 pl-0 pr-0 relative flex-1 overflow-y-auto" id="expert-sessions-report-content">
-                    ${generateExpertSessionsReportHTML(expertSessions, clients)}
+                    ${generateExpertSessionsReportHTML(__reportsExpertCurrentSessions, __reportsExpertCurrentClients)}
                 </div>
             </div>
         `;
@@ -238,8 +260,7 @@ async function toggleExpertSessionsSort() {
         currentExpertSessionsSortOrder = currentExpertSessionsSortOrder === 'desc' ? 'asc' : 'desc';
 
 
-        const expertSessions = await getAllExpertSessions();
-        const clients = await getAllClients();
+        const { sessions: expertSessions, clients } = __getReportsExpertSessionsDataForAction();
 
 
         const sortButton = document.querySelector('button[onclick="toggleExpertSessionsSort()"]');
@@ -265,6 +286,8 @@ function filterExpertSessionsReport(searchTerm, expertSessions, clients) {
 
         const reportContent = document.getElementById('expert-sessions-report-content');
         reportContent.innerHTML = generateExpertSessionsReportHTML(expertSessions, clients, currentExpertSessionsSortOrder);
+        __reportsExpertCurrentSessions = Array.isArray(expertSessions) ? expertSessions : [];
+        __reportsExpertCurrentClients = Array.isArray(clients) ? clients : [];
         return;
     }
 
@@ -286,14 +309,15 @@ function filterExpertSessionsReport(searchTerm, expertSessions, clients) {
     });
 
     const reportContent = document.getElementById('expert-sessions-report-content');
+    __reportsExpertCurrentSessions = filteredSessions;
+    __reportsExpertCurrentClients = Array.isArray(clients) ? clients : [];
     reportContent.innerHTML = generateExpertSessionsReportHTML(filteredSessions, clients, currentExpertSessionsSortOrder);
 }
 
 
 async function printExpertSessionsReport() {
     try {
-        const expertSessions = await getAllExpertSessions();
-        const clients = await getAllClients();
+        const { sessions: expertSessions, clients } = __getReportsExpertSessionsDataForAction();
 
         let sessionsData = [...expertSessions];
         sessionsData.sort((a, b) => {
@@ -413,8 +437,7 @@ async function printExpertSessionsReport() {
 
 async function exportExpertSessionsReportExcel() {
     try {
-        const expertSessions = await getAllExpertSessions();
-        const clients = await getAllClients();
+        const { sessions: expertSessions, clients } = __getReportsExpertSessionsDataForAction();
 
 
         let sessionsData = [...expertSessions];
@@ -568,8 +591,7 @@ async function exportExpertSessionsReportExcel() {
 
 async function exportExpertSessionsReportPDF() {
     try {
-        const expertSessions = await getAllExpertSessions();
-        const clients = await getAllClients();
+        const { sessions: expertSessions, clients } = __getReportsExpertSessionsDataForAction();
 
         let sessionsData = [...expertSessions];
         sessionsData.sort((a, b) => {

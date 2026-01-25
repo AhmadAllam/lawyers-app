@@ -160,7 +160,7 @@ function displayExpertSessionsModal() {
                 <!-- الجانب الأيسر: قائمة جلسات الخبراء -->
                 <div class="flex-1 min-h-0 search-right-pane">
                     <div class="bg-white rounded-xl border border-gray-200 shadow-sm h-full min-h-0 overflow-hidden flex flex-col">
-                        <div id="expert-sessions-list" class="space-y-4 overscroll-contain p-3">
+                        <div id="expert-sessions-list" class="space-y-4 overscroll-contain p-2 md:p-3">
                             <div class="text-center text-gray-500 py-12 sticky top-0 bg-white">
                                 <i class="ri-loader-4-line animate-spin text-3xl mb-3"></i>
                                 <p class="text-lg">جاري تحميل جلسات الخبراء...</p>
@@ -346,46 +346,96 @@ function createExpertSessionCard(session, clientData) {
 
     return `
         <div class="session-card bg-white border border-gray-200 rounded-md p-2 hover:shadow-sm hover:border-purple-300 cursor-pointer">
-            <div class="flex items-center justify-between">
+            <!-- Mobile layout -->
+            <div class="md:hidden">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center shrink-0">
+                        <i class="ri-team-line text-sm"></i>
+                    </div>
+                    <div class="flex-1 space-y-1">
+                        <div class="grid grid-cols-2 gap-2 items-stretch">
+                            <div style="background-color: #f3f4f6; border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 8px; height: 32px; display: flex; align-items: center; justify-content: center; gap: 4px; text-align: center;">
+                                <span style="font-size: 11px; color: #4b5563;">النوع</span>
+                                <span style="font-size: 12px; font-weight: 700; color: #1f2937;">${session.sessionType || 'غير محدد'}</span>
+                            </div>
+                            <div style="background-color: #f3f4f6; border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 8px; height: 32px; display: flex; align-items: center; justify-content: center; gap: 4px; text-align: center;">
+                                <span style="font-size: 11px; color: #4b5563;">الحالة</span>
+                                <span style="font-size: 12px; font-weight: 700; color: #1f2937;">${session.status || 'غير محدد'}</span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 items-stretch">
+                            <div style="background-color: #f3f4f6; border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 8px; height: 32px; display: flex; align-items: center; justify-content: center; gap: 4px; text-align: center;">
+                                <span style="font-size: 11px; color: #4b5563;">التاريخ</span>
+                                <span style="font-size: 12px; font-weight: 700; color: #1f2937;">${__formatExpertSessionDateForDisplay(session.sessionDate)}</span>
+                            </div>
+                            <div style="background-color: #f3f4f6; border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 8px; height: 32px; display: flex; align-items: center; justify-content: center; gap: 4px; text-align: center;">
+                                <span style="font-size: 11px; color: #4b5563;">الوقت</span>
+                                <span style="font-size: 12px; font-weight: 700; color: #1f2937;">${session.sessionTime || 'غير محدد'}</span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 gap-2 items-stretch">
+                            <div style="background-color: #f3f4f6; border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 8px; height: 32px; display: flex; align-items: center; justify-content: center; gap: 4px; text-align: center;">
+                                <span style="font-size: 11px; color: #4b5563;">رقم القضية</span>
+                                <span style="font-size: 12px; font-weight: 700; color: #1f2937;">${session.caseNumber || 'غير محدد'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-center gap-2">
+                    <button onclick="editExpertSession(${session.id})" class="flex items-center gap-1 px-3 py-2 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 text-xs font-semibold">
+                        <i class="ri-pencil-line text-xs"></i>
+                        <span>تعديل</span>
+                    </button>
+                    <button onclick="deleteExpertSession(${session.id})" class="flex items-center gap-1 px-3 py-2 bg-red-100 text-red-600 rounded hover:bg-red-200 text-xs font-semibold">
+                        <i class="ri-delete-bin-line text-xs"></i>
+                        <span>حذف</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Desktop layout -->
+            <div class="hidden md:flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center">
                         <i class="ri-team-line text-sm"></i>
                     </div>
                     <div class="space-y-1">
                         <div class="grid grid-cols-2 gap-2 items-stretch">
-                            <div style="background-color: #e8f4f8; border: 1px solid #b3d9e8; border-radius: 4px; padding: 4px 8px; height: 32px; display: flex; align-items: center; justify-content: center; gap: 4px; text-align: center;">
-                                <span style="font-size: 11px; color: #4a90a4;">النوع</span>
-                                <span style="font-size: 12px; font-weight: 700; color: #2c5f6f;">${session.sessionType || 'غير محدد'}</span>
+                            <div style="background-color: #f3f4f6; border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 8px; height: 32px; display: flex; align-items: center; justify-content: center; gap: 4px; text-align: center;">
+                                <span style="font-size: 11px; color: #4b5563;">النوع</span>
+                                <span style="font-size: 12px; font-weight: 700; color: #1f2937;">${session.sessionType || 'غير محدد'}</span>
                             </div>
-                            <div style="background-color: #e8f5f0; border: 1px solid #b3ddc8; border-radius: 4px; padding: 4px 8px; height: 32px; display: flex; align-items: center; justify-content: center; gap: 4px; text-align: center;">
-                                <span style="font-size: 11px; color: #4a9d7a;">الحالة</span>
-                                <span style="font-size: 12px; font-weight: 700; color: #2c6d4f;">${session.status || 'غير محدد'}</span>
+                            <div style="background-color: #f3f4f6; border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 8px; height: 32px; display: flex; align-items: center; justify-content: center; gap: 4px; text-align: center;">
+                                <span style="font-size: 11px; color: #4b5563;">الحالة</span>
+                                <span style="font-size: 12px; font-weight: 700; color: #1f2937;">${session.status || 'غير محدد'}</span>
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-2 items-stretch">
-                            <div style="background-color: #ede8f4; border: 1px solid #d0b3e8; border-radius: 4px; padding: 4px 8px; height: 32px; display: flex; align-items: center; justify-content: center; gap: 4px; text-align: center;">
-                                <span style="font-size: 11px; color: #7a4aa4;">التاريخ</span>
-                                <span style="font-size: 12px; font-weight: 700; color: #5a2c6f;">${__formatExpertSessionDateForDisplay(session.sessionDate)}</span>
+                            <div style="background-color: #f3f4f6; border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 8px; height: 32px; display: flex; align-items: center; justify-content: center; gap: 4px; text-align: center;">
+                                <span style="font-size: 11px; color: #4b5563;">التاريخ</span>
+                                <span style="font-size: 12px; font-weight: 700; color: #1f2937;">${__formatExpertSessionDateForDisplay(session.sessionDate)}</span>
                             </div>
-                            <div style="background-color: #f4ede8; border: 1px solid #e8d0b3; border-radius: 4px; padding: 4px 8px; height: 32px; display: flex; align-items: center; justify-content: center; gap: 4px; text-align: center;">
-                                <span style="font-size: 11px; color: #a4774a;">الوقت</span>
-                                <span style="font-size: 12px; font-weight: 700; color: #6f4f2c;">${session.sessionTime || 'غير محدد'}</span>
+                            <div style="background-color: #f3f4f6; border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 8px; height: 32px; display: flex; align-items: center; justify-content: center; gap: 4px; text-align: center;">
+                                <span style="font-size: 11px; color: #4b5563;">الوقت</span>
+                                <span style="font-size: 12px; font-weight: 700; color: #1f2937;">${session.sessionTime || 'غير محدد'}</span>
                             </div>
                         </div>
                         <div class="grid grid-cols-1 gap-2 items-stretch">
-                            <div style="background-color: #f4e8ed; border: 1px solid #e8b3c8; border-radius: 4px; padding: 4px 8px; height: 32px; display: flex; align-items: center; justify-content: center; gap: 4px; text-align: center;">
-                                <span style="font-size: 11px; color: #a44a7a;">رقم القضية</span>
-                                <span style="font-size: 12px; font-weight: 700; color: #6f2c5a;">${session.caseNumber || 'غير محدد'}</span>
+                            <div style="background-color: #f3f4f6; border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 8px; height: 32px; display: flex; align-items: center; justify-content: center; gap: 4px; text-align: center;">
+                                <span style="font-size: 11px; color: #4b5563;">رقم القضية</span>
+                                <span style="font-size: 12px; font-weight: 700; color: #1f2937;">${session.caseNumber || 'غير محدد'}</span>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center gap-1">
-                    <button onclick="editExpertSession(${session.id})" class="p-1.5 bg-blue-100 text-blue-600 rounded hover:bg-blue-200">
+                <div class="flex flex-col items-center gap-2">
+                    <button onclick="editExpertSession(${session.id})" class="flex items-center gap-1 px-2 py-1.5 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 text-xs font-semibold">
                         <i class="ri-pencil-line text-xs"></i>
+                        <span>تعديل</span>
                     </button>
-                    <button onclick="deleteExpertSession(${session.id})" class="p-1.5 bg-red-100 text-red-600 rounded hover:bg-red-200">
+                    <button onclick="deleteExpertSession(${session.id})" class="flex items-center gap-1 px-2 py-1.5 bg-red-100 text-red-600 rounded hover:bg-red-200 text-xs font-semibold">
                         <i class="ri-delete-bin-line text-xs"></i>
+                        <span>حذف</span>
                     </button>
                 </div>
             </div>
@@ -1012,3 +1062,27 @@ function setupExpertSessionsHoverScrollBehavior() {
     
     enablePageScroll();
 }
+// Auto-open expert session from notification
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const xId = sessionStorage.getItem('temp_open_expert_id');
+        if (xId) {
+            sessionStorage.removeItem('temp_open_expert_id');
+            if (typeof initDB === 'function') await initDB();
+
+            setTimeout(() => {
+                const eid = parseInt(xId, 10);
+                if (typeof editExpertSession === 'function') {
+                    editExpertSession(eid);
+                } else if (typeof displayExpertSessionForm === 'function') {
+                    (async () => {
+                        try {
+                            const data = await getById('expert_sessions', eid);
+                            if (data) displayExpertSessionForm(eid, data);
+                        } catch (e) { }
+                    })();
+                }
+            }, 800);
+        }
+    } catch (e) { console.error(e); }
+});

@@ -15,6 +15,14 @@
             }
         })();
 
+        const isFirstRunSetupCompleted = (function () {
+            try {
+                return String(localStorage.getItem('lawyer_app_setup_completed') || '') === 'true';
+            } catch (_) {
+                return false;
+            }
+        })();
+
         try {
             if (!isDesktopApp) {
                 if (document.getElementById('app-loading-overlay')) {
@@ -761,9 +769,14 @@ window.addEventListener('DOMContentLoaded', async () => {
         }
     } catch (e) { }
     if (typeof enforceAppPassword === 'function') {
-        await enforceAppPassword();
-    }
+        const isSetupRunning = /\/setup\.html$/i.test(window.location.pathname || '');
+        const isSetupDone = String(localStorage.getItem('lawyer_app_setup_completed') || '') === 'true';
 
+        // تشغيل التحقق من كلمة المرور فقط إذا لم نكن في صفحة الإعداد، وتم الإنتهاء من الإعداد مسبقاً
+        if (!isSetupRunning && isSetupDone) {
+            await enforceAppPassword();
+        }
+    }
 
     try {
         const header = document.querySelector('header');
@@ -835,24 +848,6 @@ window.addEventListener('DOMContentLoaded', async () => {
         }
     } catch (e) { }
 
-    const copyableTitle = document.getElementById('copyable-title');
-    const pageTitleSpan = document.getElementById('page-title');
-    if (copyableTitle && pageTitleSpan) {
-        copyableTitle.addEventListener('click', async () => {
-            const text = pageTitleSpan.textContent.trim();
-            try {
-                await navigator.clipboard.writeText(text);
-                if (typeof showToast === 'function') showToast('تم النسخ', 'success');
-            } catch (e) {
-                const ta = document.createElement('textarea');
-                ta.value = text;
-                document.body.appendChild(ta);
-                ta.select();
-                document.execCommand('copy');
-                document.body.removeChild(ta);
-            }
-        });
-    }
     function addEyeToInput(input) {
         try {
             if (!input || input.dataset.eyeEnhanced === '1') return;

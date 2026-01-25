@@ -1,14 +1,11 @@
 let currentStep = 0;
 let wizardState = {
     officeName: '',
-    password: '',
-    passwordConfirm: '',
     chosenPath: '',
     loadDemoData: false
 };
 const steps = [
     { id: 'office', required: true },
-    { id: 'security', required: false },
 	{ id: 'storage', required: false },
     { id: 'demo', required: false },
     { id: 'done', required: false }
@@ -43,7 +40,6 @@ function render(){
 
     const s = steps[currentStep].id;
     if (s === 'office') cont.innerHTML = getOfficeHtml();
-    else if (s === 'security') cont.innerHTML = getSecurityHtml();
 	else if (s === 'storage') cont.innerHTML = getStorageHtml();
     else if (s === 'demo') cont.innerHTML = getDemoHtml();
     else if (s === 'done') cont.innerHTML = getDoneHtml();
@@ -69,26 +65,6 @@ function getOfficeHtml(){
         <label class="block text-sm mb-2">اسم المكتب</label>
         <input id="office-name-input" class="w-full rounded-xl p-3 bg-white text-black" placeholder="فريد الديب" />
         <p id="office-name-error-msg" class="text-red-300 text-sm mt-1 hidden">يرجى إدخال اسم المكتب</p>
-      </div>
-    `;
-}
-
-function getSecurityHtml(){
-    return `
-      <div>
-        <h2 class="text-2xl font-extrabold mb-2">الأمان</h2>
-        <p class="text-white/80 mb-6">يمكنك تعيين كلمة مرور لحماية البرنامج الآن، أو يمكنك التخطي.</p>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm mb-2">كلمة المرور</label>
-            <input id="app-password-input" type="password" class="w-full rounded-xl p-3 bg-white text-black" placeholder="••••••" />
-            <p id="password-error-msg" class="text-red-300 text-sm mt-1 hidden">تأكيد كلمة المرور غير مطابق</p>
-          </div>
-          <div>
-            <label class="block text-sm mb-2">تأكيد كلمة المرور</label>
-            <input id="app-password-confirm" type="password" class="w-full rounded-xl p-3 bg-white text-black" placeholder="••••••" />
-          </div>
-        </div>
       </div>
     `;
 }
@@ -156,56 +132,6 @@ function bindStepHandlers(stepId){
             officeInput.addEventListener('input', syncOfficeName);
             syncOfficeName();
         }
-    }
-    if (stepId === 'security') {
-        const passInput = $('app-password-input');
-        const confInput = $('app-password-confirm');
-        
-        if (passInput) passInput.value = wizardState.password;
-        if (confInput) confInput.value = wizardState.passwordConfirm;
-        
-        if (passInput) passInput.addEventListener('input', () => { 
-            wizardState.password = (passInput.value || ''); 
-            const passwordError = $('password-error-msg');
-            if (passwordError) passwordError.classList.add('hidden');
-        });
-        if (confInput) confInput.addEventListener('input', () => { 
-            wizardState.passwordConfirm = (confInput.value || ''); 
-            const passwordError = $('password-error-msg');
-            if (passwordError) passwordError.classList.add('hidden');
-        });
-
-        // Always-visible eye toggle for setup wizard password fields
-        (function attachSetupEyeToggle(){
-            function addEyeTo(input){
-                try {
-                    if (!input || input.dataset.eyeEnhanced === '1') return;
-                    const container = input.parentNode;
-                    const wrap = document.createElement('div');
-                    wrap.style.position = 'relative';
-                    if (container) { container.insertBefore(wrap, input); wrap.appendChild(input); }
-                    try { input.style.paddingLeft = '42px'; } catch(_){}
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.innerHTML = '<i class="ri-eye-line"></i>';
-                    btn.style.cssText = 'position:absolute;left:8px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;color:#475569;background:transparent;cursor:pointer;transition:background-color .2s, transform .1s;z-index:5;';
-                    btn.addEventListener('mouseenter',()=>{ try{ btn.style.backgroundColor = '#f1f5f9'; }catch(_){}});
-                    btn.addEventListener('mouseleave',()=>{ try{ btn.style.backgroundColor = 'transparent'; }catch(_){}});
-                    btn.addEventListener('click',()=>{
-                        try {
-                            const isPwd = input.type === 'password';
-                            input.type = isPwd ? 'text' : 'password';
-                            const ic = btn.querySelector('i');
-                            if (ic) ic.className = isPwd ? 'ri-eye-off-line' : 'ri-eye-line';
-                        } catch(_){}
-                    });
-                    wrap.appendChild(btn);
-                    input.dataset.eyeEnhanced = '1';
-                } catch(_){}
-            }
-            addEyeTo(passInput);
-            addEyeTo(confInput);
-        })();
     }
     if (stepId === 'storage') {
         const btn = $('choose-path-btn');
@@ -483,56 +409,6 @@ async function handleNext(){
         try { await setSetting('officeName', name); } catch (e) {}
         
         wizardState.officeName = name;
-    } else if (id === 'security') {
-        
-        const pass = (document.getElementById('app-password-input')?.value || '').trim();
-        const conf = (document.getElementById('app-password-confirm')?.value || '').trim();
-        
-        const hasAnyData = pass || conf;
-        
-        if (!hasAnyData) {
-            
-            if (currentStep < steps.length - 1) {
-                currentStep += 1;
-                render();
-            }
-            return;
-        }
-        
-        
-        if (pass || conf) {
-            if (!pass || pass !== conf) { 
-                const passwordError = $('password-error-msg');
-                if (passwordError) passwordError.classList.remove('hidden');
-                return; 
-            }
-        }
-        
-        
-        
-        wizardState.password = pass;
-        wizardState.passwordConfirm = conf;
-        
-        
-        if (pass) {
-            const passwordError = $('password-error-msg');
-            if (passwordError) passwordError.classList.add('hidden');
-            
-            try {
-                await setSetting('appPasswordPlain', pass);
-                await setSetting('appPasswordHash', '');
-                await setSetting('appPasswordLen', pass.length);
-            } catch (e) {}
-
-            try {
-                if (typeof getUserByUsername === 'function' && typeof updateUser === 'function') {
-                    const adminUser = await getUserByUsername('Admin');
-                    if (adminUser && adminUser.id != null && adminUser.isAdmin === true) {
-                        await updateUser(adminUser.id, { password: pass });
-                    }
-                }
-            } catch (e) {}
-        }
     } else if (id === 'storage') {
         
         const chosenPathText = $('chosen-path')?.textContent?.trim();

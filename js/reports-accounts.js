@@ -15,6 +15,25 @@ async function __getReportsAccountsDateLocaleSetting() {
     return locale;
 }
 
+let __reportsAccountsAllAccounts = [];
+let __reportsAccountsAllClients = [];
+let __reportsAccountsCurrentAccounts = [];
+let __reportsAccountsCurrentClients = [];
+
+function __getReportsAccountsDataForAction() {
+    try {
+        const a = Array.isArray(__reportsAccountsCurrentAccounts) ? __reportsAccountsCurrentAccounts : [];
+        const c = Array.isArray(__reportsAccountsCurrentClients) ? __reportsAccountsCurrentClients : [];
+        if (a.length || c.length) {
+            return { accounts: a, clients: c };
+        }
+    } catch (e) { }
+    return {
+        accounts: Array.isArray(__reportsAccountsAllAccounts) ? __reportsAccountsAllAccounts : [],
+        clients: Array.isArray(__reportsAccountsAllClients) ? __reportsAccountsAllClients : []
+    };
+}
+
 async function updateAccountsReportContent(reportName, reportType) {
     const reportContent = document.getElementById('report-content');
 
@@ -30,6 +49,10 @@ async function updateAccountsReportContent(reportName, reportType) {
 
         const accounts = await getAllAccounts();
         const clients = await getAllClients();
+        __reportsAccountsAllAccounts = Array.isArray(accounts) ? accounts : [];
+        __reportsAccountsAllClients = Array.isArray(clients) ? clients : [];
+        __reportsAccountsCurrentAccounts = __reportsAccountsAllAccounts;
+        __reportsAccountsCurrentClients = __reportsAccountsAllClients;
 
         const colors = { bg: '#14b8a6', bgHover: '#0d9488', bgLight: '#f0fdfa', text: '#0d9488', textLight: '#7dd3fc' };
 
@@ -75,7 +98,7 @@ async function updateAccountsReportContent(reportName, reportType) {
                 
                 <!-- محتوى التقرير -->
                 <div class="bg-white rounded-lg border border-gray-200 pt-0 pb-6 pl-0 pr-0 relative flex-1 overflow-y-auto" id="accounts-report-content">
-                    ${generateAccountsReportHTML(accounts, clients)}
+                    ${generateAccountsReportHTML(__reportsAccountsCurrentAccounts, __reportsAccountsCurrentClients)}
                 </div>
             </div>
         `;
@@ -303,8 +326,7 @@ async function toggleAccountsSort() {
         currentAccountsSortOrder = currentAccountsSortOrder === 'desc' ? 'asc' : 'desc';
 
 
-        const accounts = await getAllAccounts();
-        const clients = await getAllClients();
+        const { accounts, clients } = __getReportsAccountsDataForAction();
 
 
         const sortButton = document.querySelector('button[onclick="toggleAccountsSort()"]');
@@ -330,6 +352,8 @@ function filterAccountsReport(searchTerm, accounts, clients) {
 
         const reportContent = document.getElementById('accounts-report-content');
         reportContent.innerHTML = generateAccountsReportHTML(accounts, clients, currentAccountsSortOrder);
+        __reportsAccountsCurrentAccounts = Array.isArray(accounts) ? accounts : [];
+        __reportsAccountsCurrentClients = Array.isArray(clients) ? clients : [];
         return;
     }
 
@@ -343,6 +367,8 @@ function filterAccountsReport(searchTerm, accounts, clients) {
         filteredClients.some(client => client.id === account.clientId)
     );
 
+    __reportsAccountsCurrentAccounts = filteredAccounts;
+    __reportsAccountsCurrentClients = filteredClients;
     const reportContent = document.getElementById('accounts-report-content');
     reportContent.innerHTML = generateAccountsReportHTML(filteredAccounts, filteredClients, currentAccountsSortOrder);
 }
@@ -351,8 +377,7 @@ function filterAccountsReport(searchTerm, accounts, clients) {
 async function printAccountsReport() {
     try {
         await __getReportsAccountsDateLocaleSetting();
-        const accounts = await getAllAccounts();
-        const clients = await getAllClients();
+        const { accounts, clients } = __getReportsAccountsDataForAction();
 
 
         const clientGroups = {};
@@ -480,8 +505,7 @@ async function printAccountsReport() {
 async function exportAccountsReport() {
     try {
         await __getReportsAccountsDateLocaleSetting();
-        const accounts = await getAllAccounts();
-        const clients = await getAllClients();
+        const { accounts, clients } = __getReportsAccountsDataForAction();
 
 
         const clientGroups = {};
@@ -640,8 +664,7 @@ async function exportAccountsReport() {
 
 async function exportAccountsReportPDF() {
     try {
-        const accounts = await getAllAccounts();
-        const clients = await getAllClients();
+        const { accounts, clients } = __getReportsAccountsDataForAction();
 
 
         const clientGroups = {};

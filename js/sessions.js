@@ -715,3 +715,32 @@ async function handleSaveSession(e, sessionId) {
 
     }
 }
+
+// Auto-open session from notification
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const openId = sessionStorage.getItem('temp_open_session_id');
+        const openCaseId = sessionStorage.getItem('temp_open_case_id');
+
+        if (openId && openCaseId) {
+            sessionStorage.removeItem('temp_open_session_id');
+            sessionStorage.removeItem('temp_open_case_id');
+
+            if (typeof initDB === 'function') await initDB();
+
+            if (typeof stateManager !== 'undefined') {
+                stateManager.currentCaseId = parseInt(openCaseId, 10);
+            }
+
+            setTimeout(async () => {
+                try {
+                    const sid = parseInt(openId, 10);
+                    const data = await getById('sessions', sid);
+                    if (typeof displaySessionForm === 'function' && data) {
+                        displaySessionForm(sid, data);
+                    }
+                } catch (e) { console.error('Auto-open session error:', e); }
+            }, 600);
+        }
+    } catch (err) { console.error(err); }
+});

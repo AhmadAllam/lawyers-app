@@ -137,7 +137,12 @@ window.USE_NOTIFICATIONS_PORTAL = true;
               const caseNum = caseInfo ? (caseInfo.caseNumber || '') : '';
               const roll = s.roll || '';
               const rollText = roll ? ` - رول ${roll}` : '';
-              todayLines.push(`قضية ${caseNum}${rollText}`);
+              todayLines.push({
+                text: `قضية ${caseNum}${rollText}`,
+                type: 'session',
+                id: s.id,
+                caseId: s.caseId
+              });
           }
           items.push({ title: `جلسات اليوم (${todaySessionsList.length})`, lines: todayLines });
         }
@@ -148,21 +153,40 @@ window.USE_NOTIFICATIONS_PORTAL = true;
               const caseNum = caseInfo ? (caseInfo.caseNumber || '') : '';
               const roll = s.roll || '';
               const rollText = roll ? ` - رول ${roll}` : '';
-              tomorrowLines.push(`قضية ${caseNum}${rollText}`);
+              tomorrowLines.push({
+                text: `قضية ${caseNum}${rollText}`,
+                type: 'session',
+                id: s.id,
+                caseId: s.caseId
+              });
           }
           items.push({ title: `جلسات الغد (${tomorrowSessionsList.length})`, lines: tomorrowLines });
         }
         if (Array.isArray(todayExpertsList) && todayExpertsList.length) {
-          
-          items.push({ title: `خبراء اليوم (${todayExpertsList.length})`, lines: todayExpertsList.map(s => `${s.sessionType || 'جلسة'} - ${s.sessionTime || ''}`) });
+          const lines = todayExpertsList.map(s => ({
+            text: `${s.sessionType || 'جلسة'} - ${s.sessionTime || ''}`,
+            type: 'expert',
+            id: s.id,
+            caseId: s.clientId // expert sessions use clientId mainly, but we might need case info. Using clientId as fallback or if API uses it.
+          }));
+          items.push({ title: `خبراء اليوم (${todayExpertsList.length})`, lines: lines });
         }
         if (Array.isArray(tomorrowExpertsList) && tomorrowExpertsList.length) {
-          
-          items.push({ title: `خبراء الغد (${tomorrowExpertsList.length})`, lines: tomorrowExpertsList.map(s => `${s.sessionType || 'جلسة'} - ${s.sessionTime || ''}`) });
+           const lines = tomorrowExpertsList.map(s => ({
+            text: `${s.sessionType || 'جلسة'} - ${s.sessionTime || ''}`,
+            type: 'expert',
+            id: s.id,
+            caseId: s.clientId
+          }));
+          items.push({ title: `خبراء الغد (${tomorrowExpertsList.length})`, lines: lines });
         }
         if (Array.isArray(tomorrowAdminList) && tomorrowAdminList.length) {
-          
-          items.push({ title: `أعمال الغد (${tomorrowAdminList.length})`, lines: tomorrowAdminList.map(a => `${a.title || a.task || 'عمل'}`) });
+           const lines = tomorrowAdminList.map(a => ({
+            text: `${a.title || a.task || 'عمل'}`,
+            type: 'admin',
+            id: a.id
+          }));
+          items.push({ title: `أعمال الغد (${tomorrowAdminList.length})`, lines: lines });
         }
 
         if (!items.length) {
@@ -181,10 +205,51 @@ window.USE_NOTIFICATIONS_PORTAL = true;
           header.innerHTML = '<span class="material-symbols-outlined" style="color:#4b5563;font-size:18px;">notifications</span>' +
                              `<span style="font-weight:700;">${it.title}</span>`;
           block.appendChild(header);
-          it.lines.slice(0,3).forEach(line => {
+          it.lines.slice(0, 3).forEach(lineItem => {
             const row = document.createElement('div');
-            row.style.cssText = 'padding:4px 8px;color:#374151;';
-            row.textContent = line;
+            row.style.cssText = 'padding:4px 8px;color:#374151;display:flex;align-items:center;justify-content:space-between;gap:8px;';
+            
+            // Text logic
+            const textHTML = typeof lineItem === 'string' ? lineItem : (lineItem.text || '');
+            const txt = document.createElement('span');
+            txt.textContent = textHTML;
+            row.appendChild(txt);
+
+            // Action Button logic
+            if (typeof lineItem === 'object' && lineItem.type) {
+                const btn = document.createElement('button');
+                btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">visibility</span>';
+                btn.title = 'عرض التفاصيل';
+                btn.style.cssText = 'border:none;background:transparent;color:#3b82f6;cursor:pointer;padding:2px;border-radius:4px;display:flex;align-items:center;';
+                btn.onmouseover = () => btn.style.background = '#eff6ff';
+                btn.onmouseout = () => btn.style.background = 'transparent';
+                
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    // Close portal
+                    if(typeof hidePopover === 'function') hidePopover(); else { try{ document.getElementById('notifications-portal-popover').style.display='none'; }catch(e){} }
+                    
+                    // Navigate logic
+                    const type = lineItem.type;
+                    const id = lineItem.id;
+                    const caseId = lineItem.caseId;
+                    
+                    if (type === 'session') {
+                        sessionStorage.setItem('temp_open_case_id', caseId);
+                        sessionStorage.setItem('temp_open_session_id', id);
+                        window.location.href = 'sessions.html';
+                    } else if (type === 'expert') {
+                         sessionStorage.setItem('temp_open_expert_id', id);
+                         // expert mostly needs just ID or we can navigate
+                         window.location.href = 'expert-sessions.html';
+                    } else if (type === 'admin') {
+                         sessionStorage.setItem('temp_open_admin_id', id);
+                         window.location.href = 'administrative.html';
+                    }
+                };
+                row.appendChild(btn);
+            }
+            
             block.appendChild(row);
           });
           frag.appendChild(block);

@@ -21,23 +21,47 @@ async function refreshWebAppToLatest() {
     try {
         try { updateUpdateStatus('جاري تحديث الموقع...', 'checking'); } catch (_) { }
 
+        const shouldResetOfflineCache = (function () {
+            try {
+                return localStorage.getItem('pwa_offline_ready') === '1';
+            } catch (_) {
+                return false;
+            }
+        })();
+
         try {
-            if ('serviceWorker' in navigator) {
-                const regs = await navigator.serviceWorker.getRegistrations();
-                await Promise.allSettled((regs || []).map(r => r.unregister()));
+            if (typeof sessionStorage !== 'undefined') {
+                sessionStorage.setItem('law_app_last_refresh_reason', shouldResetOfflineCache ? 'offline_reset' : 'reload_only');
             }
         } catch (_) { }
 
-        try {
-            if (typeof caches !== 'undefined' && caches && typeof caches.keys === 'function') {
-                const keys = await caches.keys();
-                await Promise.allSettled((keys || []).map(k => caches.delete(k)));
-            }
-        } catch (_) { }
+        // IMPORTANT: Do not disrupt normal browser users.
+        // Only reset SW/cache if the user explicitly prepared offline files before.
+        if (shouldResetOfflineCache) {
+            try {
+                if ('serviceWorker' in navigator) {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    await Promise.allSettled((regs || []).map(r => r.unregister()));
+                }
+            } catch (_) { }
 
-        try { localStorage.removeItem('pwa_offline_ready'); } catch (_) { }
+            try {
+                if (typeof caches !== 'undefined' && caches && typeof caches.keys === 'function') {
+                    const keys = await caches.keys();
+                    await Promise.allSettled((keys || []).map(k => caches.delete(k)));
+                }
+            } catch (_) { }
+
+            try { localStorage.removeItem('pwa_offline_ready'); } catch (_) { }
+        }
 
         try {
+            try { updateUpdateStatus('جاري إعادة تحميل الصفحة...', 'checking'); } catch (_) { }
+            try {
+                if (typeof showToast === 'function') {
+                    showToast('جاري إعادة تحميل الصفحة لتطبيق آخر تحديث...', 'info');
+                }
+            } catch (_) { }
             const sep = (location.search && location.search.length > 0) ? '&' : '?';
             location.replace(location.pathname + location.search + sep + 'reloaded=' + Date.now() + location.hash);
         } catch (_) {
@@ -46,6 +70,48 @@ async function refreshWebAppToLatest() {
     } catch (_) {
         try { location.reload(); } catch (_) { }
     }
+}
+
+function __notifyWebReloadResultIfAny() {
+    try {
+        if (typeof location === 'undefined') return;
+        const url = new URL(location.href);
+        const reloaded = url.searchParams.get('reloaded');
+        if (!reloaded) return;
+
+        let reason = '';
+        try {
+            reason = (typeof sessionStorage !== 'undefined') ? (sessionStorage.getItem('law_app_last_refresh_reason') || '') : '';
+        } catch (_) { }
+
+        const msg = (reason === 'offline_reset')
+            ? 'تم تحديث ملفات الأوفلاين. افتح الصفحة من جديد للتأكد.'
+            : 'تم تحديث الصفحة.';
+
+        try {
+            if (typeof updateUpdateStatus === 'function') {
+                updateUpdateStatus(msg, 'up-to-date');
+            }
+        } catch (_) { }
+
+        try {
+            if (typeof showToast === 'function') {
+                showToast(msg, 'success');
+            }
+        } catch (_) { }
+
+        try {
+            if (typeof sessionStorage !== 'undefined') {
+                sessionStorage.removeItem('law_app_last_refresh_reason');
+            }
+        } catch (_) { }
+
+        // Clean the URL so the message doesn't repeat.
+        try {
+            url.searchParams.delete('reloaded');
+            history.replaceState(null, '', url.pathname + (url.search ? url.search : '') + url.hash);
+        } catch (_) { }
+    } catch (_) { }
 }
 
 
@@ -452,6 +518,7 @@ async function getCurrentVersion() {
 // تهيئة التحديثات عند تحميل الصفحة
 if (typeof document !== 'undefined') {
     document.addEventListener('DOMContentLoaded', () => {
+        try { __notifyWebReloadResultIfAny(); } catch (_) { }
         initUpdater();
     });
 }

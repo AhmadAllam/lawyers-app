@@ -15,6 +15,23 @@ async function __getReportsPoaDateLocaleSetting() {
     return locale;
 }
 
+let __reportsPoaAllClients = [];
+let __reportsPoaAllCases = [];
+let __reportsPoaCurrentClients = [];
+let __reportsPoaCurrentCases = [];
+
+function __getReportsPoaDataForAction() {
+    try {
+        const c = Array.isArray(__reportsPoaCurrentClients) ? __reportsPoaCurrentClients : [];
+        const cs = Array.isArray(__reportsPoaCurrentCases) ? __reportsPoaCurrentCases : [];
+        if (c.length || cs.length) return { clients: c, cases: cs };
+    } catch (e) { }
+    return {
+        clients: Array.isArray(__reportsPoaAllClients) ? __reportsPoaAllClients : [],
+        cases: Array.isArray(__reportsPoaAllCases) ? __reportsPoaAllCases : []
+    };
+}
+
 async function updateClientsFilesReportContent(reportName, reportType) {
     const reportContent = document.getElementById('report-content');
 
@@ -24,6 +41,11 @@ async function updateClientsFilesReportContent(reportName, reportType) {
 
         const clients = await getAllClients();
         const cases = await getAllCases();
+
+        __reportsPoaAllClients = Array.isArray(clients) ? clients : [];
+        __reportsPoaAllCases = Array.isArray(cases) ? cases : [];
+        __reportsPoaCurrentClients = __reportsPoaAllClients;
+        __reportsPoaCurrentCases = __reportsPoaAllCases;
 
         const colors = { bg: '#3b82f6', bgHover: '#2563eb', bgLight: '#eff6ff', text: '#2563eb', textLight: '#93c5fd' };
 
@@ -69,7 +91,7 @@ async function updateClientsFilesReportContent(reportName, reportType) {
                 
                 <!-- محتوى التقرير -->
                 <div class="bg-white rounded-lg border border-gray-200 pt-0 pb-6 pl-0 pr-0 relative flex-1 overflow-y-auto" id="clients-files-report-content">
-                    ${generateClientsFilesReportHTML(clients, cases)}
+                    ${generateClientsFilesReportHTML(__reportsPoaCurrentClients, __reportsPoaCurrentCases)}
                 </div>
             </div>
         `;
@@ -214,8 +236,7 @@ async function toggleClientsFilesSort() {
         currentClientsFilesSortOrder = currentClientsFilesSortOrder === 'desc' ? 'asc' : 'desc';
 
 
-        const clients = await getAllClients();
-        const cases = await getAllCases();
+        const { clients, cases } = __getReportsPoaDataForAction();
 
 
         const sortButton = document.querySelector('button[onclick="toggleClientsFilesSort()"]');
@@ -241,6 +262,8 @@ function filterClientsFilesReport(searchTerm, clients, cases) {
 
         const reportContent = document.getElementById('clients-files-report-content');
         reportContent.innerHTML = generateClientsFilesReportHTML(clients, cases, currentClientsFilesSortOrder);
+        __reportsPoaCurrentClients = Array.isArray(clients) ? clients : [];
+        __reportsPoaCurrentCases = Array.isArray(cases) ? cases : [];
         return;
     }
 
@@ -277,6 +300,8 @@ function filterClientsFilesReport(searchTerm, clients, cases) {
         );
     });
 
+    __reportsPoaCurrentClients = filteredClients;
+    __reportsPoaCurrentCases = Array.isArray(cases) ? cases : [];
     const reportContent = document.getElementById('clients-files-report-content');
     reportContent.innerHTML = generateClientsFilesReportHTML(filteredClients, cases, currentClientsFilesSortOrder);
 }
@@ -285,8 +310,7 @@ function filterClientsFilesReport(searchTerm, clients, cases) {
 async function printClientsFilesReport() {
     try {
         await __getReportsPoaDateLocaleSetting();
-        const clients = await getAllClients();
-        const cases = await getAllCases();
+        const { clients, cases } = __getReportsPoaDataForAction();
 
 
         const clientCasesMap = {};
@@ -426,8 +450,7 @@ async function printClientsFilesReport() {
 
 async function exportClientsFilesReportExcel() {
     try {
-        const clients = await getAllClients();
-        const cases = await getAllCases();
+        const { clients, cases } = __getReportsPoaDataForAction();
 
 
         const clientCasesMap = {};
@@ -597,8 +620,7 @@ async function exportClientsFilesReportExcel() {
 async function exportClientsFilesReportPDF() {
     try {
         await __getReportsPoaDateLocaleSetting();
-        const clients = await getAllClients();
-        const cases = await getAllCases();
+        const { clients, cases } = __getReportsPoaDataForAction();
 
 
         const clientCasesMap = {};

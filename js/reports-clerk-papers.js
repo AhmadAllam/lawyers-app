@@ -26,6 +26,23 @@ function __formatReportsClerkPapersDateForDisplay(dateStr) {
     }
 }
 
+let __reportsClerkAllPapers = [];
+let __reportsClerkAllClients = [];
+let __reportsClerkCurrentPapers = [];
+let __reportsClerkCurrentClients = [];
+
+function __getReportsClerkPapersDataForAction() {
+    try {
+        const p = Array.isArray(__reportsClerkCurrentPapers) ? __reportsClerkCurrentPapers : [];
+        const c = Array.isArray(__reportsClerkCurrentClients) ? __reportsClerkCurrentClients : [];
+        if (p.length || c.length) return { papers: p, clients: c };
+    } catch (e) { }
+    return {
+        papers: Array.isArray(__reportsClerkAllPapers) ? __reportsClerkAllPapers : [],
+        clients: Array.isArray(__reportsClerkAllClients) ? __reportsClerkAllClients : []
+    };
+}
+
 async function updateClerkPapersReportContent(reportName, reportType) {
     const reportContent = document.getElementById('report-content');
 
@@ -35,6 +52,11 @@ async function updateClerkPapersReportContent(reportName, reportType) {
 
         const clerkPapers = await getAllClerkPapers();
         const clients = await getAllClients();
+
+        __reportsClerkAllPapers = Array.isArray(clerkPapers) ? clerkPapers : [];
+        __reportsClerkAllClients = Array.isArray(clients) ? clients : [];
+        __reportsClerkCurrentPapers = __reportsClerkAllPapers;
+        __reportsClerkCurrentClients = __reportsClerkAllClients;
 
         const colors = { bg: '#059669', bgHover: '#047857', bgLight: '#f0fdf4', text: '#059669', textLight: '#86efac' };
 
@@ -81,7 +103,7 @@ async function updateClerkPapersReportContent(reportName, reportType) {
                 
                 <!-- محتوى التقرير -->
                 <div class="bg-white rounded-lg border border-gray-200 pt-0 pb-6 pl-0 pr-0 relative flex-1 overflow-y-auto" id="clerk-papers-report-content">
-                    ${generateClerkPapersReportHTML(clerkPapers, clients)}
+                    ${generateClerkPapersReportHTML(__reportsClerkCurrentPapers, __reportsClerkCurrentClients)}
                 </div>
             </div>
         `;
@@ -341,8 +363,7 @@ async function toggleClerkPapersSort() {
         currentClerkPapersSortOrder = currentClerkPapersSortOrder === 'desc' ? 'asc' : 'desc';
 
 
-        const clerkPapers = await getAllClerkPapers();
-        const clients = await getAllClients();
+        const { papers: clerkPapers, clients } = __getReportsClerkPapersDataForAction();
 
 
         const sortButton = document.querySelector('button[onclick="toggleClerkPapersSort()"]');
@@ -369,8 +390,8 @@ async function filterClerkPapersByType(type) {
         currentClerkPapersTypeFilter = type;
 
 
-        const clerkPapers = await getAllClerkPapers();
-        const clients = await getAllClients();
+        const clerkPapers = Array.isArray(__reportsClerkAllPapers) ? __reportsClerkAllPapers : [];
+        const clients = Array.isArray(__reportsClerkAllClients) ? __reportsClerkAllClients : [];
 
 
         document.querySelectorAll('.clerk-papers-stats-grid > div').forEach(card => {
@@ -393,8 +414,23 @@ async function filterClerkPapersByType(type) {
         }
 
 
+        let filtered = clerkPapers;
+        const norm = (t) => String(t || '').replace(/[إأآ]/g, 'ا').toLowerCase();
+        if (filterType === 'إعلان') {
+            filtered = clerkPapers.filter(paper => norm(paper.paperType).includes('اعلان'));
+        } else if (filterType === 'إنذار') {
+            filtered = clerkPapers.filter(paper => norm(paper.paperType).includes('انذار'));
+        } else if (filterType === 'other') {
+            filtered = clerkPapers.filter(paper => {
+                const tp = norm(paper.paperType);
+                return tp && !tp.includes('اعلان') && !tp.includes('انذار');
+            });
+        }
+
+        __reportsClerkCurrentPapers = filtered;
+        __reportsClerkCurrentClients = clients;
         const reportContent = document.getElementById('clerk-papers-report-content');
-        reportContent.innerHTML = generateClerkPapersReportHTML(clerkPapers, clients, currentClerkPapersSortOrder, filterType);
+        reportContent.innerHTML = generateClerkPapersReportHTML(filtered, clients, currentClerkPapersSortOrder, filterType);
 
     } catch (error) {
         console.error('Error filtering clerk papers by type:', error);
@@ -405,8 +441,7 @@ async function filterClerkPapersByType(type) {
 
 async function toggleClerkPapersFilter() {
     try {
-        const clerkPapers = await getAllClerkPapers();
-        const clients = await getAllClients();
+        const { papers: clerkPapers, clients } = __getReportsClerkPapersDataForAction();
 
         const colorClasses = {
             green: 'bg-green-100 text-green-700 hover:bg-green-200',
@@ -434,6 +469,8 @@ function filterClerkPapersReport(searchTerm, clerkPapers, clients) {
 
         const reportContent = document.getElementById('clerk-papers-report-content');
         reportContent.innerHTML = generateClerkPapersReportHTML(clerkPapers, clients, currentClerkPapersSortOrder, currentClerkPapersTypeFilter);
+        __reportsClerkCurrentPapers = Array.isArray(clerkPapers) ? clerkPapers : [];
+        __reportsClerkCurrentClients = Array.isArray(clients) ? clients : [];
         return;
     }
 
@@ -456,6 +493,8 @@ function filterClerkPapersReport(searchTerm, clerkPapers, clients) {
     });
 
     const reportContent = document.getElementById('clerk-papers-report-content');
+    __reportsClerkCurrentPapers = filteredPapers;
+    __reportsClerkCurrentClients = Array.isArray(clients) ? clients : [];
     reportContent.innerHTML = generateClerkPapersReportHTML(filteredPapers, clients, currentClerkPapersSortOrder, currentClerkPapersTypeFilter);
 }
 
@@ -463,8 +502,7 @@ function filterClerkPapersReport(searchTerm, clerkPapers, clients) {
 async function printClerkPapersReport() {
     try {
 
-        const clerkPapers = await getAllClerkPapers();
-        const clients = await getAllClients();
+        const { papers: clerkPapers, clients } = __getReportsClerkPapersDataForAction();
 
 
         let clerkPapersData = [...clerkPapers];
@@ -594,8 +632,7 @@ async function printClerkPapersReport() {
 
 async function exportClerkPapersReport() {
     try {
-        const clerkPapers = await getAllClerkPapers();
-        const clients = await getAllClients();
+        const { papers: clerkPapers, clients } = __getReportsClerkPapersDataForAction();
 
 
         let filteredPapers = clerkPapers;
@@ -755,8 +792,7 @@ async function exportClerkPapersReport() {
 
 async function exportClerkPapersReportPDF() {
     try {
-        const clerkPapers = await getAllClerkPapers();
-        const clients = await getAllClients();
+        const { papers: clerkPapers, clients } = __getReportsClerkPapersDataForAction();
 
 
         let clerkPapersData = [...clerkPapers];
