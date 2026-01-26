@@ -36,12 +36,16 @@ async function showInlineAddPaymentRow(accountId) {
                 <div class="font-bold text-green-800 mb-3 text-base">إضافة دفعة جديدة</div>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">المبلغ</label>
-                        <input type="number" id="inline-payment-amount" step="0.01" min="0" class="w-full px-4 py-3 text-base bg-white border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 font-bold" placeholder="مثال: 1000">
+                        <div class="flex items-stretch">
+                            <label class="px-3 py-2 border-2 border-gray-300 bg-gray-100 text-sm font-bold text-gray-700 shrink-0 w-28 text-right rounded-r-lg">المبلغ</label>
+                            <input type="number" id="inline-payment-amount" step="0.01" min="0" class="flex-1 px-4 py-3 text-base bg-white border-2 border-gray-300 rounded-l-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 -mr-px font-bold" placeholder="مثال: 1000">
+                        </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">التاريخ</label>
-                        <input type="text" id="inline-payment-date" class="w-full px-4 py-3 text-base bg-white border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 font-bold" placeholder="مثال: 15/12/2025">
+                        <div class="flex items-stretch">
+                            <label class="px-3 py-2 border-2 border-gray-300 bg-gray-100 text-sm font-bold text-gray-700 shrink-0 w-28 text-right rounded-r-lg">التاريخ</label>
+                            <input type="text" id="inline-payment-date" class="flex-1 px-4 py-3 text-base bg-white border-2 border-gray-300 rounded-l-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 -mr-px font-bold" placeholder="مثال: 15/12/2025">
+                        </div>
                     </div>
                 </div>
                 <div class="flex gap-2 justify-end mt-4">
@@ -1638,15 +1642,23 @@ async function displayAccountForm(accountId = null) {
                     const locale = await __getAccountsDateLocaleSetting();
                     const rowId = 'dp_' + Math.random().toString(16).slice(2);
                     const html = `
-                        <div class="draft-payment-row grid grid-cols-1 lg:grid-cols-12 gap-2 bg-gray-50 border border-gray-200 rounded-md p-2" data-row-id="${rowId}">
-                            <div class="lg:col-span-5">
-                                <input type="number" class="draft-payment-amount w-full px-3 py-2 border border-gray-300 rounded-md font-bold" placeholder="مبلغ الدفعة" step="0.01" min="0">
-                            </div>
-                            <div class="lg:col-span-5">
-                                <input type="text" class="draft-payment-date w-full px-3 py-2 border border-gray-300 rounded-md font-bold" placeholder="تاريخ الدفعة">
-                            </div>
-                            <div class="lg:col-span-2 flex justify-end">
-                                <button type="button" class="remove-draft-payment px-3 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200">حذف</button>
+                        <div class="draft-payment-row bg-gray-50 border border-gray-200 rounded-md p-2" data-row-id="${rowId}">
+                            <div class="grid grid-cols-1 lg:grid-cols-12 gap-2">
+                                <div class="lg:col-span-5">
+                                    <div class="flex items-stretch">
+                                        <label class="px-3 py-2 border-2 border-gray-300 bg-gray-100 text-sm font-bold text-gray-700 shrink-0 w-28 text-right rounded-r-lg">المبلغ</label>
+                                        <input type="number" class="draft-payment-amount flex-1 px-4 py-3 text-base bg-white border-2 border-gray-300 rounded-l-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 -mr-px font-bold" placeholder="مثال: 1000" step="0.01" min="0">
+                                    </div>
+                                </div>
+                                <div class="lg:col-span-5">
+                                    <div class="flex items-stretch">
+                                        <label class="px-3 py-2 border-2 border-gray-300 bg-gray-100 text-sm font-bold text-gray-700 shrink-0 w-28 text-right rounded-r-lg">التاريخ</label>
+                                        <input type="text" class="draft-payment-date flex-1 px-4 py-3 text-base bg-white border-2 border-gray-300 rounded-l-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 -mr-px font-bold" placeholder="مثال: 15/12/2025">
+                                    </div>
+                                </div>
+                                <div class="lg:col-span-2 flex justify-end">
+                                    <button type="button" class="remove-draft-payment px-4 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 font-semibold">حذف</button>
+                                </div>
                             </div>
                         </div>
                     `;
