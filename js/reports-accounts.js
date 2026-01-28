@@ -49,7 +49,32 @@ async function updateAccountsReportContent(reportName, reportType) {
 
         const accounts = await getAllAccounts();
         const clients = await getAllClients();
-        __reportsAccountsAllAccounts = Array.isArray(accounts) ? accounts : [];
+
+        let allPayments = [];
+        try {
+            if (typeof getAll === 'function') {
+                allPayments = await getAll('accountPayments');
+            }
+        } catch (e) {
+            allPayments = [];
+        }
+
+        // Map computed paid fees for each account based on actual payments
+        const paymentsMap = new Map();
+        for (const p of (allPayments || [])) {
+            const aid = p && p.accountId != null ? parseInt(p.accountId, 10) : null;
+            if (aid) {
+                paymentsMap.set(aid, (paymentsMap.get(aid) || 0) + (parseFloat(p.amount) || 0));
+            }
+        }
+
+        // Update accounts with real calculated paidFees
+        const processedAccounts = (Array.isArray(accounts) ? accounts : []).map(acc => ({
+            ...acc,
+            paidFees: paymentsMap.get(acc.id) || 0
+        }));
+
+        __reportsAccountsAllAccounts = processedAccounts;
         __reportsAccountsAllClients = Array.isArray(clients) ? clients : [];
         __reportsAccountsCurrentAccounts = __reportsAccountsAllAccounts;
         __reportsAccountsCurrentClients = __reportsAccountsAllClients;
@@ -105,7 +130,7 @@ async function updateAccountsReportContent(reportName, reportType) {
 
 
         document.getElementById('accounts-search').addEventListener('input', function (e) {
-            filterAccountsReport(e.target.value, accounts, clients);
+            filterAccountsReport(e.target.value, processedAccounts, clients);
         });
 
     } catch (error) {
@@ -150,12 +175,14 @@ function generateAccountsReportHTML(accounts, clients, sortOrder = 'desc') {
             clientGroups[client.id] = {
                 client: client,
                 totalFees: 0,
+                totalPaid: 0,
                 totalExpenses: 0,
                 totalRemaining: 0
             };
         }
 
-        clientGroups[client.id].totalFees += account.paidFees || 0;
+        clientGroups[client.id].totalFees += account.totalFees || 0;
+        clientGroups[client.id].totalPaid += account.paidFees || 0;
         clientGroups[client.id].totalExpenses += account.expenses || 0;
         clientGroups[client.id].totalRemaining += account.remaining || 0;
     }
@@ -179,7 +206,8 @@ function generateAccountsReportHTML(accounts, clients, sortOrder = 'desc') {
         const rowClass = i % 2 === 0 ? 'bg-gradient-to-l from-teal-50 to-cyan-50' : 'bg-white';
 
 
-        const profits = clientData.totalFees - clientData.totalExpenses;
+        const remainingOnClient = clientData.totalFees - clientData.totalPaid;
+        const profits = clientData.totalPaid - clientData.totalExpenses;
 
         tableRows += `
             <tr class="${rowClass} border-b border-gray-200 hover:bg-gradient-to-l hover:from-teal-100 hover:to-cyan-100 transition-all duration-300 hover:shadow-sm">
@@ -190,13 +218,13 @@ function generateAccountsReportHTML(accounts, clients, sortOrder = 'desc') {
                     <div class="font-bold text-base text-blue-600 hover:text-blue-700 transition-colors duration-200">${clientData.totalFees.toLocaleString()}</div>
                 </td>
                 <td class="py-4 px-4 text-center border-l border-gray-200 w-24 whitespace-nowrap">
-                    <div class="font-bold text-base text-red-600 hover:text-red-700 transition-colors duration-200">${clientData.totalExpenses.toLocaleString()}</div>
+                    <div class="font-bold text-base text-emerald-600 hover:text-emerald-700 transition-colors duration-200">${clientData.totalPaid.toLocaleString()}</div>
                 </td>
-                <td class="py-4 px-4 text-center w-28 whitespace-nowrap">
-                    <div class="font-bold text-base ${profits >= 0 ? 'text-green-600 hover:text-green-700' : 'text-red-600 hover:text-red-700'} transition-colors duration-200">
-                        ${profits.toLocaleString()}
-                        ${profits >= 0 ? '<i class="ri-arrow-up-line text-sm mr-1"></i>' : '<i class="ri-arrow-down-line text-sm mr-1"></i>'}
-                    </div>
+                <td class="py-4 px-4 text-center border-l border-gray-200 w-24 whitespace-nowrap">
+                    <div class="font-bold text-base ${remainingOnClient > 0 ? 'text-amber-700 hover:text-amber-800' : 'text-gray-700 hover:text-gray-800'} transition-colors duration-200">${remainingOnClient.toLocaleString()}</div>
+                </td>
+                <td class="py-4 px-4 text-center border-l border-gray-200 w-24 whitespace-nowrap">
+                    <div class="font-bold text-base text-red-600 hover:text-red-700 transition-colors duration-200">${clientData.totalExpenses.toLocaleString()}</div>
                 </td>
             </tr>
         `;
@@ -204,8 +232,10 @@ function generateAccountsReportHTML(accounts, clients, sortOrder = 'desc') {
 
 
     const grandTotalFees = clientsData.reduce((sum, client) => sum + client.totalFees, 0);
+    const grandTotalPaid = clientsData.reduce((sum, client) => sum + client.totalPaid, 0);
     const grandTotalExpenses = clientsData.reduce((sum, client) => sum + client.totalExpenses, 0);
-    const grandTotalProfits = grandTotalFees - grandTotalExpenses;
+    const grandTotalRemainingOnClient = grandTotalFees - grandTotalPaid;
+    const grandTotalProfits = grandTotalPaid - grandTotalExpenses;
 
     return `
         <div class="accounts-report-container" style="height: 100%; overflow-y: auto; position: relative;">
@@ -239,6 +269,31 @@ function generateAccountsReportHTML(accounts, clients, sortOrder = 'desc') {
                     </div>
                 </div>
                 
+                <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 p-3 rounded-xl border border-emerald-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center">
+                            <i class="ri-hand-coin-line text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-emerald-600 font-medium">المدفوع</p>
+                            <p class="text-lg font-bold text-emerald-700">${grandTotalPaid.toLocaleString()}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-br from-amber-50 to-amber-100 p-3 rounded-xl border border-amber-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-amber-600 rounded-full flex items-center justify-center">
+                            <i class="ri-hourglass-line text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-amber-700 font-medium">المتبقى</p>
+                            <p class="text-lg font-bold text-amber-800">${grandTotalRemainingOnClient.toLocaleString()}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                
                 <div class="bg-gradient-to-br from-red-50 to-red-100 p-3 rounded-xl border border-red-200">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center">
@@ -247,30 +302,6 @@ function generateAccountsReportHTML(accounts, clients, sortOrder = 'desc') {
                         <div>
                             <p class="text-sm text-red-600 font-medium">المصروفات</p>
                             <p class="text-lg font-bold text-red-700">${grandTotalExpenses.toLocaleString()}</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="bg-gradient-to-br from-green-50 to-green-100 p-3 rounded-xl border border-green-200">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
-                            <i class="ri-line-chart-line text-white text-lg"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm text-green-600 font-medium">الأرباح</p>
-                            <p class="text-lg font-bold text-green-700">${grandTotalProfits.toLocaleString()}</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-3 rounded-xl border border-purple-200">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
-                            <i class="ri-group-line text-white text-lg"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm text-purple-600 font-medium">الموكلين</p>
-                            <p class="text-lg font-bold text-purple-700">${clientsData.length}</p>
                         </div>
                     </div>
                 </div>
@@ -295,15 +326,22 @@ function generateAccountsReportHTML(accounts, clients, sortOrder = 'desc') {
                             </th>
                             <th style="position: sticky; top: 0; z-index: 20; background-color: #14b8a6 !important; color: white !important; border-color: #0d9488 !important; white-space: nowrap; width: 130px; padding: 0.5rem 0.75rem; text-align: center; font-weight: 600; font-size: 0.875rem; border-left: 2px solid #0d9488;">
                                 <div class="flex items-center justify-center gap-2">
+                                    <i class="ri-hand-coin-line text-sm"></i>
+                                    <span>المدفوع</span>
+                                </div>
+                            </th>
+                            <th style="position: sticky; top: 0; z-index: 20; background-color: #14b8a6 !important; color: white !important; border-color: #0d9488 !important; white-space: nowrap; width: 150px; padding: 0.5rem 0.75rem; text-align: center; font-weight: 600; font-size: 0.875rem; border-left: 2px solid #0d9488;">
+                                <div class="flex items-center justify-center gap-2">
+                                    <i class="ri-hourglass-line text-sm"></i>
+                                    <span>المتبقى</span>
+                                </div>
+                            </th>
+                            <th style="position: sticky; top: 0; z-index: 20; background-color: #14b8a6 !important; color: white !important; border-color: #0d9488 !important; white-space: nowrap; width: 130px; padding: 0.5rem 0.75rem; text-align: center; font-weight: 600; font-size: 0.875rem; border-left: 2px solid #0d9488;">
+                                <div class="flex items-center justify-center gap-2">
                                     <i class="ri-shopping-cart-line text-sm"></i>
                                     <span>المصروفات</span>
                                 </div>
                             </th>
-                            <th style="position: sticky; top: 0; z-index: 20; background-color: #14b8a6 !important; color: white !important; white-space: nowrap; width: 140px; padding: 0.5rem 0.75rem; text-align: center; font-weight: 600; font-size: 0.875rem;">
-                                <div class="flex items-center justify-center gap-2">
-                                    <i class="ri-line-chart-line text-sm"></i>
-                                    <span>الأرباح</span>
-                                </div>
                             </th>
                         </tr>
                     </thead>
@@ -391,12 +429,14 @@ async function printAccountsReport() {
                 clientGroups[client.id] = {
                     client: client,
                     totalFees: 0,
+                    totalPaid: 0,
                     totalExpenses: 0,
                     totalRemaining: 0
                 };
             }
 
-            clientGroups[client.id].totalFees += account.paidFees || 0;
+            clientGroups[client.id].totalFees += account.totalFees || 0;
+            clientGroups[client.id].totalPaid += account.paidFees || 0;
             clientGroups[client.id].totalExpenses += account.expenses || 0;
             clientGroups[client.id].totalRemaining += account.remaining || 0;
         }
@@ -415,15 +455,17 @@ async function printAccountsReport() {
 
         let tableRows = '';
         clientsData.forEach((clientData, i) => {
-            const profits = clientData.totalFees - clientData.totalExpenses;
+            const remainingOnClient = clientData.totalFees - clientData.totalPaid;
+            const profits = clientData.totalPaid - clientData.totalExpenses;
             const rowBg = i % 2 === 0 ? '#f0fdfa' : '#ffffff';
 
             tableRows += `
                 <tr style="background: ${rowBg};">
                     <td style="border: 1px solid #ddd; padding: 6px 6px; text-align: center; font-size: 16px;">${clientData.client.name}</td>
                     <td style="border: 1px solid #ddd; padding: 6px 6px; text-align: center; color: #2563eb; font-weight: bold; font-size: 16px;">${clientData.totalFees.toLocaleString()}</td>
+                    <td style="border: 1px solid #ddd; padding: 6px 6px; text-align: center; color: #059669; font-weight: bold; font-size: 16px;">${clientData.totalPaid.toLocaleString()}</td>
+                    <td style="border: 1px solid #ddd; padding: 6px 6px; text-align: center; color: #b45309; font-weight: bold; font-size: 16px;">${remainingOnClient.toLocaleString()}</td>
                     <td style="border: 1px solid #ddd; padding: 6px 6px; text-align: center; color: #dc2626; font-weight: bold; font-size: 16px;">${clientData.totalExpenses.toLocaleString()}</td>
-                    <td style="border: 1px solid #ddd; padding: 6px 6px; text-align: center; color: ${profits >= 0 ? '#16a34a' : '#dc2626'}; font-weight: bold; font-size: 16px;">${profits.toLocaleString()}</td>
                 </tr>
             `;
         });
@@ -443,8 +485,9 @@ async function printAccountsReport() {
                         <tr>
                             <th style="background-color: #14b8a6; color: white; padding: 8px 6px; text-align: center; border: 1px solid #0d9488; font-weight: bold; font-size: 18px;">اسم الموكل</th>
                             <th style="background-color: #14b8a6; color: white; padding: 8px 6px; text-align: center; border: 1px solid #0d9488; font-weight: bold; font-size: 18px;">الأتعاب</th>
+                            <th style="background-color: #14b8a6; color: white; padding: 8px 6px; text-align: center; border: 1px solid #0d9488; font-weight: bold; font-size: 18px;">المدفوع</th>
+                            <th style="background-color: #14b8a6; color: white; padding: 8px 6px; text-align: center; border: 1px solid #0d9488; font-weight: bold; font-size: 18px;">المتبقى</th>
                             <th style="background-color: #14b8a6; color: white; padding: 8px 6px; text-align: center; border: 1px solid #0d9488; font-weight: bold; font-size: 18px;">المصروفات</th>
-                            <th style="background-color: #14b8a6; color: white; padding: 8px 6px; text-align: center; border: 1px solid #0d9488; font-weight: bold; font-size: 18px;">الأرباح</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -519,12 +562,14 @@ async function exportAccountsReport() {
                 clientGroups[client.id] = {
                     client: client,
                     totalFees: 0,
+                    totalPaid: 0,
                     totalExpenses: 0,
                     totalRemaining: 0
                 };
             }
 
-            clientGroups[client.id].totalFees += account.paidFees || 0;
+            clientGroups[client.id].totalFees += account.totalFees || 0;
+            clientGroups[client.id].totalPaid += account.paidFees || 0;
             clientGroups[client.id].totalExpenses += account.expenses || 0;
             clientGroups[client.id].totalRemaining += account.remaining || 0;
         }
@@ -611,8 +656,9 @@ async function exportAccountsReport() {
                     <tr>
                         <th style="background-color: #14b8a6; color: #FFFFFF; border: 2px solid #0d9488; padding: 10px; text-align: center; font-weight: bold; font-size: 21px;">اسم الموكل</th>
                         <th style="background-color: #14b8a6; color: #FFFFFF; border: 2px solid #0d9488; padding: 10px; text-align: center; font-weight: bold; font-size: 21px;">الأتعاب</th>
+                        <th style="background-color: #14b8a6; color: #FFFFFF; border: 2px solid #0d9488; padding: 10px; text-align: center; font-weight: bold; font-size: 21px;">المدفوع</th>
+                        <th style="background-color: #14b8a6; color: #FFFFFF; border: 2px solid #0d9488; padding: 10px; text-align: center; font-weight: bold; font-size: 21px;">المتبقى</th>
                         <th style="background-color: #14b8a6; color: #FFFFFF; border: 2px solid #0d9488; padding: 10px; text-align: center; font-weight: bold; font-size: 21px;">المصروفات</th>
-                        <th style="background-color: #14b8a6; color: #FFFFFF; border: 2px solid #0d9488; padding: 10px; text-align: center; font-weight: bold; font-size: 21px;">الأرباح</th>
                     </tr>
         `;
 
@@ -620,15 +666,18 @@ async function exportAccountsReport() {
         clientsData.forEach((clientData) => {
             const clientName = clientData.client.name;
             const totalFees = clientData.totalFees.toLocaleString();
+            const totalPaid = clientData.totalPaid.toLocaleString();
+            const remainingOnClient = (clientData.totalFees - clientData.totalPaid).toLocaleString();
             const totalExpenses = clientData.totalExpenses.toLocaleString();
-            const profits = (clientData.totalFees - clientData.totalExpenses).toLocaleString();
+            const profits = (clientData.totalPaid - clientData.totalExpenses).toLocaleString();
 
             excelContent += `
                 <tr>
                     <td style="border: 1px solid #cccccc; padding: 8px; text-align: center; background-color: #FFFFFF; font-size: 18px;">${clientName}</td>
                     <td style="border: 1px solid #cccccc; padding: 8px; text-align: center; background-color: #FFFFFF; font-size: 18px;">${totalFees}</td>
+                    <td style="border: 1px solid #cccccc; padding: 8px; text-align: center; background-color: #FFFFFF; font-size: 18px;">${totalPaid}</td>
+                    <td style="border: 1px solid #cccccc; padding: 8px; text-align: center; background-color: #FFFFFF; font-size: 18px;">${remainingOnClient}</td>
                     <td style="border: 1px solid #cccccc; padding: 8px; text-align: center; background-color: #FFFFFF; font-size: 18px;">${totalExpenses}</td>
-                    <td style="border: 1px solid #cccccc; padding: 8px; text-align: center; background-color: #FFFFFF; font-size: 18px;">${profits}</td>
                 </tr>
             `;
         });
@@ -676,12 +725,14 @@ async function exportAccountsReportPDF() {
                 clientGroups[client.id] = {
                     client: client,
                     totalFees: 0,
+                    totalPaid: 0,
                     totalExpenses: 0,
                     totalRemaining: 0
                 };
             }
 
-            clientGroups[client.id].totalFees += account.paidFees || 0;
+            clientGroups[client.id].totalFees += account.totalFees || 0;
+            clientGroups[client.id].totalPaid += account.paidFees || 0;
             clientGroups[client.id].totalExpenses += account.expenses || 0;
             clientGroups[client.id].totalRemaining += account.remaining || 0;
         }
@@ -708,23 +759,27 @@ async function exportAccountsReportPDF() {
 
         let tableRows = '';
         clientsData.forEach((clientData, i) => {
-            const profits = clientData.totalFees - clientData.totalExpenses;
+            const remainingOnClient = clientData.totalFees - clientData.totalPaid;
+            const profits = clientData.totalPaid - clientData.totalExpenses;
             const rowBg = i % 2 === 0 ? '#f0fdfa' : '#ffffff';
 
             tableRows += `
                 <tr style="background: ${rowBg};">
                     <td style="border: 1px solid #ddd; padding: 4px 4px; text-align: center; font-size: 8px;">${clientData.client.name}</td>
                     <td style="border: 1px solid #ddd; padding: 4px 4px; text-align: center; color: #2563eb; font-weight: bold; font-size: 8px;">${clientData.totalFees.toLocaleString()}</td>
+                    <td style="border: 1px solid #ddd; padding: 4px 4px; text-align: center; color: #059669; font-weight: bold; font-size: 8px;">${clientData.totalPaid.toLocaleString()}</td>
+                    <td style="border: 1px solid #ddd; padding: 4px 4px; text-align: center; color: #b45309; font-weight: bold; font-size: 8px;">${remainingOnClient.toLocaleString()}</td>
                     <td style="border: 1px solid #ddd; padding: 4px 4px; text-align: center; color: #dc2626; font-weight: bold; font-size: 8px;">${clientData.totalExpenses.toLocaleString()}</td>
-                    <td style="border: 1px solid #ddd; padding: 4px 4px; text-align: center; color: ${profits >= 0 ? '#16a34a' : '#dc2626'}; font-weight: bold; font-size: 8px;">${profits.toLocaleString()}</td>
                 </tr>
             `;
         });
 
 
         const grandTotalFees = clientsData.reduce((sum, client) => sum + client.totalFees, 0);
+        const grandTotalPaid = clientsData.reduce((sum, client) => sum + client.totalPaid, 0);
         const grandTotalExpenses = clientsData.reduce((sum, client) => sum + client.totalExpenses, 0);
-        const grandTotalProfits = grandTotalFees - grandTotalExpenses;
+        const grandTotalRemainingOnClient = grandTotalFees - grandTotalPaid;
+        const grandTotalProfits = grandTotalPaid - grandTotalExpenses;
 
         const element = document.createElement('div');
         element.style.direction = 'rtl';
@@ -744,16 +799,16 @@ async function exportAccountsReportPDF() {
                         <div style="color: #14b8a6; font-size: 9px; font-weight: bold;">${grandTotalFees.toLocaleString()}</div>
                     </div>
                     <div style="text-align: center;">
+                        <div style="color: #666; font-size: 7px;">المدفوع</div>
+                        <div style="color: #14b8a6; font-size: 9px; font-weight: bold;">${grandTotalPaid.toLocaleString()}</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="color: #666; font-size: 7px;">المتبقى</div>
+                        <div style="color: #14b8a6; font-size: 9px; font-weight: bold;">${grandTotalRemainingOnClient.toLocaleString()}</div>
+                    </div>
+                    <div style="text-align: center;">
                         <div style="color: #666; font-size: 7px;">المصروفات</div>
                         <div style="color: #14b8a6; font-size: 9px; font-weight: bold;">${grandTotalExpenses.toLocaleString()}</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div style="color: #666; font-size: 7px;">الأرباح</div>
-                        <div style="color: #14b8a6; font-size: 9px; font-weight: bold;">${grandTotalProfits.toLocaleString()}</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div style="color: #666; font-size: 7px;">الموكلين</div>
-                        <div style="color: #14b8a6; font-size: 9px; font-weight: bold;">${clientsData.length}</div>
                     </div>
                 </div>
                 
@@ -762,8 +817,9 @@ async function exportAccountsReportPDF() {
                         <tr>
                             <th style="background-color: #14b8a6; color: white; padding: 5px 4px; text-align: center; border: 1px solid #0d9488; font-weight: bold; font-size: 9px;">اسم الموكل</th>
                             <th style="background-color: #14b8a6; color: white; padding: 5px 4px; text-align: center; border: 1px solid #0d9488; font-weight: bold; font-size: 9px;">الأتعاب</th>
+                            <th style="background-color: #14b8a6; color: white; padding: 5px 4px; text-align: center; border: 1px solid #0d9488; font-weight: bold; font-size: 9px;">المدفوع</th>
+                            <th style="background-color: #14b8a6; color: white; padding: 5px 4px; text-align: center; border: 1px solid #0d9488; font-weight: bold; font-size: 9px;">المتبقى</th>
                             <th style="background-color: #14b8a6; color: white; padding: 5px 4px; text-align: center; border: 1px solid #0d9488; font-weight: bold; font-size: 9px;">المصروفات</th>
-                            <th style="background-color: #14b8a6; color: white; padding: 5px 4px; text-align: center; border: 1px solid #0d9488; font-weight: bold; font-size: 9px;">الأرباح</th>
                         </tr>
                     </thead>
                     <tbody>
