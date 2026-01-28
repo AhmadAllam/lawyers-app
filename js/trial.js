@@ -264,12 +264,12 @@
 
             const parsedTextToData = (licenseId, text) => {
                 const lines = String(text || '').replace(/\r/g, '').split('\n');
-                let max = 4;
+                let max = 2;
                 const t = String(text || '');
                 const maxMatchAr = t.match(/الحد\s*الأقصى\s*للتفعيل\s*:\s*(\d+)/);
                 const maxMatchEn = t.match(/^(?:MAX|LIMIT|MAX_ACTIVATIONS)\s*:\s*(\d+)\s*$/mi);
                 const maxMatch = maxMatchEn || maxMatchAr;
-                if (maxMatch) max = parseInt(maxMatch[1], 10) || 4;
+                if (maxMatch) max = parseInt(maxMatch[1], 10) || 2;
                 const offices = [];
 
                 // New simple block format:
@@ -352,14 +352,14 @@
 
             const jsonRes = await readFile('log.json');
             if (!jsonRes.exists) {
-                return { ok: true, data: { licenseId: String(licenseId || ''), max: 4, activations: [] } };
+                return { ok: true, data: { licenseId: String(licenseId || ''), max: 2, activations: [] } };
             }
             if (jsonRes.ok === false) {
                 return { ok: false, error: `http_${jsonRes.status}` };
             }
             const content = String(jsonRes.content || '');
             if (!content || content.trim() === '') {
-                return { ok: true, data: { licenseId: String(licenseId || ''), max: 4, activations: [] } };
+                return { ok: true, data: { licenseId: String(licenseId || ''), max: 2, activations: [] } };
             }
             try {
                 const logData = JSON.parse(content);
@@ -374,7 +374,7 @@
 
     function normalizeActivationStats(licenseId, logData) {
         try {
-            const max = parseInt(logData && logData.max, 10) || 4;
+            const max = parseInt(logData && logData.max, 10) || 2;
             let activations = [];
             const hasActivationsArray = Array.isArray(logData && logData.activations);
             if (Array.isArray(logData && logData.activations)) {
@@ -408,7 +408,7 @@
                 activations
             };
         } catch (e) {
-            return { licenseId: String(licenseId || ''), count: 0, max: 4, activations: [] };
+            return { licenseId: String(licenseId || ''), count: 0, max: 2, activations: [] };
         }
     }
 
@@ -451,7 +451,7 @@
                     ${dt}
                 </div>`;
             }).join('')}</div>`
-            : '<div class="mt-2 text-gray-600">لا توجد بيانات مكاتب داخل ملف اللوج</div>';
+            : '<div class="mt-2 text-gray-600">لا توجد بيانات متاحة حالياً</div>';
 
         box.innerHTML = `
             <div class="grid grid-cols-2 gap-2">
@@ -534,7 +534,7 @@
 
             const toSimpleText = (licenseId, maxCount, activations, lastUpdated) => {
                 const lines = [];
-                lines.push(`MAX: ${String(maxCount || 4)}`);
+                lines.push(`MAX: ${String(maxCount || 2)}`);
                 lines.push(`ID:${String(licenseId || '')}`);
                 lines.push('______________________');
 
@@ -552,7 +552,7 @@
             };
 
             let logTxtSha = null;
-            let maxCount = 4;
+            let maxCount = 2;
             let activations = [];
 
             const txtRes = await readFile('log.txt');
@@ -561,7 +561,7 @@
                 const res2 = await readActivationLogFromGitHub(licenseId);
                 if (res2 && res2.ok) {
                     const stats2 = normalizeActivationStats(licenseId, res2.data || {});
-                    maxCount = stats2.max || 4;
+                    maxCount = stats2.max || 2;
                     activations = Array.isArray(stats2.activations) ? stats2.activations : [];
                 }
             } else {
@@ -569,7 +569,7 @@
                 if (jsonRes.exists && jsonRes.ok) {
                     try {
                         const logData = JSON.parse(String(jsonRes.content || ''));
-                        maxCount = parseInt(logData.max, 10) || 4;
+                        maxCount = parseInt(logData.max, 10) || 2;
                         if (Array.isArray(logData.activations)) {
                             activations = logData.activations
                                 .map(a => ({ officeName: String((a && a.officeName) || '').trim(), activatedAt: String((a && a.activatedAt) || '').trim() }))

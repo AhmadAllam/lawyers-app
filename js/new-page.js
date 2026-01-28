@@ -122,9 +122,20 @@ const partyDetailsFormHTML = `
 </form>
 `;
 
+let __editCaseIdFromStorage = null;
+let __isEditCaseMode = false;
+
 document.addEventListener('DOMContentLoaded', async function () {
     try {
         await initDB();
+
+        try {
+            const rawEditCaseId = sessionStorage.getItem('editCaseId');
+            const parsed = parseInt(rawEditCaseId || '0', 10);
+            if (parsed) __editCaseIdFromStorage = parsed;
+            try { sessionStorage.removeItem('editCaseId'); } catch (_) { }
+        } catch (_) { }
+
         try {
             const origin = sessionStorage.getItem('returnToPage') || '';
             if (origin === 'search') {
@@ -139,6 +150,44 @@ document.addEventListener('DOMContentLoaded', async function () {
                 stateManager.setSelectedClientId(null);
             }
         } catch (_) { }
+
+        if (__editCaseIdFromStorage) {
+            __isEditCaseMode = true;
+            try { stateManager.setCurrentCaseId(__editCaseIdFromStorage); } catch (_) { stateManager.currentCaseId = __editCaseIdFromStorage; }
+            try {
+                const caseRecord = await getById('cases', __editCaseIdFromStorage);
+                if (caseRecord) {
+                    try { stateManager.setSelectedClientId(caseRecord.clientId || null); } catch (_) { stateManager.selectedClientId = (caseRecord.clientId || null); }
+                    try { stateManager.setSelectedOpponentId(caseRecord.opponentId || null); } catch (_) { stateManager.selectedOpponentId = (caseRecord.opponentId || null); }
+                    try {
+                        stateManager.updateCaseDataStash('parties', {
+                            clientCapacity: caseRecord.clientCapacity,
+                            opponentCapacity: caseRecord.opponentCapacity,
+                            clientPoaNumber: caseRecord.poaNumber
+                        });
+                    } catch (_) { }
+                }
+            } catch (_) { }
+
+            try {
+                const partyContainer = document.getElementById('party-form-container');
+                if (partyContainer) partyContainer.classList.add('hidden');
+            } catch (_) { }
+            try {
+                const embedded = document.getElementById('embedded-content');
+                if (embedded) embedded.classList.remove('hidden');
+            } catch (_) { }
+
+            await displayCaseDetailsForm();
+            try {
+                const pageHeaderTitle = document.getElementById('page-title');
+                if (pageHeaderTitle) pageHeaderTitle.textContent = 'تعديل الدعوى';
+            } catch (_) { }
+            setupBackButton();
+            setupModalClose();
+            return;
+        }
+
         await loadPartyDetailsForm();
         setupBackButton();
         setupModalClose();
@@ -606,6 +655,24 @@ function setupBackButton() {
 
             if (caseForm) {
                 e.preventDefault();
+
+                // في وضع تعديل الدعوى: الرجوع يرجع للبحث ويفتح نفس الموكل (بدون شاشة بيضاء)
+                if (__isEditCaseMode) {
+                    try {
+                        const goBackTo = sessionStorage.getItem('returnToPage') || '';
+                        const clientId = parseInt(sessionStorage.getItem('returnToClientId') || '0', 10);
+                        if ((goBackTo === 'search' || goBackTo === 'clientView') && clientId) {
+                            sessionStorage.removeItem('returnToPage');
+                            sessionStorage.removeItem('returnToClientId');
+                            sessionStorage.setItem('openClientDetailsOnSearch', String(clientId));
+                            window.location.href = 'search.html';
+                            return;
+                        }
+                    } catch (_) { }
+                    window.location.href = 'search.html';
+                    return;
+                }
+
                 const partyContainer = document.getElementById('party-form-container');
                 if (partyContainer) partyContainer.classList.remove('hidden');
                 if (embedded) embedded.innerHTML = '';
@@ -977,9 +1044,9 @@ async function displayCaseDetailsForm() {
     setHeaderAsBack();
     if (!targetContainer) return;
     targetContainer.innerHTML = `
-        <div class="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-300 max-w-4xl mx-auto">
+        <div class="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-300 max-w-4xl mx-auto case-details--mobile-tight md:border-0 md:bg-transparent md:shadow-none">
             <form id="case-details-form" class="space-y-4" novalidate>
-                <div class="p-4 bg-blue-50 rounded-xl border-2 border-blue-300 shadow-md">
+                <div class="p-4 bg-blue-50 rounded-xl shadow-md">
                     <div class="space-y-4">
                         
                         <div>

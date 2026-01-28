@@ -319,9 +319,19 @@ function attachCaseDetailsListeners() {
     
     const editBtn = document.querySelector('.edit-case-from-details-btn');
     if (editBtn) {
-        editBtn.addEventListener('click', () => {
+        editBtn.addEventListener('click', async () => {
             const caseId = parseInt(editBtn.dataset.caseId);
-            navigateTo(() => displayCaseEditForm(caseId));
+            try {
+                sessionStorage.setItem('returnToPage', 'search');
+                sessionStorage.setItem('editCaseId', String(caseId));
+            } catch (_) { }
+            try {
+                const caseRecord = await getById('cases', caseId);
+                if (caseRecord && caseRecord.clientId) {
+                    try { sessionStorage.setItem('returnToClientId', String(caseRecord.clientId)); } catch (_) { }
+                }
+            } catch (_) { }
+            window.location.href = 'new.html';
         });
     }
 }
@@ -663,7 +673,19 @@ async function loadCaseSessionsForView(sessions) {
 function attachCaseViewListeners(caseId) {
     
     document.getElementById('edit-case-data-btn').addEventListener('click', () => {
-        navigateTo(() => displayCaseEditForm(caseId));
+        (async () => {
+            try {
+                sessionStorage.setItem('returnToPage', 'search');
+                sessionStorage.setItem('editCaseId', String(caseId));
+            } catch (_) { }
+            try {
+                const caseRecord = await getById('cases', caseId);
+                if (caseRecord && caseRecord.clientId) {
+                    try { sessionStorage.setItem('returnToClientId', String(caseRecord.clientId)); } catch (_) { }
+                }
+            } catch (_) { }
+            window.location.href = 'new.html';
+        })();
     });
     
     
@@ -875,9 +897,19 @@ function attachOpponentViewListeners(opponentId) {
     
     
     document.querySelectorAll('.edit-case-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', async () => {
             const caseId = parseInt(btn.dataset.caseId);
-            navigateTo(() => displayCaseEditForm(caseId));
+            try {
+                sessionStorage.setItem('returnToPage', 'search');
+                sessionStorage.setItem('editCaseId', String(caseId));
+            } catch (_) { }
+            try {
+                const caseRecord = await getById('cases', caseId);
+                if (caseRecord && caseRecord.clientId) {
+                    try { sessionStorage.setItem('returnToClientId', String(caseRecord.clientId)); } catch (_) { }
+                }
+            } catch (_) { }
+            window.location.href = 'new.html';
         });
     });
 }

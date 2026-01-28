@@ -31,7 +31,7 @@ async function __clientViewRenderSelectedCaseParties(selectedCase) {
         if (oppCapEl) oppCapEl.textContent = (selectedCase && selectedCase.opponentCapacity) ? String(selectedCase.opponentCapacity) : 'فارغ';
         if (oppAddrEl) oppAddrEl.textContent = (opp && opp.address) ? opp.address : 'فارغ';
         if (oppPhoneEl) oppPhoneEl.textContent = (opp && opp.phone) ? opp.phone : 'فارغ';
-    } catch (_) {}
+    } catch (_) { }
 }
 
 async function __clientViewSelectCaseByIndex(index) {
@@ -45,14 +45,14 @@ async function __clientViewSelectCaseByIndex(index) {
     try {
         const idxEl = document.getElementById('current-case-index');
         if (idxEl) idxEl.textContent = String(safeIndex + 1);
-    } catch (_) {}
+    } catch (_) { }
 
     try {
         if (__clientViewSelectedCase && __clientViewSelectedCase.id != null) {
             highlightCaseCard(String(__clientViewSelectedCase.id));
             stateManager.currentCaseId = parseInt(__clientViewSelectedCase.id);
         }
-    } catch (_) {}
+    } catch (_) { }
 
     await __clientViewRenderSelectedCaseParties(cs);
 }
@@ -68,8 +68,8 @@ async function displayClientViewForm(clientId) {
         const cases = await getFromIndex('cases', 'clientId', clientId);
         const sortedCases = Array.isArray(cases) ? cases.slice().sort((a, b) => (b.id || 0) - (a.id || 0)) : [];
         const latestCase = sortedCases[0] || null;
-        
-        
+
+
         const pageHeaderTitle = document.getElementById('page-title');
         if (pageHeaderTitle) pageHeaderTitle.textContent = 'تفاصيل الموكل';
         const modalTitleEl = document.getElementById('modal-title');
@@ -102,7 +102,7 @@ async function displayClientViewForm(clientId) {
                     restoredSelectedCaseIndex = restoredCaseIndexRaw;
                 }
             }
-        } catch (_) {}
+        } catch (_) { }
         try {
             const sortedCases = Array.isArray(cases) ? cases.slice().sort((a, b) => (b.id || 0) - (a.id || 0)) : [];
             const seenCaps = new Set();
@@ -114,7 +114,7 @@ async function displayClientViewForm(clientId) {
                     clientCapacities.push(v);
                 }
             }
-        } catch (_) {}
+        } catch (_) { }
         __clientViewClientCapacities = clientCapacities;
         __clientViewClientCapacityIndex = 0;
 
@@ -128,7 +128,7 @@ async function displayClientViewForm(clientId) {
                     clientCapacityCaseByValue.set(v, cs);
                 }
             }
-        } catch (_) {}
+        } catch (_) { }
         __clientViewClientCapacityCaseByValue = clientCapacityCaseByValue;
 
         if (restoredCase && restoredCase.clientCapacity) {
@@ -153,25 +153,25 @@ async function displayClientViewForm(clientId) {
                 window.__clientViewClientCapacityIndex = __clientViewClientCapacityIndex;
                 window.__clientViewClientCapacityCaseByValue = clientCapacityCaseByValue;
             }
-        } catch (_) {}
+        } catch (_) { }
 
         const clientCapacityText = (__clientViewSelectedCase && __clientViewSelectedCase.clientCapacity)
             ? String(__clientViewSelectedCase.clientCapacity)
             : (selectedClientCap || 'فارغ');
-        
+
 
         const caseOpponentIds = [...new Set(cases.map(c => c.opponentId).filter(id => id))];
-        
+
 
         let tempOpponentIds = [];
         const clientOpponentRelations = JSON.parse(localStorage.getItem('clientOpponentRelations') || '{}');
         if (clientOpponentRelations[clientId]) {
             tempOpponentIds = clientOpponentRelations[clientId];
         }
-        
+
 
         const uniqueOpponentIds = [...new Set([...caseOpponentIds, ...tempOpponentIds])];
-        
+
         const opponents = [];
         for (const opponentId of uniqueOpponentIds) {
             const opponent = await getById('opponents', opponentId);
@@ -188,7 +188,7 @@ async function displayClientViewForm(clientId) {
                     opponents[idx] = tmp;
                 }
             }
-        } catch (_) {}
+        } catch (_) { }
 
         const opponentCapacityById = new Map();
         const opponentCaseById = new Map();
@@ -204,7 +204,7 @@ async function displayClientViewForm(clientId) {
                     opponentCaseById.set(cs.opponentId, cs);
                 }
             }
-        } catch (_) {}
+        } catch (_) { }
 
         __clientViewOpponentCapacityById = opponentCapacityById;
         __clientViewOpponentCaseById = opponentCaseById;
@@ -215,7 +215,7 @@ async function displayClientViewForm(clientId) {
                 window.__clientViewCurrentClientId = clientId;
                 window.__clientViewOpponentCaseById = opponentCaseById;
             }
-        } catch (_) {}
+        } catch (_) { }
 
         try {
             const wantOpponentId = (restoredOpponentId != null && Number.isFinite(restoredOpponentId) && restoredOpponentId)
@@ -229,21 +229,21 @@ async function displayClientViewForm(clientId) {
                     opponents[idx] = tmp;
                 }
             }
-        } catch (_) {}
+        } catch (_) { }
 
         try {
             sessionStorage.removeItem('clientViewSelectedOpponentId');
             sessionStorage.removeItem('clientViewSelectedCapacityIndex');
             sessionStorage.removeItem('clientViewSelectedCapacityValue');
-        } catch (_) {}
+        } catch (_) { }
 
         modalContent.innerHTML = `
-            <div class="client-view space-y-6">
+            <div class="client-view client-view--mobile-tight space-y-6">
                 <!-- بيانات الأطراف -->
                 <div class="flex flex-col md:flex-row items-start gap-4 md:gap-6">
                     <!-- بيانات الموكل -->
                     <div class="flex-1 flex flex-col">
-                        <div class="p-6 border border-blue-200 rounded-lg bg-blue-50/50 shadow-lg flex-1 flex flex-col">
+                        <div class="p-6 rounded-lg bg-blue-50 border border-blue-200/60 shadow-lg flex-1 flex flex-col">
                             <h3 class="text-lg font-bold text-blue-800 mb-4 flex items-center justify-center gap-2">
                                 <i class="ri-user-3-line"></i>
                                 <span>بيانات الموكل</span>
@@ -284,7 +284,7 @@ async function displayClientViewForm(clientId) {
 
                     <!-- بيانات الخصوم -->
                     <div class="flex-1 flex flex-col">
-                        <div class="p-6 border border-red-200 rounded-lg bg-red-50/50 shadow-lg flex-1 flex flex-col">
+                        <div class="p-6 rounded-lg bg-red-50 border border-red-200/60 shadow-lg flex-1 flex flex-col">
                             <h3 class="text-lg font-bold text-red-800 mb-4 flex items-center justify-center gap-2">
                                 <i class="ri-shield-user-line"></i>
                                 <span>بيانات الخصوم</span>
@@ -371,10 +371,10 @@ async function displayClientViewForm(clientId) {
                     </div>
                     
                     <div id="client-cases-list" class="space-y-3 mb-6">
-                        ${cases.length === 0 ? 
-                            '<div class="text-center text-gray-500 py-8"><i class="ri-briefcase-line text-2xl mb-2"></i><p>لا توجد قضايا مسجلة لهذا الموكل</p></div>' 
-                            : ''
-                        }
+                        ${cases.length === 0 ?
+                '<div class="text-center text-gray-500 py-8"><i class="ri-briefcase-line text-2xl mb-2"></i><p>لا توجد قضايا مسجلة لهذا الموكل</p></div>'
+                : ''
+            }
                     </div>
 
                 </div>
@@ -402,7 +402,7 @@ async function displayClientViewForm(clientId) {
         } catch (_) {
             __clientViewSelectedCaseIndex = 0;
         }
-        
+
 
         await loadClientCasesList(cases);
 
@@ -410,15 +410,15 @@ async function displayClientViewForm(clientId) {
             if (__clientViewSelectedCase && __clientViewSelectedCase.id != null) {
                 highlightCaseCard(String(__clientViewSelectedCase.id));
             }
-        } catch (_) {}
-        
+        } catch (_) { }
+
 
         attachClientViewListeners(clientId, opponents, sortedCases);
 
         try {
             await __clientViewSelectCaseByIndex(__clientViewSelectedCaseIndex);
-        } catch (_) {}
-        
+        } catch (_) { }
+
     } catch (error) {
 
         showToast('حدث خطأ في تحميل بيانات الموكل', 'error');
@@ -428,9 +428,9 @@ async function displayClientViewForm(clientId) {
 
 async function loadClientCasesList(cases) {
     const casesList = document.getElementById('client-cases-list');
-    
+
     if (cases.length === 0) return;
-    
+
     const allOpponents = await getAllOpponents();
     const opponentsMap = new Map(Array.isArray(allOpponents) ? allOpponents.map(o => [o.id, o]) : []);
     const allSessions = await getAllSessions();
@@ -444,18 +444,18 @@ async function loadClientCasesList(cases) {
     for (const caseRecord of cases) {
         const opponent = opponentsMap.get(caseRecord.opponentId);
         const sessions = (sessionsByCaseId.get(caseRecord.id) || []).slice();
-        
+
         html += `
             <div class="case-card bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300" data-case-id="${caseRecord.id}">
                 <!-- رأس الكارت -->
                 <div class="p-4 cursor-pointer case-header" data-case-id="${caseRecord.id}">
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1">
-                            <div class="flex items-center gap-3 mb-2">
-                                <h4 class="font-bold text-lg text-green-700">
+                    <div class="flex items-start gap-3">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start gap-3 mb-2">
+                                <h4 class="font-bold text-lg text-green-700 flex-1 min-w-0">
                                     قضية رقم: ${caseRecord.caseNumber || 'غير محدد'} لسنة ${caseRecord.caseYear || 'غير محدد'}
                                 </h4>
-                                <i class="ri-arrow-down-s-line text-gray-400 transition-transform case-arrow" data-case-id="${caseRecord.id}"></i>
+                                <i class="ri-arrow-down-s-line text-gray-400 transition-transform case-arrow shrink-0" data-case-id="${caseRecord.id}"></i>
                             </div>
                             ${caseRecord.subject ? `<p class="text-sm text-gray-700 mb-2"><span class="font-medium">الموضوع:</span> ${caseRecord.subject}</p>` : '<p class="text-sm text-gray-500 mb-2">لا يوجد موضوع محدد</p>'}
                             <div class="flex items-center gap-4 text-sm text-gray-600">
@@ -464,12 +464,24 @@ async function loadClientCasesList(cases) {
                                     ضد: ${opponent ? opponent.name : 'غير محدد'}
                                 </span>
                             </div>
+
+                            <!-- أزرار الموبايل: تحت (ضد) وفي المنتصف -->
+                            <div class="flex md:hidden items-center justify-center gap-2 mt-3" onclick="event.stopPropagation()">
+                                <button class="edit-case-btn bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded text-sm transition-colors" data-case-id="${caseRecord.id}">
+                                    <i class="ri-edit-line mr-1"></i>تعديل
+                                </button>
+                                <button class="delete-case-btn bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm transition-colors" data-case-id="${caseRecord.id}">
+                                    <i class="ri-delete-bin-line mr-1"></i>حذف
+                                </button>
+                            </div>
                         </div>
-                        <div class="flex flex-col gap-2 ml-4">
-                            <button class="edit-case-btn bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm transition-colors" data-case-id="${caseRecord.id}" onclick="event.stopPropagation()">
+
+                        <!-- أزرار الكمبيوتر: كما هي في الجانب -->
+                        <div class="hidden md:flex flex-col gap-2 ml-4" onclick="event.stopPropagation()">
+                            <button class="edit-case-btn bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm transition-colors" data-case-id="${caseRecord.id}">
                                 <i class="ri-edit-line mr-1"></i>تعديل
                             </button>
-                            <button class="delete-case-btn bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors" data-case-id="${caseRecord.id}" onclick="event.stopPropagation()">
+                            <button class="delete-case-btn bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors" data-case-id="${caseRecord.id}">
                                 <i class="ri-delete-bin-line mr-1"></i>حذف
                             </button>
                         </div>
@@ -570,30 +582,30 @@ async function loadClientCasesList(cases) {
             </div>
         `;
     }
-    
+
     casesList.innerHTML = html;
-    
+
 
     attachCaseCardListeners();
-    
+
 
     if (cases.length === 1) {
         setTimeout(async () => {
             const firstCaseId = cases[0].id;
             const firstCaseDetails = document.querySelector(`.case-details[data-case-id="${firstCaseId}"]`);
             const firstArrow = document.querySelector(`.case-arrow[data-case-id="${firstCaseId}"]`);
-            
+
             if (firstCaseDetails && firstArrow) {
 
                 expandModalForCaseDetails();
-                
+
 
                 firstCaseDetails.classList.remove('hidden');
                 firstArrow.style.transform = 'rotate(180deg)';
-                
+
 
                 stateManager.currentCaseId = parseInt(firstCaseId);
-                
+
 
                 let locale = 'ar-EG';
                 try {
@@ -601,7 +613,7 @@ async function loadClientCasesList(cases) {
                         const v = await getSetting('dateLocale');
                         if (v === 'ar-EG' || v === 'en-GB') locale = v;
                     }
-                } catch (_) {}
+                } catch (_) { }
                 await loadCaseSessions(firstCaseId, locale);
             }
         }, 100);
@@ -616,7 +628,7 @@ function attachCaseCardListeners() {
             const caseId = header.dataset.caseId;
             const caseDetails = document.querySelector(`.case-details[data-case-id="${caseId}"]`);
             const arrow = document.querySelector(`.case-arrow[data-case-id="${caseId}"]`);
-            
+
             if (caseDetails.classList.contains('hidden')) {
 
                 try {
@@ -627,7 +639,7 @@ function attachCaseCardListeners() {
                         await __clientViewSelectCaseByIndex(idx);
                         storeClientViewSelection(__clientViewCurrentClientId, []);
                     }
-                } catch (_) {}
+                } catch (_) { }
 
                 highlightCaseCard(String(caseId));
 
@@ -637,42 +649,42 @@ function attachCaseCardListeners() {
                 document.querySelectorAll('.case-arrow').forEach(arr => {
                     arr.style.transform = 'rotate(0deg)';
                 });
-                
 
-                
-                
+
+
+
 
                 expandModalForCaseDetails();
-                
+
 
                 caseDetails.classList.remove('hidden');
                 arrow.style.transform = 'rotate(180deg)';
-                
+
                 var firstCaseId = caseId;
-                
+
 
                 stateManager.currentCaseId = parseInt(firstCaseId);
-                
+
 
                 stateManager.currentCaseId = parseInt(caseId);
-                
+
                 let locale = 'ar-EG';
                 try {
                     if (typeof getSetting === 'function') {
                         const v = await getSetting('dateLocale');
                         if (v === 'ar-EG' || v === 'en-GB') locale = v;
                     }
-                } catch (_) {}
+                } catch (_) { }
                 await loadCaseSessions(caseId, locale);
             } else {
-                
+
                 caseDetails.classList.add('hidden');
                 arrow.style.transform = 'rotate(0deg)';
-                
-                
-                
-                
-                
+
+
+
+
+
                 const anyOpen = Array.from(document.querySelectorAll('.case-details')).some(el => !el.classList.contains('hidden'));
                 if (!anyOpen) {
                     resetModalSize();
@@ -685,17 +697,17 @@ function attachCaseCardListeners() {
 
 
 function expandModalForCaseDetails() {
-    
+
     const modalContainer = document.getElementById('modal-container') || document.getElementById('modal-container-hidden');
     const modalContent = document.getElementById('modal-content');
     if (modalContainer && modalContent) {
-        
+
         modalContainer.style.maxHeight = 'none';
         modalContainer.style.height = 'auto';
         modalContent.style.maxHeight = 'none';
         modalContent.style.overflowY = 'visible';
-        
-        
+
+
         modalContainer.classList.add('min-h-fit');
     }
 }
@@ -705,12 +717,12 @@ function resetModalSize() {
     const modalContainer = document.getElementById('modal-container') || document.getElementById('modal-container-hidden');
     const modalContent = document.getElementById('modal-content');
     if (modalContainer && modalContent) {
-        
+
         modalContainer.style.maxHeight = '';
         modalContainer.style.height = '';
         modalContent.style.maxHeight = '';
         modalContent.style.overflowY = '';
-        
+
         modalContainer.classList.remove('min-h-fit');
     }
 }
@@ -745,7 +757,7 @@ function highlightCaseCard(activeCaseId) {
             target.style.borderColor = '#facc15';
             target.style.boxShadow = '0 0 0 3px rgba(250, 204, 21, 0.85)';
         }
-    } catch (_) {}
+    } catch (_) { }
 }
 
 
@@ -754,14 +766,14 @@ let currentOpponentIndex = 0;
 
 function updateOpponentDisplay(opponents) {
     if (opponents.length === 0) return;
-    
+
     const currentOpponent = opponents[currentOpponentIndex];
-    
+
     const nameEl = document.getElementById('opponent-name-value');
     const capacityEl = document.getElementById('opponent-capacity-value');
     const addressEl = document.getElementById('opponent-address-value');
     const phoneEl = document.getElementById('opponent-phone-value');
-        
+
     if (nameEl) nameEl.textContent = currentOpponent.name || 'فارغ';
     if (capacityEl) {
         let fromCase = '';
@@ -769,7 +781,7 @@ function updateOpponentDisplay(opponents) {
             if (__clientViewSelectedCase && currentOpponent && currentOpponent.id != null && __clientViewSelectedCase.opponentId === currentOpponent.id) {
                 fromCase = String(__clientViewSelectedCase.opponentCapacity || '').trim();
             }
-        } catch (_) {}
+        } catch (_) { }
         if (!fromCase) {
             fromCase = (currentOpponent && currentOpponent.id != null) ? (__clientViewOpponentCapacityById.get(currentOpponent.id) || '') : '';
         }
@@ -777,7 +789,7 @@ function updateOpponentDisplay(opponents) {
     }
     if (addressEl) addressEl.textContent = currentOpponent.address || 'فارغ';
     if (phoneEl) phoneEl.textContent = currentOpponent.phone || 'فارغ';
-        
+
     const editBtn = document.querySelector('.edit-opponent-btn');
     if (editBtn) {
         editBtn.setAttribute('data-opponent-id', currentOpponent.id);
@@ -804,8 +816,8 @@ function updateClientCapacityDisplay() {
             if (typeof window !== 'undefined') {
                 window.__clientViewClientCapacityIndex = __clientViewClientCapacityIndex;
             }
-        } catch (_) {}
-    } catch (_) {}
+        } catch (_) { }
+    } catch (_) { }
 }
 
 function syncOpponentToSelectedClientCapacity(opponents) {
@@ -821,7 +833,7 @@ function syncOpponentToSelectedClientCapacity(opponents) {
                 highlightCaseCard(String(__clientViewSelectedCase.id));
                 stateManager.currentCaseId = parseInt(__clientViewSelectedCase.id);
             }
-        } catch (_) {}
+        } catch (_) { }
 
         if (!Array.isArray(opponents) || opponents.length === 0) return;
         if (cs && cs.opponentId != null) {
@@ -831,7 +843,7 @@ function syncOpponentToSelectedClientCapacity(opponents) {
             }
         }
         updateOpponentDisplay(opponents);
-    } catch (_) {}
+    } catch (_) { }
 }
 
 function syncClientCapacityToSelectedOpponent(opponents) {
@@ -845,7 +857,7 @@ function syncClientCapacityToSelectedOpponent(opponents) {
             __clientViewSelectedCase = null;
             try {
                 stateManager.currentCaseId = null;
-            } catch (_) {}
+            } catch (_) { }
             updateOpponentDisplay(opponents);
             return;
         }
@@ -856,7 +868,7 @@ function syncClientCapacityToSelectedOpponent(opponents) {
                 highlightCaseCard(String(__clientViewSelectedCase.id));
                 stateManager.currentCaseId = parseInt(__clientViewSelectedCase.id);
             }
-        } catch (_) {}
+        } catch (_) { }
 
         const cap = String(cs.clientCapacity || '').trim();
         if (cap && Array.isArray(__clientViewClientCapacities) && __clientViewClientCapacities.length > 0) {
@@ -867,7 +879,7 @@ function syncClientCapacityToSelectedOpponent(opponents) {
             }
         }
         updateOpponentDisplay(opponents);
-    } catch (_) {}
+    } catch (_) { }
 }
 
 function storeClientViewSelection(clientId, opponents) {
@@ -875,12 +887,12 @@ function storeClientViewSelection(clientId, opponents) {
         sessionStorage.setItem('clientViewSelectedClientId', String(clientId));
         sessionStorage.setItem('clientViewSelectedCaseId', String((__clientViewSelectedCase && __clientViewSelectedCase.id != null) ? __clientViewSelectedCase.id : ''));
         sessionStorage.setItem('clientViewSelectedCaseIndex', String(__clientViewSelectedCaseIndex || 0));
-    } catch (_) {}
+    } catch (_) { }
 }
- 
+
 
 function attachClientViewListeners(clientId, opponents, sortedCases) {
-    
+
     const editClientBtn = document.getElementById('edit-client-data-btn');
     if (editClientBtn) {
         editClientBtn.addEventListener('click', () => {
@@ -889,7 +901,7 @@ function attachClientViewListeners(clientId, opponents, sortedCases) {
         });
     }
 
-    
+
     const addCaseBtn = document.getElementById('add-case-for-client-btn');
     if (addCaseBtn) {
         addCaseBtn.addEventListener('click', () => {
@@ -912,7 +924,7 @@ function attachClientViewListeners(clientId, opponents, sortedCases) {
         });
     }
 
-    
+
     document.querySelectorAll('.edit-opponent-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const opponentId = parseInt(btn.dataset.opponentId);
@@ -937,36 +949,41 @@ function attachClientViewListeners(clientId, opponents, sortedCases) {
                 });
             }
         }
-    } catch (_) {}
+    } catch (_) { }
 
-    
+
     document.querySelectorAll('.edit-case-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const caseId = parseInt(btn.dataset.caseId);
-            navigateTo(displayCaseEditForm, caseId);
+            try {
+                sessionStorage.setItem('returnToPage', 'search');
+                sessionStorage.setItem('returnToClientId', String(clientId));
+                sessionStorage.setItem('editCaseId', String(caseId));
+            } catch (_) { }
+            window.location.href = 'new.html';
         });
     });
 
-    
+
     document.querySelectorAll('.delete-case-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
             const caseId = parseInt(btn.dataset.caseId);
             const ok = window.safeConfirm ? await safeConfirm('هل أنت متأكد من حذف هذه القضية؟ سيتم حذف جميع الجلسات المرتبطة بها أيضاً.') : confirm('هل أنت متأكد من حذف هذه القضية؟ سيتم حذف جميع الجلسات المرتبطة بها أيضاً.');
             if (!ok) return;
             try {
-                
+
                 const sessions = await getFromIndex('sessions', 'caseId', caseId);
                 for (const session of sessions) {
                     await deleteRecord('sessions', session.id);
                 }
-                
-                
+
+
                 await deleteRecord('cases', caseId);
-                
+
                 showToast('تم حذف القضية بنجاح', 'success');
-                
-                
+
+
                 displayClientViewForm(clientId);
             } catch (error) {
                 showToast('حدث خطأ في حذف القضية', 'error');
@@ -974,24 +991,24 @@ function attachClientViewListeners(clientId, opponents, sortedCases) {
         });
     });
 
-    
+
     document.querySelectorAll('.add-session-for-case-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation();
             const caseId = parseInt(btn.dataset.caseId);
-            
+
             try {
                 const caseRecord = await getById('cases', caseId);
                 if (!caseRecord) {
                     showToast('لم يتم العثور على بيانات القضية', 'error');
                     return;
                 }
-                
+
                 if (!caseRecord.caseNumber || !caseRecord.caseYear) {
                     showToast('يجب إدخال رقم الدعوى والسنة أولاً قبل إضافة الجلسات', 'error');
                     return;
                 }
-                
+
                 stateManager.currentCaseId = caseId;
                 navigateTo(displaySessionForm);
             } catch (error) {

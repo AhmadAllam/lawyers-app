@@ -72,6 +72,17 @@ class AdministrativeManager {
             } catch (_) { }
             await this.loadAllAdministrative();
             this.restoreState();
+
+            // افتراضيًا: حدد تاريخ اليوم عند فتح التقويم (إلا لو فيه فلترة محفوظة)
+            try {
+                if (!this.filteredDate && !this.filterType) {
+                    const t = this.getNow();
+                    const yyyy = t.getFullYear();
+                    const mm = String(t.getMonth() + 1).padStart(2, '0');
+                    const dd = String(t.getDate()).padStart(2, '0');
+                    this.selectedDate = `${yyyy}-${mm}-${dd}`;
+                }
+            } catch (_) { }
             this.render();
         } catch (error) {
             showToast('حدث خطأ في تحميل الأعمال الإدارية', 'error');
@@ -124,13 +135,13 @@ class AdministrativeManager {
         };
 
 
-        sessionStorage.setItem('administrativeState', JSON.stringify(this.savedState));
+        localStorage.setItem('administrativeState', JSON.stringify(this.savedState));
     }
 
 
     restoreState() {
         try {
-            const savedStateStr = sessionStorage.getItem('administrativeState');
+            const savedStateStr = localStorage.getItem('administrativeState');
             if (savedStateStr) {
                 const savedState = JSON.parse(savedStateStr);
                 this.viewMode = savedState.viewMode || this.getDefaultViewMode();
@@ -158,7 +169,7 @@ class AdministrativeManager {
 
 
     clearSavedState() {
-        sessionStorage.removeItem('administrativeState');
+        localStorage.removeItem('administrativeState');
     }
 
 
@@ -488,12 +499,21 @@ class AdministrativeManager {
         const year = this.currentDate.getFullYear();
         const month = this.currentDate.getMonth();
         const today = this.getNow();
+        const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
 
         const monthNames = [
             'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
             'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
         ];
+
+        const monthOptions = monthNames.map((m, idx) => `<option value="${idx}" ${idx === month ? 'selected' : ''}>${m}</option>`).join('');
+        const yearStart = 2000;
+        const yearEnd = 2050;
+        let yearOptions = '';
+        for (let y = yearStart; y <= yearEnd; y++) {
+            yearOptions += `<option value="${y}" ${y === year ? 'selected' : ''}>${y}</option>`;
+        }
 
 
         const dayNames = ['سبت', 'أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة'];
@@ -508,7 +528,7 @@ class AdministrativeManager {
         let startingDayOfWeek = (nativeStart + 1) % 7;
 
         let calendarHTML = `
-            <div class="calendar-container bg-white rounded-lg shadow-md border border-gray-200 w-full">
+            <div class="calendar-container bg-white rounded-lg shadow-md border border-gray-200 w-full relative">
                 <!-- Calendar Header -->
                 <div class="calendar-header bg-gradient-to-r from-indigo-500 to-indigo-600 text-white p-3 rounded-t-lg relative">
                     <button id="sync-time-btn" class="absolute left-2 top-2 w-7 h-7 rounded-full bg-green-400 hover:bg-green-500 text-white flex items-center justify-center shadow" title="مزامنة">
@@ -523,8 +543,25 @@ class AdministrativeManager {
                                 <i class="ri-arrow-left-s-line text-lg"></i>
                             </button>
                         </div>
-                        <h2 class="text-lg font-bold">${monthNames[month]} ${year}</h2>
+                        <button id="open-month-year-picker" type="button" class="text-lg font-bold px-2 py-1 rounded-md transition-colors border border-white/60 bg-white/10 hover:bg-white/20 hover:border-white/80 shadow-sm">${monthNames[month]} ${year}</button>
                         <div class="w-6"></div>
+                    </div>
+                </div>
+
+                <div id="month-year-picker" class="hidden absolute top-12 left-1/2 -translate-x-1/2 z-20 bg-white rounded-lg shadow-lg border border-gray-200 p-3 w-[260px]">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <div class="text-xs font-bold text-gray-700 mb-1">الشهر</div>
+                            <select id="picker-month" class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm">${monthOptions}</select>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-gray-700 mb-1">السنة</div>
+                            <select id="picker-year" class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm">${yearOptions}</select>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex justify-between gap-2">
+                        <button id="picker-cancel" type="button" class="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-bold">إلغاء</button>
+                        <button id="picker-go" type="button" class="flex-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-bold">عرض</button>
                     </div>
                 </div>
 
@@ -554,17 +591,30 @@ class AdministrativeManager {
             const worksForDay = this.getWorksForDate(currentDateStr);
             const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
             const isSelected = this.selectedDate === currentDateStr;
+            const dayDateObj = new Date(year, month, day);
+            const isPast = dayDateObj.getTime() < todayMidnight.getTime();
+            const hasWorks = worksForDay.length > 0;
 
             let dayClasses = 'h-20 border-l border-b border-gray-200 p-1.5 cursor-pointer transition-all duration-200 relative overflow-hidden';
             let dayContent = '';
             let dayNumberStyle = 'text-xs font-medium text-gray-800 mb-1';
 
 
-            if (worksForDay.length > 0) {
+            if (isPast && hasWorks) {
+                dayClasses += ' bg-gray-200 border-gray-400 hover:bg-gray-300 hover:border-gray-500';
+                dayNumberStyle = 'text-xs font-bold text-gray-800 mb-1';
+            } else if (hasWorks) {
                 dayClasses += ' bg-gradient-to-br from-green-100 to-green-200 border-green-300';
                 dayNumberStyle = 'text-xs font-bold text-green-800 mb-1';
+            } else if (isToday) {
+                dayClasses += ' bg-gradient-to-br from-indigo-100 to-indigo-200 border-indigo-300';
+                dayNumberStyle = 'text-xs font-bold text-indigo-800 mb-1';
+            } else {
+                dayClasses += ' hover:bg-indigo-50 hover:border-indigo-300';
+            }
 
 
+            if (worksForDay.length > 0) {
                 dayContent = `
                     <div class="flex items-center justify-center h-full">
                         <div class="bg-white bg-opacity-90 rounded-lg px-2 py-1 shadow-md border">
@@ -575,16 +625,14 @@ class AdministrativeManager {
                         </div>
                     </div>
                 `;
-            } else if (isToday) {
-                dayClasses += ' bg-gradient-to-br from-indigo-100 to-indigo-200 border-indigo-300';
-                dayNumberStyle = 'text-xs font-bold text-indigo-800 mb-1';
-            } else {
-                dayClasses += ' hover:bg-indigo-50 hover:border-indigo-300';
             }
 
 
             if (isSelected) {
-                if (worksForDay.length > 0) {
+                if (isPast && hasWorks) {
+                    dayClasses += ' ring-1 ring-gray-500 bg-gray-200';
+                    dayNumberStyle = 'text-xs font-bold text-gray-800 mb-1';
+                } else if (hasWorks) {
                     dayClasses += ' ring-2 ring-green-500';
                 } else {
                     dayClasses += ' ring-1 ring-indigo-500 bg-gradient-to-br from-indigo-200 to-indigo-300';
@@ -608,7 +656,7 @@ class AdministrativeManager {
         let baseList = this.__sortedDesc || this.administrative;
         if (this.sortOrder === 'asc') baseList = this.__sortedAsc || baseList;
 
-        let titleText = 'جميع الأعمال الإدارية';
+        let titleText = 'الإداري';
         let clearFilterButton = '';
         let filterFn = null;
 
@@ -747,6 +795,7 @@ class AdministrativeManager {
 
                 this.filteredDate = null;
                 document.getElementById('date-search').value = '';
+                this.saveState();
                 this.updateContent();
                 if (typeof closeMobileSidebar === 'function') closeMobileSidebar();
             }
@@ -755,6 +804,7 @@ class AdministrativeManager {
         document.getElementById('list-view-btn')?.addEventListener('click', () => {
             if (this.viewMode !== 'list') {
                 this.viewMode = 'list';
+                this.saveState();
                 this.updateContent();
                 if (typeof closeMobileSidebar === 'function') closeMobileSidebar();
             }
@@ -762,14 +812,77 @@ class AdministrativeManager {
 
 
         document.getElementById('prev-month')?.addEventListener('click', () => {
-            this.currentDate.setMonth(this.currentDate.getMonth() - 1);
+            this.currentDate.setMonth(this.currentDate.getMonth() + 1);
+            this.saveState();
             this.updateContent();
         });
 
         document.getElementById('next-month')?.addEventListener('click', () => {
-            this.currentDate.setMonth(this.currentDate.getMonth() + 1);
+            this.currentDate.setMonth(this.currentDate.getMonth() - 1);
+            this.saveState();
             this.updateContent();
         });
+
+
+        const openPickerBtn = document.getElementById('open-month-year-picker');
+        if (openPickerBtn) {
+            openPickerBtn.replaceWith(openPickerBtn.cloneNode(true));
+            const newOpenPickerBtn = document.getElementById('open-month-year-picker');
+            newOpenPickerBtn?.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const panel = document.getElementById('month-year-picker');
+                if (panel) panel.classList.toggle('hidden');
+            });
+        }
+
+        const cancelBtn = document.getElementById('picker-cancel');
+        if (cancelBtn) {
+            cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+            const newCancelBtn = document.getElementById('picker-cancel');
+            newCancelBtn?.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const panel = document.getElementById('month-year-picker');
+                if (panel) panel.classList.add('hidden');
+            });
+        }
+
+        const goBtn = document.getElementById('picker-go');
+        if (goBtn) {
+            goBtn.replaceWith(goBtn.cloneNode(true));
+            const newGoBtn = document.getElementById('picker-go');
+            newGoBtn?.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const monthSel = document.getElementById('picker-month');
+                const yearSel = document.getElementById('picker-year');
+                const panel = document.getElementById('month-year-picker');
+                const m = monthSel ? parseInt(monthSel.value, 10) : NaN;
+                const y = yearSel ? parseInt(yearSel.value, 10) : NaN;
+                if (!isNaN(m) && !isNaN(y)) {
+                    this.currentDate = new Date(y, m, 1);
+                    this.saveState();
+                    this.updateContent();
+                }
+                if (panel) panel.classList.add('hidden');
+            });
+        }
+
+        const panelEl = document.getElementById('month-year-picker');
+        if (panelEl && !panelEl.__outsideBound) {
+            panelEl.__outsideBound = true;
+            document.addEventListener('click', (e) => {
+                try {
+                    const panel = document.getElementById('month-year-picker');
+                    const btn = document.getElementById('open-month-year-picker');
+                    if (!panel || panel.classList.contains('hidden')) return;
+                    if (panel.contains(e.target)) return;
+                    if (btn && btn.contains(e.target)) return;
+                    panel.classList.add('hidden');
+                } catch (_) { }
+            });
+        }
 
 
         document.getElementById('sync-time-btn')?.addEventListener('click', async (e) => {

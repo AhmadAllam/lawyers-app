@@ -117,6 +117,126 @@ async function showInlineAddPaymentRow(accountId) {
     }
 }
 
+async function showInlineEditPaymentRow(accountId, paymentId) {
+    try {
+        const editorEl = document.getElementById('inline-payment-editor');
+        if (!editorEl) {
+            await displayEditPaymentForm(accountId, paymentId);
+            return;
+        }
+
+        const account = await getById('accounts', accountId);
+        if (!account) {
+            showToast('لم يتم العثور على الحساب', 'error');
+            return;
+        }
+
+        const payments = await getAccountPaymentsByAccountId(accountId);
+        const target = (payments || []).find(p => parseInt(p?.id || 0, 10) === parseInt(paymentId || 0, 10));
+        if (!target) {
+            showToast('لم يتم العثور على الدفعة', 'error');
+            return;
+        }
+
+        const totalFees = parseFloat(account.totalFees || 0) || 0;
+        const existingTotal = __sumPayments(payments);
+        const oldAmount = parseFloat(target.amount || 0) || 0;
+        const maxAllowedAfterEdit = (totalFees > 0) ? (totalFees - (existingTotal - oldAmount)) : null;
+
+        editorEl.innerHTML = `
+            <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                <div class="font-bold text-blue-800 mb-3 text-base">تعديل دفعة</div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div>
+                        <div class="flex items-stretch">
+                            <label class="px-3 py-2 border-2 border-gray-300 bg-gray-100 text-sm font-bold text-gray-700 shrink-0 w-28 text-right rounded-r-lg">المبلغ</label>
+                            <input type="number" id="inline-edit-payment-amount" step="0.01" min="0" class="flex-1 px-4 py-3 text-base bg-white border-2 border-gray-300 rounded-l-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 -mr-px font-bold" value="${oldAmount}" placeholder="مثال: 1000">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-stretch">
+                            <label class="px-3 py-2 border-2 border-gray-300 bg-gray-100 text-sm font-bold text-gray-700 shrink-0 w-28 text-right rounded-r-lg">التاريخ</label>
+                            <input type="text" id="inline-edit-payment-date" class="flex-1 px-4 py-3 text-base bg-white border-2 border-gray-300 rounded-l-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 -mr-px font-bold" value="${target.paymentDate || ''}" placeholder="مثال: 15/12/2025">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex gap-2 justify-end mt-4">
+                    <button type="button" id="inline-edit-payment-cancel" class="px-4 py-2 bg-gray-500 text-white rounded-md font-semibold">إلغاء</button>
+                    <button type="button" id="inline-edit-payment-save" class="px-4 py-2 bg-blue-600 text-white rounded-md font-semibold">حفظ</button>
+                </div>
+            </div>
+        `;
+
+        const amountEl = document.getElementById('inline-edit-payment-amount');
+        const dateEl = document.getElementById('inline-edit-payment-date');
+        const cancelBtn = document.getElementById('inline-edit-payment-cancel');
+        const saveBtn = document.getElementById('inline-edit-payment-save');
+
+        const applyLocaleFormatting = async () => {
+            try {
+                if (!dateEl) return;
+                const raw = (dateEl.value || '').trim();
+                if (!raw) return;
+                const d = __parseAccountsDateString(raw);
+                if (!d) return;
+                const locale = await __getAccountsDateLocaleSetting();
+                dateEl.value = d.toLocaleDateString(locale);
+            } catch (_) { }
+        };
+        if (dateEl) dateEl.addEventListener('blur', () => { applyLocaleFormatting(); });
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                editorEl.innerHTML = '';
+            });
+        }
+
+        if (saveBtn) {
+            saveBtn.addEventListener('click', async () => {
+                const amount = parseFloat(amountEl?.value || 0) || 0;
+                const rawDate = dateEl?.value || '';
+                const paymentDate = __normalizeDateToISO(rawDate);
+
+                if (!(amount > 0) || !Number.isFinite(amount)) {
+                    showToast('اكتب مبلغ صحيح', 'error');
+                    return;
+                }
+
+                if (totalFees > 0) {
+                    const newTotal = (existingTotal - oldAmount) + amount;
+                    if (newTotal > totalFees) {
+                        showToast('التعديل هيخلي إجمالي الدفعات أكبر من إجمالي الأتعاب', 'error');
+                        return;
+                    }
+                }
+
+                if (typeof updateAccountPayment !== 'function') {
+                    showToast('تعذر تعديل الدفعة', 'error');
+                    return;
+                }
+
+                await updateAccountPayment({
+                    ...target,
+                    id: target.id,
+                    amount,
+                    paymentDate: (paymentDate && String(paymentDate).trim() !== '') ? paymentDate : '',
+                    updatedAt: new Date().toISOString()
+                });
+
+                await refreshAccountComputedFields(accountId);
+                try { await renderPaymentsList(accountId); } catch (_) { }
+                editorEl.innerHTML = '';
+
+                loadAllAccounts();
+                updateAccountsStats();
+                showToast('تم تعديل الدفعة', 'success');
+            });
+        }
+    } catch (_) {
+        showToast('حدث خطأ في تعديل الدفعة', 'error');
+    }
+}
+
 function __openPopup(title, html) {
     const modal = document.getElementById('modal');
     const titleEl = document.getElementById('modal-popup-title');
@@ -198,7 +318,12 @@ async function renderPaymentsList(accountId) {
             e.preventDefault();
             const pid = parseInt(btn.dataset.paymentId, 10);
             if (!Number.isFinite(pid)) return;
-            await displayEditPaymentForm(accountId, pid);
+            const inlineEditor = document.getElementById('inline-payment-editor');
+            if (inlineEditor) {
+                await showInlineEditPaymentRow(accountId, pid);
+            } else {
+                await displayEditPaymentForm(accountId, pid);
+            }
         });
     });
     listEl.querySelectorAll('.delete-payment-btn').forEach(btn => {
@@ -346,6 +471,24 @@ async function refreshAccountComputedFields(accountId) {
             totalFeesEl.dataset.paidFees = String(paid);
         }
     } catch (_) { }
+}
+
+function __scrollClientGroupIntoView(clientGroup) {
+    try {
+        if (!clientGroup) return;
+        const list = document.getElementById('accounts-list');
+        if (!list) {
+            clientGroup.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return;
+        }
+        const listRect = list.getBoundingClientRect();
+        const groupRect = clientGroup.getBoundingClientRect();
+        const deltaTop = groupRect.top - listRect.top;
+        const topPad = 12;
+        list.scrollTo({ top: Math.max(0, list.scrollTop + deltaTop - topPad), behavior: 'smooth' });
+    } catch (_) {
+        try { clientGroup.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { }
+    }
 }
 
 async function displayAddPaymentForm(accountId) {
@@ -601,7 +744,7 @@ function displayAccountsModal() {
                                         <i class="ri-subtract-line text-white text-xs"></i>
                                     </div>
                                     <div class="text-sm font-bold text-red-700 mb-0.5" id="total-expenses">0</div>
-                                    <div class="text-xs font-medium text-red-800">إجمالي المصروفات</div>
+                                    <div class="text-xs font-medium text-red-800">المصروفات</div>
                                 </div>
 
                                 <!-- إجمالي الأرباح -->
@@ -658,7 +801,7 @@ function displayAccountsModal() {
                     if (accountsDetails && accountsDetails.classList.contains('hidden')) {
                         toggleClientDetails(expandedClientId);
                     }
-                    clientGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    __scrollClientGroupIntoView(clientGroup);
                 }
                 sessionStorage.removeItem('expandedClientId');
             }, 200);
@@ -873,13 +1016,13 @@ async function loadAllAccounts() {
                                         </div>
 
                                         <div class="flex justify-center gap-2 mt-3 pt-2 border-t border-gray-200">
-                                            <button class="edit-account-btn flex items-center gap-1 px-3 py-2 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 transition-colors" data-account-id="${account.id}" title="تعديل">
-                                                <i class="ri-edit-line text-sm"></i>
-                                                <span class="text-xs font-bold">تعديل</span>
+                                            <button class="edit-account-btn flex items-center gap-1 px-4 py-2 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 transition-colors" data-account-id="${account.id}" title="تعديل">
+                                                <i class="ri-edit-line text-base"></i>
+                                                <span class="text-sm font-bold">تعديل</span>
                                             </button>
-                                            <button class="delete-account-btn flex items-center gap-1 px-3 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition-colors" data-account-id="${account.id}" title="حذف">
-                                                <i class="ri-delete-bin-line text-sm"></i>
-                                                <span class="text-xs font-bold">حذف</span>
+                                            <button class="delete-account-btn flex items-center gap-1 px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition-colors" data-account-id="${account.id}" title="حذف">
+                                                <i class="ri-delete-bin-line text-base"></i>
+                                                <span class="text-sm font-bold">حذف</span>
                                             </button>
                                         </div>
                                     </div>
@@ -910,12 +1053,12 @@ async function loadAllAccounts() {
                                             </div>
                                         </div>
                                         <div class="flex items-center gap-1">
-                                            <button class="edit-account-btn flex items-center gap-1 px-2 py-1.5 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 transition-colors" data-account-id="${account.id}" title="تعديل">
-                                                <i class="ri-edit-line text-xs"></i>
+                                            <button class="edit-account-btn flex items-center gap-1 px-3 py-2 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 transition-colors" data-account-id="${account.id}" title="تعديل">
+                                                <i class="ri-edit-line text-sm"></i>
                                                 <span class="text-xs font-bold">تعديل</span>
                                             </button>
-                                            <button class="delete-account-btn flex items-center gap-1 px-2 py-1.5 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition-colors" data-account-id="${account.id}" title="حذف">
-                                                <i class="ri-delete-bin-line text-xs"></i>
+                                            <button class="delete-account-btn flex items-center gap-1 px-3 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition-colors" data-account-id="${account.id}" title="حذف">
+                                                <i class="ri-delete-bin-line text-sm"></i>
                                                 <span class="text-xs font-bold">حذف</span>
                                             </button>
                                         </div>
@@ -941,7 +1084,7 @@ async function loadAllAccounts() {
                     if (accountsDetails && accountsDetails.classList.contains('hidden')) {
                         toggleClientDetails(expandedClientId);
                     }
-                    clientGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    __scrollClientGroupIntoView(clientGroup);
                 }
                 sessionStorage.removeItem('expandedClientId');
             }, 100);
@@ -2137,8 +2280,14 @@ function setupAccountsScrollBox() {
         rightWrapper.style.height = targetH + 'px';
         rightWrapper.style.minHeight = '0px';
 
-        accountsList.style.maxHeight = (targetH - 24) + 'px';
+        rightWrapper.style.display = 'flex';
+        rightWrapper.style.flexDirection = 'column';
+        rightWrapper.style.overflow = 'hidden';
+
+        accountsList.style.flex = '1 1 auto';
+        accountsList.style.minHeight = '0px';
         accountsList.style.overflowY = 'auto';
+        accountsList.style.maxHeight = '';
 
         const leftPane = document.querySelector('#modal-content [data-left-pane="accounts"]');
         if (leftPane) {

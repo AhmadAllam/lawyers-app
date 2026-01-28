@@ -146,7 +146,10 @@ self.addEventListener('message', (event) => {
 
         for (const url of urls) {
           try {
-            await cache.add(url);
+            const req = new Request(url, { cache: 'no-store' });
+            const res = await fetch(req);
+            if (!res || !res.ok) throw new Error('Fetch failed');
+            await cache.put(url, res.clone());
           } catch (_) {
             try { failed.push(url); } catch (_) {}
           } finally {

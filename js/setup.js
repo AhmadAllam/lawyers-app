@@ -4,12 +4,30 @@ let wizardState = {
     chosenPath: '',
     loadDemoData: false
 };
-const steps = [
-    { id: 'office', required: true },
-	{ id: 'storage', required: false },
-    { id: 'demo', required: false },
-    { id: 'done', required: false }
-];
+let steps = [];
+
+function isDesktopApp(){
+    try { return !!(window && window.electronAPI); } catch (e) { return false; }
+}
+
+function isStandaloneMode(){
+    try {
+        return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (window.navigator && window.navigator.standalone);
+    } catch (e) {
+        return false;
+    }
+}
+
+function buildSteps(){
+    const s = [{ id: 'office', required: true }];
+    if (isDesktopApp()) s.push({ id: 'storage', required: false });
+    s.push({ id: 'demo', required: false });
+    if (!isDesktopApp() && !isStandaloneMode()) s.push({ id: 'install', required: false });
+    s.push({ id: 'done', required: false });
+    steps = s;
+    if (currentStep >= steps.length) currentStep = steps.length - 1;
+    if (currentStep < 0) currentStep = 0;
+}
 
 function $(id){ return document.getElementById(id); }
 
@@ -42,6 +60,7 @@ function render(){
     if (s === 'office') cont.innerHTML = getOfficeHtml();
 	else if (s === 'storage') cont.innerHTML = getStorageHtml();
     else if (s === 'demo') cont.innerHTML = getDemoHtml();
+    else if (s === 'install') cont.innerHTML = getInstallHtml();
     else if (s === 'done') cont.innerHTML = getDoneHtml();
 
     bindStepHandlers(s);
@@ -88,17 +107,37 @@ function getStorageHtml(){
 function getDemoHtml(){
     return `
       <div>
-        <h2 class="text-2xl font-extrabold mb-2">البيانات التجريبية</h2>
-        <p class="text-white/80 mb-6">اذا قمت بتفعيل هذا الخيار سيتم إدخال بيانات وهمية لكى تختبر البرنامج وتفهم طريقة عمله، ويمكنك حذفها من الإعدادات لاحقاً.</p>
+        <h2 class="text-2xl font-extrabold mb-2">البيانات الوهمية </h2>
+        <p class="text-white/80 mb-6">اذا قمت بتفعيل هذا الخيار سيدخل البرنامج بيانات وهمية  لكى تختبره وتفهم طريقة عمله بدلا من بذل مجهود لادخالها بنفسك .</p>
         <div class="text-white">
           <div class="flex items-center justify-between gap-3">
-            <label for="load-demo-data" class="text-base">تحميل بيانات تجريبية للاختبار</label>
-            <div class="relative">
+            <label for="load-demo-data" class="text-base">البيانات الوهمية </label>
+            <div class="flex items-center gap-3">
+              <span id="demo-switch-state" class="text-sm font-bold">معطلة</span>
+              <div class="relative">
               <input id="load-demo-data" type="checkbox" class="sr-only">
               <div id="demo-switch" class="relative w-12 h-7 rounded-full bg-gray-400 transition-colors">
                 <span id="demo-switch-knob" class="absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform"></span>
               </div>
+              </div>
             </div>
+          </div>
+        </div>
+      </div>
+    `;
+}
+
+function getInstallHtml(){
+    return `
+      <div>
+        <h2 class="text-2xl font-extrabold mb-2">تثبيت التطبيق</h2>
+        <p class="text-white/80 mb-6">تثبيت التطبيق على جهازك الحالى للعمل بدون انترنت وبسرعه اكبر</p>
+        <div class="space-y-3">
+          <button id="setup-install-btn" class="btn-primary px-6 py-3 rounded-xl w-full">تثبيت الآن</button>
+          <div id="setup-install-status" class="text-sm text-white/80"></div>
+          <div id="setup-install-final" class="text-sm font-bold text-green-200" style="display:none;"></div>
+          <div id="setup-install-help" class="text-sm text-white/80" style="display:none;">
+            لو زر التثبيت مش شغال: افتح قائمة المتصفح واختر \"تثبيت التطبيق\" أو \"إضافة للشاشة الرئيسية\".
           </div>
         </div>
       </div>
@@ -361,6 +400,7 @@ function bindStepHandlers(stepId){
         const cb = $('load-demo-data');
         const track = $('demo-switch');
         const knob = $('demo-switch-knob');
+        const stateLabel = $('demo-switch-state');
         const applySwitch = () => {
             if (track && cb) {
                 track.classList.toggle('bg-green-500', !!cb.checked);
@@ -368,6 +408,11 @@ function bindStepHandlers(stepId){
             }
             if (knob && cb) {
                 try { knob.style.transform = cb.checked ? 'translateX(20px)' : 'translateX(0)'; } catch (e) {}
+            }
+            if (stateLabel && cb) {
+                stateLabel.textContent = cb.checked ? 'مفعلة' : 'معطلة';
+                stateLabel.classList.toggle('text-green-200', !!cb.checked);
+                stateLabel.classList.toggle('text-red-200', !cb.checked);
             }
         };
         if (cb) {
@@ -385,6 +430,118 @@ function bindStepHandlers(stepId){
                 });
             }
         }
+    }
+
+    if (stepId === 'install') {
+        const btn = $('setup-install-btn');
+        const status = $('setup-install-status');
+        const finalMsg = $('setup-install-final');
+        const help = $('setup-install-help');
+
+        const setBtn = (text, disabled) => {
+            try { if (btn) btn.textContent = text; } catch (e) {}
+            try { if (btn) btn.disabled = !!disabled; } catch (e) {}
+        };
+
+        const showFinal = (text) => {
+            try {
+                if (!finalMsg) return;
+                finalMsg.textContent = text || '';
+                finalMsg.style.display = text ? 'block' : 'none';
+            } catch (e) {}
+        };
+
+        const refreshState = () => {
+            try {
+                const can = !!(window.pwaAPI && typeof window.pwaAPI.canPromptInstall === 'function' && window.pwaAPI.canPromptInstall());
+                setBtn('تثبيت الآن', !can);
+                if (status) status.textContent = can ? 'جاهز للتثبيت' : 'التثبيت غير متاح الآن';
+                showFinal('');
+                if (help) help.style.display = can ? 'none' : 'block';
+            } catch (e) {
+                if (help) help.style.display = 'block';
+            }
+        };
+
+        refreshState();
+
+        const updatePrecacheProgress = (done, total) => {
+            try {
+                const d = Number(done || 0);
+                const t = Number(total || 0);
+                const pct = t ? Math.min(100, Math.round((d / t) * 100)) : 0;
+                if (status) status.textContent = `جاري تحميل ملفات الأوفلاين: ${d} / ${t} (${pct}%)`;
+                setBtn('جاري تحميل ملفات الأوفلاين...', true);
+            } catch (e) {}
+        };
+
+        const onInstalled = () => {
+            try {
+                if (status) status.textContent = 'تم التثبيت بنجاح. جاري تجهيز ملفات الأوفلاين...';
+                setBtn('تم التثبيت ✓', true);
+            } catch (e) {}
+        };
+
+        const onPrecacheComplete = (failed) => {
+            try {
+                const f = Array.isArray(failed) ? failed : [];
+                if (f.length > 0) {
+                    if (status) status.textContent = 'تم التثبيت، لكن تعذر تحميل بعض ملفات الأوفلاين. يمكنك إعادة المحاولة بعد توفر الإنترنت.';
+                    setBtn('تم التثبيت ✓', true);
+                    showFinal('تحقق من الشاشة الرئيسية لديك: ستجد التطبيق تم تثبيته.');
+                } else {
+                    if (status) status.textContent = 'اكتمل تثبيت التطبيق وتجهيز ملفات الأوفلاين.';
+                    setBtn('تم ✓', true);
+                    showFinal('قم بالتحقق من الشاشة الرئيسية لديك: ستجد التطبيق تم تثبيته.');
+                }
+            } catch (e) {}
+        };
+
+        window.addEventListener('pwa:appinstalled', () => {
+            onInstalled();
+        });
+
+        window.addEventListener('pwa:precache:progress', (ev) => {
+            try {
+                const detail = (ev && ev.detail) ? ev.detail : {};
+                updatePrecacheProgress(detail.done, detail.total);
+            } catch (e) {}
+        });
+
+        window.addEventListener('pwa:precache:complete', (ev) => {
+            try {
+                const detail = (ev && ev.detail) ? ev.detail : {};
+                onPrecacheComplete(detail.failed);
+            } catch (e) {}
+        });
+
+        if (btn) {
+            btn.addEventListener('click', async () => {
+                try {
+                    showFinal('');
+                    if (help) help.style.display = 'none';
+                    if (status) status.textContent = 'جاري فتح نافذة التثبيت...';
+                    setBtn('جاري التثبيت...', true);
+                    const ok = !!(window.pwaAPI && typeof window.pwaAPI.promptInstall === 'function' && await window.pwaAPI.promptInstall());
+                    if (ok) {
+                        if (status) status.textContent = 'تم إرسال طلب التثبيت. برجاء إكمال التثبيت من النافذة.';
+                        // The real confirmation will come from the appinstalled event.
+                    } else {
+                        if (status) status.textContent = 'التثبيت غير متاح الآن';
+                        if (help) help.style.display = 'block';
+                        setBtn('تثبيت الآن', false);
+                    }
+                } catch (e) {
+                    if (status) status.textContent = 'التثبيت غير متاح الآن';
+                    if (help) help.style.display = 'block';
+                    setBtn('تثبيت الآن', false);
+                }
+            });
+        }
+
+        try {
+            window.dispatchEvent(new CustomEvent('lawyer:setup:install-step'));
+        } catch (e) {}
     }
 }
 
@@ -427,6 +584,49 @@ async function handleNext(){
         currentStep += 1;
         render();
     } else {
+        try {
+            if (!document.getElementById('app-loading-overlay')) {
+                const overlay = document.createElement('div');
+                overlay.id = 'app-loading-overlay';
+                overlay.setAttribute('data-app-loading', '1');
+                overlay.style.cssText = [
+                    'position:fixed',
+                    'inset:0',
+                    'background:rgba(255,255,255,0.92)',
+                    'z-index:2147483646',
+                    'display:flex',
+                    'align-items:center',
+                    'justify-content:center',
+                    'padding:16px',
+                    'direction:rtl'
+                ].join(';');
+
+                const box = document.createElement('div');
+                box.style.cssText = [
+                    'width:min(520px, 100%)',
+                    'background:#ffffff',
+                    'border:1px solid rgba(15,23,42,.12)',
+                    'border-radius:16px',
+                    'padding:16px',
+                    'box-shadow:0 16px 40px rgba(15,23,42,.14)',
+                    'font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial',
+                    'text-align:center'
+                ].join(';');
+
+                const title = document.createElement('div');
+                title.textContent = 'جاري التحميل';
+                title.style.cssText = 'font-weight:900;color:#0f172a;font-size:16px;margin-bottom:12px;';
+
+                const hint = document.createElement('div');
+                hint.textContent = 'الرجاء الانتظار...';
+                hint.style.cssText = 'margin-top:10px;font-size:13px;color:#334155;';
+
+                box.appendChild(title);
+                box.appendChild(hint);
+                overlay.appendChild(box);
+                (document.body || document.documentElement).appendChild(overlay);
+            }
+        } catch (e) {}
         
         try { 
             if (wizardState.loadDemoData) { await importSampleData(); }
@@ -443,6 +643,7 @@ function handleSkip(){ currentStep += 1; render(); }
 
 document.addEventListener('DOMContentLoaded', async () => {
     try { await initDB(); } catch (e) {}
+    try { buildSteps(); } catch (e) {}
     try {
         const savedOffice = await getSetting('officeName');
         if (savedOffice) wizardState.officeName = savedOffice;
@@ -472,7 +673,7 @@ async function importSampleData() {
             if (!res.ok) continue;
             const backupData = await res.json();
             await restoreBackup(backupData);
-            try { if (typeof showToast === 'function') showToast('تم تحميل البيانات التجريبية'); } catch (e) {}
+            try { if (typeof showToast === 'function') showToast('تم تحميل البيانات الوهمية'); } catch (e) {}
             return true;
         } catch (e) {}
     }
@@ -492,7 +693,7 @@ async function importSampleData() {
             const candidate = (window && (window.__LAW_APP_TEST_DATA || window.TEST_DATA || window.SAMPLE_DATA)) || null;
             if (candidate && typeof candidate === 'object') {
                 await restoreBackup(candidate);
-                try { if (typeof showToast === 'function') showToast('تم تحميل البيانات التجريبية'); } catch (e) {}
+                try { if (typeof showToast === 'function') showToast('تم تحميل البيانات الوهمية'); } catch (e) {}
                 return true;
             }
         } catch (e) {}

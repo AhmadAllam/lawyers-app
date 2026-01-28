@@ -4,16 +4,16 @@ const menuItemsDesktop = [
     { id: 'search', label: 'البحث والتعديل', icon: 'search', color: 'indigo', description: 'البحث في القضايا' },
 
     { id: 'sessions', label: 'الجلسات', icon: 'event', color: 'teal', description: 'إدارة الجلسات' },
-    { id: 'administrative', label: 'الأعمال الإدارية', icon: 'assignment', color: 'amber', description: 'المهام الإدارية' },
-    { id: 'clerk-papers', label: 'أوراق المحضرين', icon: 'description', color: 'sky', description: 'أوراق المحضرين' },
+    { id: 'administrative', label: 'المهام', icon: 'assignment', color: 'amber', description: 'المهام الإدارية' },
+    { id: 'clerk-papers', label: 'المحضرين', icon: 'description', color: 'sky', description: 'أوراق المحضرين' },
     { id: 'accounts', label: 'الحسابات', icon: 'account_balance', color: 'rose', description: 'إدارة الحسابات' },
 
-    { id: 'expert-sessions', label: 'جلسات الخبراء', icon: 'groups', color: 'orange', description: 'جلسات الخبراء' },
+    { id: 'expert-sessions', label: 'الخبراء', icon: 'groups', color: 'orange', description: 'جلسات الخبراء' },
     { id: 'archive', label: 'الأرشيف', icon: 'archive', color: 'fuchsia', description: 'الأرشيف والملفات' },
-    { id: 'legal-library', label: 'المكتبة القانونية', icon: 'local_library', color: 'lime', description: 'المراجع القانونية' },
+    { id: 'legal-library', label: 'المكتبة', icon: 'local_library', color: 'lime', description: 'المراجع القانونية' },
     { id: 'reports', label: 'التقارير', icon: 'bar_chart', color: 'slate', description: 'تقارير شاملة' },
 
-    { id: 'open-clients-folder', label: 'ملفات الموكلين', icon: 'folder_shared', color: 'cyan', description: 'عرض مستندات عملائك' }
+    { id: 'open-clients-folder', label: 'المجلدات', icon: 'folder_shared', color: 'cyan', description: 'عرض مجلدات موكليك' }
 ];
 
 

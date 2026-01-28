@@ -51,6 +51,17 @@ class SessionsCalendar {
             await this.loadAllSessions();
             this.restoreState();
 
+            // افتراضيًا: حدد تاريخ اليوم عند فتح التقويم (إلا لو فيه فلترة محفوظة)
+            try {
+                if (!this.filteredDate && !this.filterType) {
+                    const t = this.getNow();
+                    const yyyy = t.getFullYear();
+                    const mm = String(t.getMonth() + 1).padStart(2, '0');
+                    const dd = String(t.getDate()).padStart(2, '0');
+                    this.selectedDate = `${yyyy}-${mm}-${dd}`;
+                }
+            } catch (_) { }
+
 
             this.render();
         } catch (error) {
@@ -81,13 +92,13 @@ class SessionsCalendar {
         };
 
 
-        sessionStorage.setItem('sessionsCalendarState', JSON.stringify(this.savedState));
+        localStorage.setItem('sessionsCalendarState', JSON.stringify(this.savedState));
     }
 
 
     restoreState() {
         try {
-            const savedStateStr = sessionStorage.getItem('sessionsCalendarState');
+            const savedStateStr = localStorage.getItem('sessionsCalendarState');
             if (savedStateStr) {
                 const savedState = JSON.parse(savedStateStr);
                 this.viewMode = savedState.viewMode || this.getDefaultViewMode();
@@ -116,7 +127,7 @@ class SessionsCalendar {
 
 
     clearSavedState() {
-        sessionStorage.removeItem('sessionsCalendarState');
+        localStorage.removeItem('sessionsCalendarState');
     }
 
     async loadAllSessions() {
@@ -437,12 +448,21 @@ class SessionsCalendar {
         const year = this.currentDate.getFullYear();
         const month = this.currentDate.getMonth();
         const today = this.getNow();
+        const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
 
         const monthNames = [
             'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
             'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
         ];
+
+        const monthOptions = monthNames.map((m, idx) => `<option value="${idx}" ${idx === month ? 'selected' : ''}>${m}</option>`).join('');
+        const yearStart = 2000;
+        const yearEnd = 2050;
+        let yearOptions = '';
+        for (let y = yearStart; y <= yearEnd; y++) {
+            yearOptions += `<option value="${y}" ${y === year ? 'selected' : ''}>${y}</option>`;
+        }
 
 
         const dayNames = ['سبت', 'أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة'];
@@ -458,7 +478,7 @@ class SessionsCalendar {
         let startingDayOfWeek = (nativeStart + 1) % 7;
 
         let calendarHTML = `
-            <div class="calendar-container bg-white rounded-lg shadow-md border border-gray-200 w-full">
+            <div class="calendar-container bg-white rounded-lg shadow-md border border-gray-200 w-full relative">
                 <!-- Calendar Header -->
                 <div class="calendar-header bg-gradient-to-r from-blue-500 to-blue-600 text-white p-3 rounded-t-lg relative">
                     <button id="sync-time-btn" class="absolute left-2 top-2 w-7 h-7 rounded-full bg-green-400 hover:bg-green-500 text-white flex items-center justify-center shadow" title="مزامنة">
@@ -473,8 +493,25 @@ class SessionsCalendar {
                                 <i class="ri-arrow-left-s-line text-lg"></i>
                             </button>
                         </div>
-                        <h2 class="text-lg font-bold">${monthNames[month]} ${year}</h2>
+                        <button id="open-month-year-picker" type="button" class="text-lg font-bold px-2 py-1 rounded-md transition-colors border border-white/60 bg-white/10 hover:bg-white/20 hover:border-white/80 shadow-sm">${monthNames[month]} ${year}</button>
                         <div class="w-6"></div>
+                    </div>
+                </div>
+
+                <div id="month-year-picker" class="hidden absolute top-12 left-1/2 -translate-x-1/2 z-20 bg-white rounded-lg shadow-lg border border-gray-200 p-3 w-[260px]">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <div class="text-xs font-bold text-gray-700 mb-1">الشهر</div>
+                            <select id="picker-month" class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm">${monthOptions}</select>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-gray-700 mb-1">السنة</div>
+                            <select id="picker-year" class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm">${yearOptions}</select>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex justify-between gap-2">
+                        <button id="picker-cancel" type="button" class="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-bold">إلغاء</button>
+                        <button id="picker-go" type="button" class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-bold">عرض</button>
                     </div>
                 </div>
 
@@ -504,12 +541,18 @@ class SessionsCalendar {
             const sessionsForDay = this.getSessionsForDate(currentDateStr);
             const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
             const isSelected = this.selectedDate === currentDateStr;
+            const dayDateObj = new Date(year, month, day);
+            const isPast = dayDateObj.getTime() < todayMidnight.getTime();
+            const hasSessions = sessionsForDay.length > 0;
 
             let dayClasses = 'h-20 border-l border-b border-gray-200 p-1.5 cursor-pointer transition-all duration-200 relative overflow-hidden';
             let dayContent = '';
             let dayNumberStyle = 'text-xs font-medium text-gray-800 mb-1';
 
-            if (isToday) {
+            if (isPast && hasSessions) {
+                dayClasses += ' bg-gray-200 border-gray-400 hover:bg-gray-300 hover:border-gray-500';
+                dayNumberStyle = 'text-xs font-bold text-gray-800 mb-1';
+            } else if (isToday) {
                 dayClasses += ' bg-gradient-to-br from-blue-100 to-blue-200 border-blue-300';
                 dayNumberStyle = 'text-xs font-bold text-blue-800 mb-1';
             } else {
@@ -517,14 +560,21 @@ class SessionsCalendar {
             }
 
             if (isSelected) {
-                dayClasses += ' ring-1 ring-blue-500 bg-gradient-to-br from-blue-200 to-blue-300';
-                dayNumberStyle = 'text-xs font-bold text-blue-900 mb-1';
+                if (isPast && hasSessions) {
+                    dayClasses += ' ring-1 ring-gray-500 bg-gray-200';
+                    dayNumberStyle = 'text-xs font-bold text-gray-800 mb-1';
+                } else {
+                    dayClasses += ' ring-1 ring-blue-500 bg-gradient-to-br from-blue-200 to-blue-300';
+                    dayNumberStyle = 'text-xs font-bold text-blue-900 mb-1';
+                }
             }
 
-            if (sessionsForDay.length > 0) {
+            if (hasSessions) {
 
-                dayClasses += ' bg-gradient-to-br from-green-100 to-green-200 border-green-300';
-                dayNumberStyle = 'text-xs font-bold text-green-800 mb-1';
+                if (!isPast) {
+                    dayClasses += ' bg-gradient-to-br from-green-100 to-green-200 border-green-300';
+                    dayNumberStyle = 'text-xs font-bold text-green-800 mb-1';
+                }
 
 
                 dayContent = `
@@ -577,14 +627,17 @@ class SessionsCalendar {
         else if (this.sortOrder === 'decisions') baseList = this.__sortedDecisions || baseList;
 
         let sessionsToShow = baseList;
-        let titleText = 'جميع الجلسات';
+        let titleText = 'الجلسات';
         let clearFilterButton = '';
         let filterFn = null;
+
+        let titleClass = 'text-sm md:text-lg';
 
         if (this.filteredDate) {
             const eqDate = this.filteredDate;
             filterFn = (session) => session.sessionDate === eqDate;
             titleText = `جلسات يوم ${this.filteredDate}`;
+            titleClass = 'text-sm md:text-base';
             clearFilterButton = `
                 <button id="clear-filter-btn" class="px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600 transition-colors">
                     <i class="ri-close-line ml-1"></i>إلغاء الفلترة
@@ -611,6 +664,7 @@ class SessionsCalendar {
                     return typeof ts === 'number' && ts >= startMs && ts <= endMs;
                 };
                 titleText = 'جلسات الأسبوع الحالي';
+                titleClass = 'text-sm md:text-base';
 
             } else if (this.filterType === 'month') {
                 const currentMonth = today.getMonth();
@@ -621,10 +675,12 @@ class SessionsCalendar {
                     return !!sd && typeof sd === 'string' && sd.slice(0, 7) === ym;
                 };
                 titleText = 'جلسات الشهر الحالي';
+                titleClass = 'text-sm md:text-base';
 
             } else if (this.filterType === 'no-decisions') {
                 filterFn = (session) => !session.__hasDecision;
                 titleText = 'الجلسات بدون قرارات';
+                titleClass = 'text-sm md:text-base';
             }
 
             clearFilterButton = `
@@ -667,7 +723,7 @@ class SessionsCalendar {
                 <div id="sessions-list-wrapper" class="bg-blue-50 rounded-xl border-2 border-blue-300 shadow-sm h-full min-h-0 overflow-hidden flex flex-col">
                     <div class="sessions-list-header flex justify-between items-center p-3 border-b border-blue-200/60 bg-blue-50">
                         <div class="flex items-center gap-3">
-                            <h3 class="text-lg font-bold text-gray-800">${titleText} (<span id="sessions-total">${filterFn ? '...' : String(sessionsToShow.length)}</span>)</h3>
+                            <h3 class="${titleClass} font-bold text-gray-800">${titleText} (<span id="sessions-total">${filterFn ? '...' : String(sessionsToShow.length)}</span>)</h3>
                             ${clearFilterButton}
                         </div>
                         <div class="flex items-center gap-2">
@@ -697,6 +753,7 @@ class SessionsCalendar {
 
                 this.filteredDate = null;
                 document.getElementById('date-search').value = '';
+                this.saveState();
                 this.updateContent();
                 if (typeof closeMobileSidebar === 'function') closeMobileSidebar();
             }
@@ -707,6 +764,7 @@ class SessionsCalendar {
                 this.viewMode = 'list';
 
 
+                this.saveState();
                 this.updateContent();
                 if (typeof closeMobileSidebar === 'function') closeMobileSidebar();
             }
@@ -714,14 +772,77 @@ class SessionsCalendar {
 
 
         document.getElementById('prev-month')?.addEventListener('click', () => {
-            this.currentDate.setMonth(this.currentDate.getMonth() - 1);
+            this.currentDate.setMonth(this.currentDate.getMonth() + 1);
+            this.saveState();
             this.updateContent();
         });
 
         document.getElementById('next-month')?.addEventListener('click', () => {
-            this.currentDate.setMonth(this.currentDate.getMonth() + 1);
+            this.currentDate.setMonth(this.currentDate.getMonth() - 1);
+            this.saveState();
             this.updateContent();
         });
+
+
+        const openPickerBtn = document.getElementById('open-month-year-picker');
+        if (openPickerBtn) {
+            openPickerBtn.replaceWith(openPickerBtn.cloneNode(true));
+            const newOpenPickerBtn = document.getElementById('open-month-year-picker');
+            newOpenPickerBtn?.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const panel = document.getElementById('month-year-picker');
+                if (panel) panel.classList.toggle('hidden');
+            });
+        }
+
+        const cancelBtn = document.getElementById('picker-cancel');
+        if (cancelBtn) {
+            cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+            const newCancelBtn = document.getElementById('picker-cancel');
+            newCancelBtn?.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const panel = document.getElementById('month-year-picker');
+                if (panel) panel.classList.add('hidden');
+            });
+        }
+
+        const goBtn = document.getElementById('picker-go');
+        if (goBtn) {
+            goBtn.replaceWith(goBtn.cloneNode(true));
+            const newGoBtn = document.getElementById('picker-go');
+            newGoBtn?.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const monthSel = document.getElementById('picker-month');
+                const yearSel = document.getElementById('picker-year');
+                const panel = document.getElementById('month-year-picker');
+                const m = monthSel ? parseInt(monthSel.value, 10) : NaN;
+                const y = yearSel ? parseInt(yearSel.value, 10) : NaN;
+                if (!isNaN(m) && !isNaN(y)) {
+                    this.currentDate = new Date(y, m, 1);
+                    this.saveState();
+                    this.updateContent();
+                }
+                if (panel) panel.classList.add('hidden');
+            });
+        }
+
+        const panelEl = document.getElementById('month-year-picker');
+        if (panelEl && !panelEl.__outsideBound) {
+            panelEl.__outsideBound = true;
+            document.addEventListener('click', (e) => {
+                try {
+                    const panel = document.getElementById('month-year-picker');
+                    const btn = document.getElementById('open-month-year-picker');
+                    if (!panel || panel.classList.contains('hidden')) return;
+                    if (panel.contains(e.target)) return;
+                    if (btn && btn.contains(e.target)) return;
+                    panel.classList.add('hidden');
+                } catch (_) { }
+            });
+        }
 
 
         document.getElementById('sync-time-btn')?.addEventListener('click', async (e) => {

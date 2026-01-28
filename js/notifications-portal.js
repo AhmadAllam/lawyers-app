@@ -26,6 +26,14 @@ window.USE_NOTIFICATIONS_PORTAL = true;
     let bellBtn = getBellBtn();
     if (!bellBtn) return;
 
+    function isMobileBellActive(){
+      try {
+        const mobile = document.getElementById('notifications-btn-mobile');
+        if (mobile && isVisible(mobile)) return true;
+        return false;
+      } catch (_) { return false; }
+    }
+
     
     const pop = document.createElement('div');
     pop.id = 'notifications-portal-popover';
@@ -52,10 +60,29 @@ window.USE_NOTIFICATIONS_PORTAL = true;
     `;
     document.body.appendChild(pop);
 
+    // على الهاتف: خلي اللوحة بعرض الشاشة بدل عرض ثابت
+    try {
+      if (isMobileBellActive()) {
+        pop.style.width = '100vw';
+        pop.style.maxWidth = '100vw';
+        pop.style.left = '0px';
+        pop.style.right = '0px';
+        pop.style.borderRadius = '0px 0px 14px 14px';
+      }
+    } catch (_) { }
+
     function placePopover() {
       try {
         const r = bellBtn.getBoundingClientRect();
         const gap = 8;
+
+        // الهاتف: اللوحة تبقى بعرض الشاشة وتبدأ من أول الشاشة
+        if (isMobileBellActive()) {
+          pop.style.left = '0px';
+          pop.style.right = '0px';
+          pop.style.top = Math.round(r.bottom + gap) + 'px';
+          return;
+        }
         
         const width = pop.offsetWidth || 352; 
         let x = Math.round(r.right - width);

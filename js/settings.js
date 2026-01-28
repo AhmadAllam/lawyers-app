@@ -144,14 +144,14 @@ async function displaySettingsModal() {
                                 <div class="relative">
                                     <button id="backup-data-btn" class="w-full px-1 sm:px-4 py-3 bg-blue-900 text-white rounded-lg hover:bg-black transition-colors text-sm font-bold flex items-center justify-center gap-2 shadow-md">
                                         <i class="ri-download-2-line text-lg"></i>
-                                        إنشاء نسخة احتياطية
+                                        حفظ نسخة
                                     </button>
                                 </div>
                                 <div class="relative">
                                     <input type="file" id="restore-file-input" accept=".json" class="hidden">
                                     <button id="restore-data-btn" class="w-full px-1 sm:px-4 py-3 bg-blue-900 text-white rounded-lg hover:bg-black transition-colors text-sm font-bold flex items-center justify-center gap-2 shadow-md">
                                         <i class="ri-upload-2-line text-lg"></i>
-                                        استعادة من نسخة احتياطية
+                                        استرجاع نسخة
                                     </button>
                                 </div>
                             </div>
@@ -296,13 +296,20 @@ async function displaySettingsModal() {
                             </div>
                             
                             <div class="flex gap-2">
-                                <button id="check-updates-btn" class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-bold flex items-center justify-center gap-2 shadow-md">
+                                <button id="check-updates-btn" class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-bold flex items-center justify-center gap-2 shadow-md" style="display:none;">
                                     <i class="ri-refresh-line text-lg"></i>
                                     فحص التحديثات
                                 </button>
                                 <button id="install-update-btn" class="hidden flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-bold flex items-center justify-center gap-2 shadow-md">
                                     <i class="ri-download-line text-lg"></i>
                                     تحديث الآن
+                                </button>
+                            </div>
+
+                            <div class="mt-2">
+                                <button id="refresh-site-assets-btn" type="button" class="w-full px-4 py-3 bg-blue-900 text-white rounded-lg hover:bg-black transition-colors text-sm font-bold flex items-center justify-center gap-2 shadow-md">
+                                    <i class="ri-restart-line text-lg"></i>
+                                    تحديث التطبيق
                                 </button>
                             </div>
                         </div>
@@ -411,6 +418,28 @@ async function displaySettingsModal() {
                         e.preventDefault();
                         try { await handleSaveGeneralSettings(); } catch (_) { }
                         try { await handleSaveSecuritySettings({ silent: true }); } catch (_) { }
+                        return;
+                    }
+                } catch (_) { }
+
+                // زر تحديث ملفات الموقع: delegation احتياطي (مهم لو زرار اتولد بعد الربط أو حصلت مشكلة في bind)
+                try {
+                    const refreshBtn = e.target && e.target.closest ? e.target.closest('#refresh-site-assets-btn') : null;
+                    if (refreshBtn) {
+                        try { e.preventDefault(); e.stopPropagation(); } catch (_) { }
+                        try {
+                            if (typeof window.__runRefreshSiteAssets === 'function') {
+                                window.__runRefreshSiteAssets();
+                                return;
+                            }
+                        } catch (_) { }
+                        // fallback: على الأقل اعمل Reload
+                        try {
+                            const sep = (location.search && location.search.length > 0) ? '&' : '?';
+                            location.replace(location.pathname + location.search + sep + 'reloaded=' + Date.now() + location.hash);
+                        } catch (_) {
+                            try { location.reload(); } catch (_) { }
+                        }
                         return;
                     }
                 } catch (_) { }
@@ -1332,46 +1361,43 @@ async function displaySettingsModal() {
     // إعداد جداول المزامنة
 
 
-    document.getElementById('check-updates-btn').addEventListener('click', () => {
-        (async () => {
-            try {
-                const isDesktop = !!(window.electronAPI);
-                if (!isDesktop) {
-                    try {
-                        if ('serviceWorker' in navigator) {
-                            const regs = await navigator.serviceWorker.getRegistrations();
-                            await Promise.allSettled((regs || []).map(r => r.unregister()));
-                        }
-                    } catch (_) { }
+    (function initUpdatesButtonsVisibility() {
+        try {
+            const isDesktop = !!(window.electronAPI);
+            const checkBtn = document.getElementById('check-updates-btn');
+            const installBtn = document.getElementById('install-update-btn');
+            const refreshBtn = document.getElementById('refresh-site-assets-btn');
 
-                    try {
-                        if (typeof caches !== 'undefined' && caches && typeof caches.keys === 'function') {
-                            const keys = await caches.keys();
-                            await Promise.allSettled((keys || []).map(k => caches.delete(k)));
-                        }
-                    } catch (_) { }
-
-                    try { localStorage.removeItem('pwa_offline_ready'); } catch (_) { }
-
-                    try {
-                        const sep = (location.search && location.search.length > 0) ? '&' : '?';
-                        location.replace(location.pathname + location.search + sep + 'reloaded=' + Date.now() + location.hash);
-                    } catch (_) {
-                        try { location.reload(); } catch (_) { }
-                    }
-                    return;
-                }
-
-                if (window.updaterAPI) {
-                    window.updaterAPI.checkForUpdates();
-                } else {
-                    showToast('نظام التحديثات غير متاح', 'warning');
-                }
-            } catch (e) {
-                try { showToast('تعذر تنفيذ التحديث الآن', 'error'); } catch (_) { }
+            if (isDesktop) {
+                // Electron: فحص التحديثات فقط
+                if (checkBtn) checkBtn.style.display = '';
+                if (installBtn) installBtn.style.display = '';
+                if (refreshBtn) refreshBtn.style.display = 'none';
+            } else {
+                // Web/PWA: إخفاء فحص التحديثات/تحديث الآن، وإظهار تحديث التطبيق
+                if (checkBtn) checkBtn.style.display = 'none';
+                if (installBtn) installBtn.style.display = 'none';
+                if (refreshBtn) refreshBtn.style.display = '';
             }
-        })();
-    });
+        } catch (_) { }
+    })();
+
+    const __checkBtnEl = document.getElementById('check-updates-btn');
+    if (__checkBtnEl && window.electronAPI) {
+        __checkBtnEl.addEventListener('click', () => {
+            (async () => {
+                try {
+                    if (window.updaterAPI) {
+                        window.updaterAPI.checkForUpdates();
+                    } else {
+                        showToast('نظام التحديثات غير متاح', 'warning');
+                    }
+                } catch (e) {
+                    try { showToast('تعذر تنفيذ التحديث الآن', 'error'); } catch (_) { }
+                }
+            })();
+        });
+    }
 
     document.getElementById('install-update-btn').addEventListener('click', () => {
         if (window.updaterAPI) {
@@ -1380,6 +1406,166 @@ async function displaySettingsModal() {
             showToast('نظام التحديثات غير متاح', 'warning');
         }
     });
+
+    // تحديث ملفات الموقع (PWA/Browser) بدون المساس ببيانات الجداول
+    (function initRefreshSiteAssetsButton() {
+        const btn = document.getElementById('refresh-site-assets-btn');
+        if (!btn) return;
+
+        const setStatus = (msg) => {
+            try {
+                const el = document.getElementById('update-status-text');
+                if (!el) return;
+                el.innerHTML = `<i class="ri-refresh-line"></i> <span class="text-gray-700">${msg}</span>`;
+            } catch (_) { }
+        };
+
+        const showProgress = () => {
+            try {
+                const c = document.getElementById('update-progress-container');
+                if (c) c.classList.remove('hidden');
+            } catch (_) { }
+        };
+
+        const hideProgress = () => {
+            try {
+                const c = document.getElementById('update-progress-container');
+                if (c) c.classList.add('hidden');
+            } catch (_) { }
+        };
+
+        const setProgressPct = (pct) => {
+            try {
+                const p = Math.max(0, Math.min(100, Math.round(Number(pct) || 0)));
+                const bar = document.getElementById('update-progress-bar');
+                const txt = document.getElementById('update-progress-text');
+                if (bar) bar.style.width = p + '%';
+                if (txt) txt.textContent = p + '%';
+            } catch (_) { }
+        };
+
+        const forceReloadNow = () => {
+            try {
+                const sep = (location.search && location.search.length > 0) ? '&' : '?';
+                location.replace(location.pathname + location.search + sep + 'reloaded=' + Date.now() + location.hash);
+            } catch (_) {
+                try { location.reload(); } catch (_) { }
+            }
+        };
+
+        const ensureSwListener = () => {
+            try {
+                if (window.__refreshSiteAssetsSwListenerBound) return;
+                window.__refreshSiteAssetsSwListenerBound = true;
+                if (!('serviceWorker' in navigator)) return;
+
+                navigator.serviceWorker.addEventListener('message', (event) => {
+                    try {
+                        const data = event.data || {};
+                        if (!window.__refreshSiteAssetsActive) return;
+
+                        if (data.type === 'PRECACHE_PROGRESS') {
+                            const done = Number(data.done || 0);
+                            const total = Number(data.total || 0);
+                            const pct = total ? Math.min(100, Math.round((done / total) * 100)) : 0;
+                            showProgress();
+                            setProgressPct(pct);
+                            setStatus('جاري تحديث ملفات الموقع...');
+                        }
+
+                        if (data.type === 'PRECACHE_COMPLETE') {
+                            const done = Number(data.done || 0);
+                            const total = Number(data.total || 0);
+                            const pct = total ? Math.min(100, Math.round((done / total) * 100)) : 100;
+                            setProgressPct(pct);
+                            hideProgress();
+                            window.__refreshSiteAssetsActive = false;
+
+                            try {
+                                const failed = Array.isArray(data.failed) ? data.failed : [];
+                                if (failed.length > 0) {
+                                    setStatus('تم التحديث جزئياً (بعض الملفات لم تُحمّل) — سيتم إعادة التحميل');
+                                } else {
+                                    setStatus('تم تحديث ملفات الموقع — سيتم إعادة التحميل');
+                                }
+                            } catch (_) {
+                                setStatus('تم تحديث ملفات الموقع — سيتم إعادة التحميل');
+                            }
+
+                            setTimeout(() => {
+                                forceReloadNow();
+                            }, 350);
+                        }
+                    } catch (_) { }
+                });
+            } catch (_) { }
+        };
+
+        // اجعلها متاحة لـ delegation الاحتياطي
+        window.__runRefreshSiteAssets = async function __runRefreshSiteAssets() {
+            try {
+                // داخل Electron لا نستخدم PWA cache
+                if (window.electronAPI) {
+                    try { if (typeof showToast === 'function') showToast('هذه الميزة للمتصفح/الموقع فقط وليست لنسخة سطح المكتب', 'error'); } catch (_) { }
+                    return;
+                }
+
+                if (!(typeof navigator !== 'undefined' && 'serviceWorker' in navigator)) {
+                    try { if (typeof showToast === 'function') showToast('المتصفح لا يدعم هذه الميزة', 'error'); } catch (_) { }
+                    return;
+                }
+
+                // نطلب بعد إعادة التحميل تشغيل نفس شاشة تجهيز الأوفلاين وإعادة تنزيل الملفات
+                try { localStorage.setItem('pwa_force_precache', '1'); } catch (_) { }
+                try { localStorage.removeItem('pwa_offline_ready'); } catch (_) { }
+
+                setStatus('جاري تحديث ملفات الموقع...');
+
+                // امسح SW والكاشات ثم أعد التحميل (ده يضمن سلوك مشابه لأول مرة)
+                try {
+                    if ('serviceWorker' in navigator) {
+                        const regs = await navigator.serviceWorker.getRegistrations();
+                        await Promise.allSettled((regs || []).map(r => r.unregister()));
+                    }
+                } catch (_) { }
+
+                try {
+                    if (typeof caches !== 'undefined' && caches && typeof caches.keys === 'function') {
+                        const keys = await caches.keys();
+                        await Promise.allSettled((keys || []).map(k => caches.delete(k)));
+                    }
+                } catch (_) { }
+
+                setTimeout(() => {
+                    try { forceReloadNow(); } catch (_) { }
+                }, 150);
+            } catch (_) {
+                setTimeout(() => { try { forceReloadNow(); } catch (_) { } }, 250);
+            }
+
+        };
+
+        // ربط مباشر (لو شغال) + delegation احتياطي موجود فوق
+        try {
+            btn.addEventListener('click', () => {
+                try {
+                    if (typeof showToast === 'function') showToast('جاري تحديث ملفات الموقع...', 'info');
+                } catch (_) { }
+                try { window.__runRefreshSiteAssets(); } catch (_) { }
+            });
+        } catch (_) { }
+
+        try {
+            // لو الصفحة تم إعادة تحميلها من زر التحديث، اعرض حالة لطيفة
+            if (typeof window !== 'undefined' && typeof location !== 'undefined') {
+                const url = new URL(location.href);
+                const reloaded = url.searchParams.get('reloaded');
+                if (reloaded) {
+                    setStatus('تم إعادة تحميل الملفات بنجاح');
+                }
+            }
+        } catch (_) { }
+    })();
 
     async function refreshCurrentVersionLabel(tryIndex = 0) {
         try {

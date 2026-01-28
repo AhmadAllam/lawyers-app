@@ -698,7 +698,6 @@ async function loadAllClients() {
             return;
         }
 
-        let html = '';
         // Prefetch cases and sessions once, then compute per-client data locally
         const allCases = await getAllCases();
         const allSessions = await getAllSessions();
@@ -715,71 +714,25 @@ async function loadAllClients() {
         let clientOpponentRelations = {};
         try { clientOpponentRelations = JSON.parse(localStorage.getItem('clientOpponentRelations') || '{}'); } catch (_) { clientOpponentRelations = {}; }
 
-        for (const client of sortedClients) {
-            const cases = casesByClient.get(client.id) || [];
-            const caseOpponentIds = [...new Set(cases.map(c => c.opponentId).filter(id => id))];
-            const tempOpponentIds = clientOpponentRelations[client.id] || [];
-            const uniqueOpponentIdsSet = new Set([...caseOpponentIds, ...tempOpponentIds]);
-            const opponentsCount = uniqueOpponentIdsSet.size;
-            let totalSessions = 0;
-            for (const caseRecord of cases) {
-                totalSessions += (sessionsCountByCase.get(caseRecord.id) || 0);
-            }
-            html += `
-                <div class="client-card bg-gradient-to-r from-white via-blue-50 to-white border border-blue-200 rounded-xl p-5 hover:shadow-lg hover:border-blue-400 hover:from-blue-50 hover:to-blue-100 transition-all duration-300 cursor-pointer group" data-client-id="${client.id}">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-4 flex-1">
-                            <div class="relative">
-                                <div class="w-12 h-12 bg-gradient-to-br from-green-600 to-green-700 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                                    <i class="ri-user-3-line text-white text-lg"></i>
-                                </div>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <h4 class="font-bold text-xl text-gray-800 mb-2 group-hover:text-blue-700 transition-colors">${client.name}</h4>
-                                <div class="flex items-center gap-3">
-                                    <div class="flex items-center gap-1 bg-red-100 px-3 py-1.5 rounded-full">
-                                        <i class="ri-shield-user-line text-red-600 text-sm"></i>
-                                        <span class="text-sm font-semibold text-red-700">${opponentsCount}</span>
-                                        <span class="text-xs text-red-600">خصم</span>
-                                    </div>
-                                    <div class="flex items-center gap-1 bg-blue-100 px-3 py-1.5 rounded-full">
-                                        <i class="ri-briefcase-line text-blue-600 text-sm"></i>
-                                        <span class="text-sm font-semibold text-blue-700">${cases.length}</span>
-                                        <span class="text-xs text-blue-600">قضية</span>
-                                    </div>
-                                    <div class="flex items-center gap-1 bg-green-100 px-3 py-1.5 rounded-full">
-                                        <i class="ri-calendar-event-line text-green-600 text-sm"></i>
-                                        <span class="text-sm font-semibold text-green-700">${totalSessions}</span>
-                                        <span class="text-xs text-green-600">جلسة</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex flex-col gap-2">
-                            <button class="attach-files-btn bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105" data-client-name="${client.name}">
-                                <i class="ri-attachment-2 ml-1"></i>إرفاق ملفات
-                            </button>
-                            <button class="open-folder-btn bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105" data-client-name="${client.name}">
-                                <i class="ri-folder-open-line ml-1"></i>فتح المجلد
-                            </button>
-                            <button class="delete-client-btn bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105" data-client-id="${client.id}">
-                                <i class="ri-delete-bin-line ml-1"></i>حذف
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
+        clientsList.innerHTML = '<div class="text-center text-gray-500 py-10"><i class="ri-loader-4-line animate-spin text-3xl mb-3"></i><p class="text-lg">جاري تحميل الموكلين...</p></div>';
 
-        // تعديل الأزرار قبل العرض
-        html = html.replace(
-            /<button class="attach-files-btn([^>]*)>\s*<i class="ri-attachment-2 ml-1"><\/i>إرفاق ملفات\s*<\/button>\s*<button class="open-folder-btn([^>]*)>\s*<i class="ri-folder-open-line ml-1"><\/i>فتح المجلد\s*<\/button>/g,
-            '<div class="flex gap-1"><button class="attach-files-btn$1 px-3 py-2 text-xs"><i class="ri-attachment-2"></i></button><button class="open-folder-btn$2 px-3 py-2 text-xs"><i class="ri-folder-open-line"></i></button></div>'
-        );
-        html = html.replace(/<button class="delete-client-btn([^>]*)>\s*<i class="ri-delete-bin-line ml-1"><\/i>حذف\s*<\/button>/g, '<button class="delete-client-btn$1><i class="ri-delete-bin-line"></i></button>');
-
-        clientsList.innerHTML = html;
+        const state = {
+            clients: sortedClients,
+            index: 0,
+            total: sortedClients.length,
+            batchSize: 60,
+            casesByClient,
+            sessionsCountByCase,
+            clientOpponentRelations,
+            done: false,
+            rendering: false
+        };
+        __setupClientsIncrementalScroll(state);
         attachClientCardListeners();
+        requestAnimationFrame(() => {
+            __renderNextClientsBatch();
+            setTimeout(() => { try { __renderNextClientsBatch(); } catch (_) { } }, 0);
+        });
 
     } catch (error) {
         const el = document.getElementById('clients-list');
@@ -794,38 +747,141 @@ async function loadAllClients() {
 
 // مستمعي أحداث كروت الموكلين
 function attachClientCardListeners() {
-    // النقر على كارت الموكل
-    document.querySelectorAll('.client-card').forEach(card => {
-        card.addEventListener('click', async (e) => {
+    const clientsList = document.getElementById('clients-list');
+    if (!clientsList) return;
+    if (clientsList.__delegatedBound) return;
+    clientsList.__delegatedBound = true;
+
+    clientsList.addEventListener('click', async (e) => {
+        try {
+            const attachBtn = e.target.closest('.attach-files-btn');
+            if (attachBtn) {
+                e.stopPropagation();
+                const clientName = attachBtn.dataset.clientName;
+                await handleCreateFolderAndUploadForClient(clientName);
+                return;
+            }
+            const openBtn = e.target.closest('.open-folder-btn');
+            if (openBtn) {
+                e.stopPropagation();
+                const clientName = openBtn.dataset.clientName;
+                await handleOpenFolderForClient(clientName);
+                return;
+            }
+            const delBtn = e.target.closest('.delete-client-btn');
+            if (delBtn) {
+                e.stopPropagation();
+                const clientId = parseInt(delBtn.dataset.clientId);
+                await handleDeleteClient(clientId);
+                return;
+            }
+            const card = e.target.closest('.client-card');
+            if (!card) return;
             if (e.target.closest('.edit-client-btn') || e.target.closest('.delete-client-btn') || e.target.closest('.attach-files-btn') || e.target.closest('.open-folder-btn')) return;
             const clientId = parseInt(card.dataset.clientId);
             displayClientEmbedded(clientId);
-        });
+        } catch (_) { }
     });
+}
 
-    document.querySelectorAll('.attach-files-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const clientName = btn.dataset.clientName;
-            await handleCreateFolderAndUploadForClient(clientName);
-        });
-    });
+function __buildClientCardHTML(client, { opponentsCount = 0, casesCount = 0, totalSessions = 0 } = {}) {
+    const clientId = client && client.id != null ? client.id : '';
+    const name = client && client.name ? client.name : '';
+    return `
+        <div class="client-card bg-gradient-to-r from-white via-blue-50 to-white border border-blue-200 rounded-xl p-5 hover:shadow-lg hover:border-blue-400 hover:from-blue-50 hover:to-blue-100 transition-all duration-300 cursor-pointer group" data-client-id="${clientId}">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4 flex-1">
+                    <div class="relative">
+                        <div class="w-12 h-12 bg-gradient-to-br from-green-600 to-green-700 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                            <i class="ri-user-3-line text-white text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-bold text-xl text-gray-800 mb-2 group-hover:text-blue-700 transition-colors">${name}</h4>
+                        <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-1 bg-red-100 px-3 py-1.5 rounded-full">
+                                <i class="ri-shield-user-line text-red-600 text-sm"></i>
+                                <span class="text-sm font-semibold text-red-700">${opponentsCount}</span>
+                                <span class="text-xs text-red-600">خصم</span>
+                            </div>
+                            <div class="flex items-center gap-1 bg-blue-100 px-3 py-1.5 rounded-full">
+                                <i class="ri-briefcase-line text-blue-600 text-sm"></i>
+                                <span class="text-sm font-semibold text-blue-700">${casesCount}</span>
+                                <span class="text-xs text-blue-600">قضية</span>
+                            </div>
+                            <div class="flex items-center gap-1 bg-green-100 px-3 py-1.5 rounded-full">
+                                <i class="ri-calendar-event-line text-green-600 text-sm"></i>
+                                <span class="text-sm font-semibold text-green-700">${totalSessions}</span>
+                                <span class="text-xs text-green-600">جلسة</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <div class="flex gap-1">
+                        <button class="attach-files-btn bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105" data-client-name="${name}"><i class="ri-attachment-2"></i></button>
+                        <button class="open-folder-btn bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105" data-client-name="${name}"><i class="ri-folder-open-line"></i></button>
+                    </div>
+                    <button class="delete-client-btn bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105" data-client-id="${clientId}"><i class="ri-delete-bin-line"></i></button>
+                </div>
+            </div>
+        </div>
+    `;
+}
 
-    document.querySelectorAll('.open-folder-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const clientName = btn.dataset.clientName;
-            await handleOpenFolderForClient(clientName);
-        });
-    });
+function __setupClientsIncrementalScroll(state) {
+    try {
+        const clientsList = document.getElementById('clients-list');
+        if (!clientsList) return;
+        clientsList.__renderState = state;
+        if (clientsList.__scrollBound) return;
+        clientsList.__scrollBound = true;
+        clientsList.addEventListener('scroll', () => {
+            try {
+                const st = clientsList.__renderState;
+                if (!st || st.done || st.rendering) return;
+                const nearBottom = (clientsList.scrollTop + clientsList.clientHeight) >= (clientsList.scrollHeight - 250);
+                if (nearBottom) {
+                    __renderNextClientsBatch();
+                }
+            } catch (_) { }
+        }, { passive: true });
+    } catch (_) { }
+}
 
-    document.querySelectorAll('.delete-client-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const clientId = parseInt(btn.dataset.clientId);
-            await handleDeleteClient(clientId);
-        });
-    });
+function __renderNextClientsBatch() {
+    const clientsList = document.getElementById('clients-list');
+    if (!clientsList) return;
+    const state = clientsList.__renderState;
+    if (!state || state.done || state.rendering) return;
+    state.rendering = true;
+    try {
+        const start = state.index;
+        const end = Math.min(state.total, start + state.batchSize);
+        let html = '';
+        for (let i = start; i < end; i++) {
+            const client = state.clients[i];
+            const cases = state.casesByClient.get(client.id) || [];
+            const caseOpponentIds = [...new Set(cases.map(c => c.opponentId).filter(id => id))];
+            const tempOpponentIds = (state.clientOpponentRelations && state.clientOpponentRelations[client.id]) ? state.clientOpponentRelations[client.id] : [];
+            const opponentsCount = new Set([...caseOpponentIds, ...tempOpponentIds]).size;
+            let totalSessions = 0;
+            for (const caseRecord of cases) {
+                totalSessions += (state.sessionsCountByCase.get(caseRecord.id) || 0);
+            }
+            html += __buildClientCardHTML(client, { opponentsCount, casesCount: cases.length, totalSessions });
+        }
+        if (start === 0) {
+            clientsList.innerHTML = '';
+        }
+        clientsList.insertAdjacentHTML('beforeend', html);
+        state.index = end;
+        state.done = (state.index >= state.total);
+        attachClientCardListeners();
+    } catch (_) {
+    } finally {
+        state.rendering = false;
+    }
 }
 
 function restoreSearchLayout({ card, backMain } = {}) {

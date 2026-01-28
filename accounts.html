@@ -39,6 +39,31 @@
       max-width: none !important;
       width: 100% !important;
     }
+
+    #accounts-search {
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    #accounts-search::placeholder {
+      font-size: 0.75rem;
+      line-height: 1rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    @media (max-width: 1024px) {
+      #accounts-search {
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+      }
+      #accounts-search::placeholder {
+        font-size: 0.7rem;
+        line-height: 1rem;
+      }
+    }
   </style>
 </head>
 

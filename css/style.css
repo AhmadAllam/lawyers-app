@@ -1069,6 +1069,18 @@ select:focus {
     line-height: 1 !important;
 }
 
+@media (max-width: 767px) {
+    #administrative-list .work-card .edit-work-btn,
+    #administrative-list .work-card .delete-work-btn {
+        padding: 6px 10px !important;
+    }
+
+    #administrative-list .work-card .edit-work-btn i,
+    #administrative-list .work-card .delete-work-btn i {
+        font-size: 16px !important;
+    }
+}
+
 /* أعمال إدارية - جعل أزرار الكارت تحت بعض داخل الحاوية اليمنى */
 #administrative-list .work-card>div.flex>div.flex:last-child {
     flex-direction: column !important;
@@ -1092,7 +1104,6 @@ select:focus {
 #sessions-list .session-card .edit-session-btn,
 #sessions-list .session-card .delete-session-btn {
     padding: 3px 6px !important;
-    /* تقليل بسيط للحجم */
     border-radius: 6px !important;
     color: #ffffff !important;
     /* أيقونة/نص أبيض */
@@ -1136,8 +1147,21 @@ select:focus {
 #sessions-list .session-card .edit-session-btn i,
 #sessions-list .session-card .delete-session-btn i {
     font-size: 14px !important;
-    /* تقليل بسيط لحجم الأيقونة */
     line-height: 1 !important;
+}
+
+@media (max-width: 767px) {
+    #sessions-list .session-card .view-case-btn,
+    #sessions-list .session-card .edit-session-btn,
+    #sessions-list .session-card .delete-session-btn {
+        padding: 6px 10px !important;
+    }
+
+    #sessions-list .session-card .view-case-btn i,
+    #sessions-list .session-card .edit-session-btn i,
+    #sessions-list .session-card .delete-session-btn i {
+        font-size: 16px !important;
+    }
 }
 
 /* جلسات - تخطيط أزرار الكارت حسب حجم الشاشة */
@@ -1337,6 +1361,23 @@ select:focus {
 
 .archive-toggle-btn:active {
     transform: scale(0.95);
+}
+
+@media (min-width: 769px) {
+    #modal-content .case-card .archive-toggle-btn,
+    #modal-content .case-mini-card .archive-toggle-btn {
+        padding: 10px 14px !important;
+    }
+
+    #modal-content .case-card .archive-toggle-btn i,
+    #modal-content .case-mini-card .archive-toggle-btn i {
+        font-size: 16px !important;
+    }
+
+    #modal-content .case-card .archive-toggle-btn span,
+    #modal-content .case-mini-card .archive-toggle-btn span {
+        font-size: 14px !important;
+    }
 }
 
 /* تحسين الألوان للحالات */
@@ -1696,7 +1737,7 @@ select:focus {
     }
 
     #administrative-list-wrapper .administrative-list-header h3 {
-        font-size: .95rem !important
+        font-size: .8rem !important
     }
 
     #administrative-list-wrapper .administrative-list-header>.flex.items-center.gap-3 {
@@ -1834,6 +1875,35 @@ select:focus {
         display: none !important
     }
 
+    .client-view--mobile-tight {
+        margin-left: -12px !important;
+        margin-right: -12px !important;
+        width: calc(100% + 24px) !important;
+        max-width: calc(100% + 24px) !important;
+    }
+
+    .client-view--mobile-tight .w-24,
+    .client-view--mobile-tight .md\:w-28 {
+        width: 5.5rem !important;
+        min-width: 5.5rem !important
+    }
+
+    .client-view--mobile-tight .bg-green-50 {
+        padding: 12px !important;
+    }
+
+    .client-view--mobile-tight #client-cases-list {
+        margin-left: -6px !important;
+        margin-right: -6px !important;
+    }
+
+    .client-view--mobile-tight #client-cases-list .case-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
     .client-view .p-6 {
         padding: 12px !important
     }
@@ -1892,12 +1962,37 @@ select:focus {
         font-size: .8rem !important
     }
 
+    .case-details--mobile-tight {
+        max-width: none !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .case-details--mobile-tight .p-4 {
+        padding: 0 !important;
+    }
+
+    .case-details--mobile-tight .bg-blue-50 {
+        border-radius: 0 !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        background: transparent !important;
+    }
+
+    .case-details--mobile-tight .space-y-4>*+* {
+        margin-top: 10px !important;
+    }
+
     /* Modal edit forms responsive - only for edit forms */
     #modal-container:has(#edit-client-form),
     #modal-container:has(#edit-single-client-form),
     #modal-container:has(#edit-single-opponent-form),
-    #modal-container:has(#edit-opponent-form),
-    #modal-container:has(#edit-case-form) {
+    #modal-container:has(#edit-opponent-form) {
         max-width: 100vw !important;
         width: 100vw !important;
         margin: 0 !important;
@@ -1908,8 +2003,7 @@ select:focus {
     #modal:has(#edit-client-form) .flex.items-start.justify-center,
     #modal:has(#edit-single-client-form) .flex.items-start.justify-center,
     #modal:has(#edit-single-opponent-form) .flex.items-start.justify-center,
-    #modal:has(#edit-opponent-form) .flex.items-start.justify-center,
-    #modal:has(#edit-case-form) .flex.items-start.justify-center {
+    #modal:has(#edit-opponent-form) .flex.items-start.justify-center {
         padding: 0 !important;
         align-items: stretch !important;
     }
@@ -1917,8 +2011,7 @@ select:focus {
     #modal-container:has(#edit-client-form) #modal-content,
     #modal-container:has(#edit-single-client-form) #modal-content,
     #modal-container:has(#edit-single-opponent-form) #modal-content,
-    #modal-container:has(#edit-opponent-form) #modal-content,
-    #modal-container:has(#edit-case-form) #modal-content {
+    #modal-container:has(#edit-opponent-form) #modal-content {
         padding: 8px !important;
         height: calc(100vh - 60px) !important;
         overflow-y: auto !important;

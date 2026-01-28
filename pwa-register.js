@@ -274,7 +274,7 @@
       if (!bar || !label) return;
       const pct = total ? Math.min(100, Math.round((done / total) * 100)) : 0;
       bar.style.width = pct + '%';
-      label.textContent = 'تحميل ملفات الموقع: ' + done + ' / ' + total + ' (' + pct + '%)';
+      label.textContent = 'تحميل ملفات التطبيق: ' + done + ' / ' + total + ' (' + pct + '%)';
     } catch (e) {}
   }
 
@@ -282,10 +282,14 @@
     try {
       if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
 
+      const forced = (function () {
+        try { return localStorage.getItem('pwa_force_precache') === '1'; } catch (_) { return false; }
+      })();
+
       const already = (function () {
         try { return localStorage.getItem('pwa_offline_ready') === '1'; } catch (_) { return false; }
       })();
-      if (already) return;
+      if (already && !forced) return;
 
       showPrecacheUI();
       updatePrecacheUI(0, 0);
@@ -294,7 +298,7 @@
       const reg = await navigator.serviceWorker.ready;
       const target = reg.active || reg.waiting || reg.installing;
       if (!target) return;
-      target.postMessage({ type: 'PRECACHE_ALL', reason: reason || 'manual' });
+      target.postMessage({ type: 'PRECACHE_ALL', reason: reason || (forced ? 'forced' : 'manual') });
     } catch (e) {}
   }
 
@@ -344,10 +348,41 @@
         } catch (err) {}
       });
 
+      try {
+        if (typeof window !== 'undefined') {
+          window.pwaAPI = window.pwaAPI || {};
+          window.pwaAPI.canPromptInstall = function () {
+            try { return !!deferredInstallPrompt; } catch (_) { return false; }
+          };
+          window.pwaAPI.promptInstall = async function () {
+            try {
+              if (!deferredInstallPrompt) return false;
+              deferredInstallPrompt.prompt();
+              await deferredInstallPrompt.userChoice;
+              deferredInstallPrompt = null;
+              return true;
+            } catch (_) {
+              try { deferredInstallPrompt = null; } catch (_) {}
+              return false;
+            }
+          };
+        }
+      } catch (e) {}
+
       window.addEventListener('load', function () {
         try {
           navigator.serviceWorker.register('./service-worker.js');
         } catch (e) {}
+
+        // If settings requested a forced refresh of offline assets, start it after load.
+        try {
+          const forced = (function () {
+            try { return localStorage.getItem('pwa_force_precache') === '1'; } catch (_) { return false; }
+          })();
+          if (forced) {
+            requestPrecacheAll('settings_refresh_assets');
+          }
+        } catch (_) {}
       });
 
       // Progress messages from SW
@@ -357,6 +392,11 @@
           if (data.type === 'PRECACHE_PROGRESS') {
             showPrecacheUI();
             updatePrecacheUI(Number(data.done || 0), Number(data.total || 0));
+            try {
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('pwa:precache:progress', { detail: { done: Number(data.done || 0), total: Number(data.total || 0) } }));
+              }
+            } catch (_) {}
           }
           if (data.type === 'PRECACHE_COMPLETE') {
             updatePrecacheUI(Number(data.done || 0), Number(data.total || 0));
@@ -364,14 +404,59 @@
             if (lastFailedPrecache.length > 0) {
               showPrecacheError('تعذر تحميل بعض الملفات بسبب انقطاع الإنترنت. يمكنك إعادة المحاولة.');
               try { localStorage.removeItem('pwa_offline_ready'); } catch (_) {}
+              try { localStorage.removeItem('pwa_force_precache'); } catch (_) {}
+              try {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('pwa:precache:complete', { detail: { done: Number(data.done || 0), total: Number(data.total || 0), failed: lastFailedPrecache } }));
+                }
+              } catch (_) {}
             } else {
               showPrecacheError('');
               try { localStorage.setItem('pwa_offline_ready', '1'); } catch (_) {}
+              try { localStorage.removeItem('pwa_force_precache'); } catch (_) {}
               setTimeout(hidePrecacheUI, 500);
+              try {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('pwa:precache:complete', { detail: { done: Number(data.done || 0), total: Number(data.total || 0), failed: [] } }));
+                }
+              } catch (_) {}
             }
           }
         } catch (e) {}
       });
+
+      // API + زر تحديث ملفات الموقع: نفس شاشة تجهيز الأوفلاين (إجباري)
+      try {
+        if (typeof window !== 'undefined') {
+          window.pwaAPI = window.pwaAPI || {};
+          window.pwaAPI.forcePrecacheAll = function () {
+            try { localStorage.setItem('pwa_force_precache', '1'); } catch (_) {}
+            try { localStorage.removeItem('pwa_offline_ready'); } catch (_) {}
+            requestPrecacheAll('settings_button');
+          };
+        }
+      } catch (e) {}
+
+      try {
+        if (typeof document !== 'undefined') {
+          document.addEventListener('click', function (ev) {
+            try {
+              const t = ev && ev.target;
+              const btn = t && t.closest ? t.closest('#refresh-site-assets-btn') : null;
+              if (!btn) return;
+              try { ev.preventDefault(); } catch (_) {}
+              if (typeof window !== 'undefined' && window.pwaAPI && typeof window.pwaAPI.forcePrecacheAll === 'function') {
+                window.pwaAPI.forcePrecacheAll();
+              } else {
+                // fallback
+                try { localStorage.setItem('pwa_force_precache', '1'); } catch (_) {}
+                try { localStorage.removeItem('pwa_offline_ready'); } catch (_) {}
+                requestPrecacheAll('settings_button');
+              }
+            } catch (_) {}
+          }, true);
+        }
+      } catch (_) {}
 
       try {
         if (typeof document !== 'undefined') {
@@ -415,33 +500,27 @@
 
       // Trigger full precache after the user installs the app.
       window.addEventListener('appinstalled', function () {
+        try { deferredInstallPrompt = null; } catch (_) {}
+        try {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('pwa:appinstalled'));
+          }
+        } catch (_) {}
         requestPrecacheAll('appinstalled');
       });
 
       try {
-        // Show install guidance ONLY at the last step of setup.
+        // No install popup. The setup wizard shows an install step and calls window.pwaAPI.promptInstall().
         if (isOnSetupPage()) {
           window.addEventListener('lawyer:setup:last-step', function () {
             try {
               const offlineReady = (function () {
                 try { return localStorage.getItem('pwa_offline_ready') === '1'; } catch (_) { return false; }
               })();
-
-              // If the app is already installed (standalone) but offline cache was cleared,
-              // start re-downloading offline files here.
               if (isStandaloneMode()) {
                 if (!offlineReady) {
                   requestPrecacheAll('setup_last_step');
                 }
-                return;
-              }
-
-              if (!canShowInstallPromptNow()) return;
-
-              if (isIOS()) {
-                showInstallUI('ios');
-              } else {
-                showInstallUI('chromium');
               }
             } catch (_) {}
           });
