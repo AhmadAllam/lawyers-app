@@ -209,7 +209,7 @@ function generateSessionsReportHTML(sessions, sortOrder = 'desc') {
             : (session.inventoryNumber || session.inventoryYear || 'غير محدد');
 
         tableRows += `
-            <tr class="${rowClass} border-b border-gray-200 hover:bg-gradient-to-l hover:from-orange-100 hover:to-amber-100 transition-all duration-300 hover:shadow-sm">
+            <tr class="report-record ${rowClass} border-b border-gray-200 hover:bg-gradient-to-l hover:from-orange-100 hover:to-amber-100 transition-all duration-300 hover:shadow-sm">
                 <td class="py-2 px-3 md:py-4 md:px-6 text-center border-l border-gray-200">
                     <div class="font-bold text-sm md:text-lg text-gray-800 hover:text-orange-700 transition-colors duration-200 whitespace-nowrap overflow-hidden" title="${sessionDate}">${sessionDate}</div>
                 </td>

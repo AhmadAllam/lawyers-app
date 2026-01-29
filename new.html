@@ -130,13 +130,43 @@
             width: 100%;
         }
 
+        /* High Contrast Hover Effect - Black */
         #case-details-form button[type="submit"]:hover,
         #next-to-case-details-btn:hover,
         #save-case-btn:hover {
-            background: #1d4ed8 !important;
-            /* blue-700 */
-            border-color: #1e40af !important;
-            /* blue-800 */
+            background-color: #000000 !important;
+            /* أسود صريح */
+            border-color: #000000 !important;
+            color: #ffffff !important;
+            transform: scale(1.03) !important;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        /* Folder Buttons - Black on Hover */
+        #create-folder-btn,
+        #open-folder-btn {
+            background: #ffffff !important;
+            border: 2px solid #64748b !important;
+            color: #334155 !important;
+            transition: all 0.2s ease !important;
+        }
+
+        #create-folder-btn:hover,
+        #open-folder-btn:hover {
+            background-color: #000000 !important;
+            /* أسود صريح */
+            border-color: #000000 !important;
+            color: #ffffff !important;
+            /* نص أبيض */
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25) !important;
+        }
+
+        #create-folder-btn:hover i,
+        #open-folder-btn:hover i {
+            color: #ffffff !important;
+            /* أيقونة بيضاء */
+            transform: scale(1.1);
         }
 
         /* Unify session save button */
@@ -157,10 +187,12 @@
         }
 
         #session-form button[type="submit"]:hover {
-            background: #1d4ed8 !important;
-            /* blue-700 */
-            border-color: #1e40af !important;
-            /* blue-800 */
+            background-color: #000000 !important;
+            /* أسود صريح */
+            border-color: #000000 !important;
+            color: #ffffff !important;
+            transform: scale(1.03) !important;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4) !important;
         }
 
         /* Manage sessions button as secondary style */
@@ -181,11 +213,43 @@
         }
 
         #manage-sessions-btn:hover {
-            background: #1e40af !important;
-            /* blue-800 */
-            border-color: #1e3a8a !important;
-            /* blue-900 */
+            background-color: #000000 !important;
+            /* أسود صريح */
+            border-color: #000000 !important;
+            color: #ffffff !important;
+            transform: scale(1.03) !important;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4) !important;
         }
+
+        /* Add New Session (Main Button) */
+        #add-new-session-btn:hover {
+            background-color: #000000 !important;
+            border-color: #000000 !important;
+            color: #ffffff !important;
+            transform: scale(1.03) !important;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        /* Sidebar "New" Button (Inline) */
+        #add-new-session-inline:hover {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        /* Navigation Arrows (Prev/Next) */
+        #prev-session-btn:hover,
+        #next-session-btn:hover {
+            background-color: #000000 !important;
+            border-color: #000000 !important;
+            color: #ffffff !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        /* Delete Session Buttons (Red to Black/Red interaction or just prominent) */
+        /* Keeping delete distinct, or if requested black? User said "buttons in session input screen side bar". Assuming add/nav primarily. */
 
         #manage-sessions-btn>div.w-12 {
             display: none !important;

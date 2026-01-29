@@ -213,7 +213,7 @@ function generateClerkPapersReportHTML(clerkPapers, clients, sortOrder = 'desc',
         }
 
         tableRows += `
-            <tr class="${rowClass} border-b border-gray-200 hover:bg-gradient-to-l hover:from-green-100 hover:to-emerald-100 transition-all duration-300 hover:shadow-sm">
+            <tr class="report-record ${rowClass} border-b border-gray-200 hover:bg-gradient-to-l hover:from-green-100 hover:to-emerald-100 transition-all duration-300 hover:shadow-sm">
                 <td class="py-4 px-6 text-center border-l border-gray-200">
                     <div class="font-bold text-base text-gray-800 hover:text-green-700 transition-colors duration-200 truncate" title="${clientName}">${clientName}</div>
                 </td>

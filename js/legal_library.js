@@ -1194,6 +1194,16 @@ function setupExternalBrowserToggle() {
     const knob = document.getElementById('external-browser-knob');
     
     if (!toggle || !track || !knob) return;
+
+    const toggleFromUiClick = (e) => {
+        try { e.preventDefault(); } catch (_) {}
+        try { e.stopPropagation(); } catch (_) {}
+        toggle.checked = !toggle.checked;
+        toggle.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+
+    track.addEventListener('click', toggleFromUiClick);
+    knob.addEventListener('click', toggleFromUiClick);
     
     
     (async () => {
@@ -1236,11 +1246,13 @@ function updateExternalBrowserUI(isEnabled, track, knob) {
     if (isEnabled) {
         track.style.background = '#10b981';
         track.style.borderColor = '#059669';
-        knob.style.transform = 'translateX(24px)';
+        knob.style.transition = 'left .25s, box-shadow .25s';
+        knob.style.left = '26px';
     } else {
         track.style.background = '#e5e7eb';
         track.style.borderColor = '#cbd5e1';
-        knob.style.transform = 'translateX(0)';
+        knob.style.transition = 'left .25s, box-shadow .25s';
+        knob.style.left = '2px';
     }
 }
 

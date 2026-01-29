@@ -109,7 +109,7 @@ async function updateClientComprehensiveReportContent(reportName, reportType) {
             const opponentNames = getClientOpponentNames(client.id, clientCases, opponentsMap);
 
             return `
-                                <div onclick="displayClientComprehensiveReport(${client.id}, '${client.name.replace(/'/g, "\\'")}')" class="flex items-center justify-between p-4 bg-gradient-to-l from-blue-50 to-white rounded-lg border border-blue-200 hover:shadow-md hover:border-blue-400 hover:from-blue-100 transition-all duration-300 cursor-pointer">
+                                <div onclick="displayClientComprehensiveReport(${client.id}, '${client.name.replace(/'/g, "\\'")}')" class="report-client-card flex items-center justify-between p-4 bg-gradient-to-l from-blue-50 to-white rounded-lg border border-blue-200 hover:shadow-md hover:border-blue-400 hover:from-blue-100 transition-all duration-300 cursor-pointer">
                                     <div class="flex items-center gap-4 flex-1">
                                         <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                                             <i class="ri-user-3-fill text-blue-600 text-xl"></i>

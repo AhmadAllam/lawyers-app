@@ -105,6 +105,18 @@ function displayReportsModal() {
         });
     });
 
+    const reportContent = document.getElementById('report-content');
+    if (reportContent && !reportContent.dataset.reportRecordSelectBound) {
+        reportContent.addEventListener('click', (e) => {
+            const rec = e.target.closest('.report-record');
+            if (!rec || !reportContent.contains(rec)) return;
+            reportContent.querySelectorAll('.report-record.report-record-selected')
+                .forEach(el => el.classList.remove('report-record-selected'));
+            rec.classList.add('report-record-selected');
+        });
+        reportContent.dataset.reportRecordSelectBound = '1';
+    }
+
     
     try {
         requestAnimationFrame(() => {
@@ -161,15 +173,15 @@ function handleReportClick(reportType) {
 function updateButtonStates(activeReportType) {
     
     document.querySelectorAll('.report-btn').forEach(btn => {
-        btn.classList.remove('ring-2', 'ring-white', 'ring-opacity-50');
+        btn.classList.remove('ring-2', 'ring-white', 'ring-opacity-50', 'report-selected');
         btn.style.transform = 'scale(1)';
     });
 
     
     const activeButton = document.querySelector(`[data-report="${activeReportType}"]`);
     if (activeButton) {
-        activeButton.classList.add('ring-2', 'ring-white', 'ring-opacity-50');
-        activeButton.style.transform = 'scale(1.02)';
+        activeButton.classList.add('report-selected');
+        activeButton.style.transform = 'scale(1)';
     }
 }
 

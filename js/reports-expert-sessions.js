@@ -191,7 +191,7 @@ function generateExpertSessionsReportHTML(expertSessions, clients, sortOrder = '
         const sessionDate = __formatReportsExpertSessionsDateForDisplay(session.sessionDate);
 
         tableRows += `
-            <tr class="${rowClass} border-b border-gray-200 hover:bg-gradient-to-l hover:from-pink-100 hover:to-rose-100 transition-all duration-300 hover:shadow-sm">
+            <tr class="report-record ${rowClass} border-b border-gray-200 hover:bg-gradient-to-l hover:from-pink-100 hover:to-rose-100 transition-all duration-300 hover:shadow-sm">
                 <td class="py-4 px-6 text-center border-l border-gray-200">
                     <div class="font-bold text-lg text-gray-800 hover:text-pink-700 transition-colors duration-200 truncate" title="${clientName}">${clientName}</div>
                 </td>

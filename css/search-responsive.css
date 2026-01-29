@@ -1,351 +1,637 @@
-.sidebar-toggle-checkbox{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
-.mobile-sidebar-toggle{display:none}
-@media (max-width:768px){.mobile-sidebar-toggle{display:flex;align-items:center;justify-content:center;position:fixed;top:50%;transform:translateY(-50%);right:8px;width:36px;height:72px;z-index:70;background:rgba(30,58,138,.95);color:#fff;border-radius:12px;border:1px solid rgba(255,255,255,.15)}.mobile-sidebar-toggle i{font-size:20px;line-height:1}#sidebar-toggle:checked~.mobile-sidebar-toggle{right:calc(min(90vw, 360px) + 10px)}#sidebar-toggle:not(:checked)~.mobile-sidebar-toggle .close-icon{display:none}#sidebar-toggle:checked~.mobile-sidebar-toggle .open-icon{display:none}.search-layout{position:relative}.search-left-pane{position:fixed;top:48px;right:-105%;bottom:0;width:min(90vw, 360px);max-width:100vw;background:#f8fafc;border-left:1px solid #cbd5e1;box-shadow:-8px 0 24px rgba(0,0,0,.2);z-index:60;transition:right .25s ease;overflow-y:auto !important;padding:16px}#sidebar-toggle:checked~main .search-layout .search-left-pane{right:0}#sidebar-toggle:checked~main .search-layout::before{content:"";position:fixed;top:48px;right:0;bottom:0;left:0;background:rgba(0,0,0,.35);z-index:55}#search-content-container .flex-1>.bg-blue-50{border-radius:0;border-width:0}#clients-list{padding:10px !important}#clients-list .client-card{padding:12px !important;border-radius:12px}#clients-list .client-card>div.flex{flex-direction:column;align-items:stretch;gap:10px}
-
-/* تحسين كروت الموكلين للهاتف - نفس التخطيط مع أحجام مناسبة */
-#clients-list .client-card .flex.items-center.justify-between{
-    flex-direction: row !important;
-    align-items: flex-start !important;
-    gap: 8px !important;
+.sidebar-toggle-checkbox {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none
 }
 
-/* تحسين المحتوى الرئيسي */
-#clients-list .client-card .flex.items-center.gap-4{
-    flex:1 !important;
-    min-width:0 !important;
-    gap:8px !important;
+.mobile-sidebar-toggle {
+    display: none
 }
 
-#clients-list .client-card .flex.items-center.gap-4 .flex-1{
-    min-width:0 !important;
-}
+@media (max-width:768px) {
+    .mobile-sidebar-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        top: 50%;
+        transform: translateY(-50%);
+        right: 8px;
+        width: 36px;
+        height: 72px;
+        z-index: 70;
+        background: rgba(30, 58, 138, .95);
+        color: #fff;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, .15)
+    }
 
-#clients-list .client-card .flex.items-center.gap-3 .text-xs {
-    font-size: 10px !important;
-}
+    .mobile-sidebar-toggle i {
+        font-size: 20px;
+        line-height: 1
+    }
 
-/* Prevent stats from overflowing */
+    #sidebar-toggle:checked~.mobile-sidebar-toggle {
+        right: calc(min(90vw, 360px) + 10px)
+    }
+
+    #sidebar-toggle:not(:checked)~.mobile-sidebar-toggle .close-icon {
+        display: none
+    }
+
+    #sidebar-toggle:checked~.mobile-sidebar-toggle .open-icon {
+        display: none
+    }
+
+    .search-layout {
+        position: relative
+    }
+
+    .search-left-pane {
+        position: fixed;
+        top: 48px;
+        right: -105%;
+        bottom: 0;
+        width: min(90vw, 360px);
+        max-width: 100vw;
+        background: #f8fafc;
+        border-left: 1px solid #cbd5e1;
+        box-shadow: -8px 0 24px rgba(0, 0, 0, .2);
+        z-index: 60;
+        transition: right .25s ease;
+        overflow-y: auto !important;
+        padding: 16px
+    }
+
+    #sidebar-toggle:checked~main .search-layout .search-left-pane {
+        right: 0
+    }
+
+    #sidebar-toggle:checked~main .search-layout::before {
+        content: "";
+        position: fixed;
+        top: 48px;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background: rgba(0, 0, 0, .35);
+        z-index: 55
+    }
+
+    #search-content-container .flex-1>.bg-blue-50 {
+        border-radius: 0;
+        border-width: 0
+    }
+
+    #clients-list {
+        padding: 10px !important
+    }
+
+    #clients-list .client-card {
+        padding: 12px !important;
+        border-radius: 12px
+    }
+
+    #clients-list .client-card>div.flex {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px
+    }
+
+    /* تحسين كروت الموكلين للهاتف - نفس التخطيط مع أحجام مناسبة */
+    #clients-list .client-card .flex.items-center.justify-between {
+        flex-direction: row !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+    }
+
+    /* تحسين المحتوى الرئيسي */
+    #clients-list .client-card .flex.items-center.gap-4 {
+        flex: 1 !important;
+        min-width: 0 !important;
+        gap: 8px !important;
+    }
+
+    #clients-list .client-card .flex.items-center.gap-4 .flex-1 {
+        min-width: 0 !important;
+    }
+
+    #clients-list .client-card .flex.items-center.gap-3 .text-xs {
+        font-size: 10px !important;
+    }
+
+    /* Prevent stats from overflowing */
 
 
-/* تحسين الأزرار للهاتف - نفس الموضع مع أحجام أصغر */
-#clients-list .client-card .flex.flex-col.gap-2{
-    flex-shrink: 0 !important;
-    gap: 4px !important;
-}
+    /* تحسين الأزرار للهاتف - نفس الموضع مع أحجام أصغر */
+    #clients-list .client-card .flex.flex-col.gap-2 {
+        flex-shrink: 0 !important;
+        gap: 4px !important;
+    }
 
-#clients-list .client-card .flex.flex-col.gap-2 button{
-    padding:6px 8px !important;
-    font-size:10px !important;
-    min-width:auto !important;
-    border-radius:6px !important;
-    font-weight:600 !important;
-    white-space:nowrap !important;
-}
+    #clients-list .client-card .flex.flex-col.gap-2 button {
+        padding: 6px 8px !important;
+        font-size: 10px !important;
+        min-width: auto !important;
+        border-radius: 6px !important;
+        font-weight: 600 !important;
+        white-space: nowrap !important;
+    }
 
-#clients-list .client-card .flex.flex-col.gap-2 button i{
-    font-size:11px !important;
-    margin-left:2px !important;
-}
+    #clients-list .client-card .flex.flex-col.gap-2 button i {
+        font-size: 11px !important;
+        margin-left: 2px !important;
+    }
 
-#clients-list .client-card h4{font-size:1rem;margin-bottom:4px}
+    #clients-list .client-card h4 {
+        font-size: 1rem;
+        margin-bottom: 4px
+    }
 
-#clients-list .client-card .w-12.h-12{width:32px !important;height:32px !important}#clients-list .client-card .bg-red-100,#clients-list .client-card .bg-blue-100,#clients-list .client-card .bg-green-100{padding:2px 4px !important}#clients-list .client-card .bg-red-100 i,#clients-list .client-card .bg-blue-100 i,#clients-list .client-card .bg-green-100 i{font-size:12px !important}#clients-list .client-card .bg-red-100 span,#clients-list .client-card .bg-blue-100 span,#clients-list .client-card .bg-green-100 span{font-size:12px !important}
+    #clients-list .client-card .w-12.h-12 {
+        width: 32px !important;
+        height: 32px !important
+    }
+
+    #clients-list .client-card .bg-red-100,
+    #clients-list .client-card .bg-blue-100,
+    #clients-list .client-card .bg-green-100 {
+        padding: 2px 4px !important
+    }
+
+    #clients-list .client-card .bg-red-100 i,
+    #clients-list .client-card .bg-blue-100 i,
+    #clients-list .client-card .bg-green-100 i {
+        font-size: 12px !important
+    }
+
+    #clients-list .client-card .bg-red-100 span,
+    #clients-list .client-card .bg-blue-100 span,
+    #clients-list .client-card .bg-green-100 span {
+        font-size: 12px !important
+    }
 
 }
 
 /* Administrative list header mobile tweaks */
-@media (max-width:768px){
-#administrative-list-wrapper .administrative-list-header{padding:8px !important; background:transparent !important; border-bottom:0 !important; flex-direction:row !important; align-items:center !important; gap:6px !important; justify-content:space-between !important}
-#administrative-list-wrapper .administrative-list-header h3{font-size:.95rem !important}
-#administrative-list-wrapper .administrative-list-header > .flex.items-center.gap-3{gap:6px !important}
-#administrative-list-wrapper .administrative-list-header > .flex.items-center.gap-2{gap:6px !important; width:100%}
-#clear-filter-btn{padding:4px 6px !important; font-size:11px !important; border-radius:6px !important}
-#sort-btn{padding:4px 6px !important; font-size:12px !important; border-radius:6px !important}
-#sort-btn i{font-size:14px !important}
-#administrative-list-wrapper .administrative-list-header .text-sm.text-gray-600{font-size:11px !important; color:#475569 !important}
+@media (max-width:768px) {
+    #administrative-list-wrapper .administrative-list-header {
+        padding: 8px !important;
+        background: transparent !important;
+        border-bottom: 0 !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 6px !important;
+        justify-content: space-between !important
+    }
+
+    #administrative-list-wrapper .administrative-list-header h3 {
+        font-size: .95rem !important
+    }
+
+    #administrative-list-wrapper .administrative-list-header>.flex.items-center.gap-3 {
+        gap: 6px !important
+    }
+
+    #administrative-list-wrapper .administrative-list-header>.flex.items-center.gap-2 {
+        gap: 6px !important;
+        width: 100%
+    }
+
+    #clear-filter-btn {
+        padding: 4px 6px !important;
+        font-size: 11px !important;
+        border-radius: 6px !important
+    }
+
+    #sort-btn {
+        padding: 4px 6px !important;
+        font-size: 12px !important;
+        border-radius: 6px !important
+    }
+
+    #sort-btn i {
+        font-size: 14px !important
+    }
+
+    #administrative-list-wrapper .administrative-list-header .text-sm.text-gray-600 {
+        font-size: 11px !important;
+        color: #475569 !important
+    }
 }
 
 /* Administrative list header phone-only refinements */
-@media (max-width:640px){
-  #administrative-list-wrapper .administrative-list-header{
-    background:#ffffff !important;
-    border:1px solid #e5e7eb !important; /* gray-200 */
-    border-radius:10px !important;
-    padding:8px !important;
-    margin:0 8px 6px 8px !important;
-    flex-direction:row !important;
-    align-items:center !important;
-    justify-content:space-between !important;
-    gap:6px !important;
-  }
-  /* جعل الكتلتين كل منهما بعرض كامل */
-  #administrative-list-wrapper .administrative-list-header > .flex.items-center.gap-2{
-    width:auto !important;
-    flex:0 0 auto !important;
-  }
-  /* الصف الأول: العنوان + زر إلغاء الفلترة بمحاذاة متباعدة */
-  #administrative-list-wrapper .administrative-list-header > .flex.items-center.gap-2:first-child{
-    justify-content:space-between !important;
-  }
-  /* تكبير بسيط وتجنب تجاوز النص */
-  #administrative-list-wrapper .administrative-list-header h3{
-    font-size:1rem !important;
-    white-space:nowrap !important;
-    overflow:hidden !important;
-    text-overflow:ellipsis !important;
-  }
-  /* زر الفرز بعرض كامل لسهولة اللمس */
-  #sort-btn{
-    width:auto !important;
-    padding:6px 8px !important;
-    font-size:12px !important;
-    border-radius:8px !important;
-  }
-  #sort-btn i{font-size:14px !important}
-  /* تصغير زر إلغاء الفلترة */
-  #clear-filter-btn{padding:4px 6px !important; font-size:11px !important; border-radius:6px !important}
+@media (max-width:640px) {
+    #administrative-list-wrapper .administrative-list-header {
+        background: #ffffff !important;
+        border: 1px solid #e5e7eb !important;
+        /* gray-200 */
+        border-radius: 10px !important;
+        padding: 8px !important;
+        margin: 0 8px 6px 8px !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 6px !important;
+    }
+
+    /* جعل الكتلتين كل منهما بعرض كامل */
+    #administrative-list-wrapper .administrative-list-header>.flex.items-center.gap-2 {
+        width: auto !important;
+        flex: 0 0 auto !important;
+    }
+
+    /* الصف الأول: العنوان + زر إلغاء الفلترة بمحاذاة متباعدة */
+    #administrative-list-wrapper .administrative-list-header>.flex.items-center.gap-2:first-child {
+        justify-content: space-between !important;
+    }
+
+    /* تكبير بسيط وتجنب تجاوز النص */
+    #administrative-list-wrapper .administrative-list-header h3 {
+        font-size: 1rem !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    /* زر الفرز بعرض كامل لسهولة اللمس */
+    #sort-btn {
+        width: auto !important;
+        padding: 6px 8px !important;
+        font-size: 12px !important;
+        border-radius: 8px !important;
+    }
+
+    #sort-btn i {
+        font-size: 14px !important
+    }
+
+    /* تصغير زر إلغاء الفلترة */
+    #clear-filter-btn {
+        padding: 4px 6px !important;
+        font-size: 11px !important;
+        border-radius: 6px !important
+    }
 }
 
 /* Administrative list cards mobile tweaks */
-#administrative-list .work-card{padding:12px !important; position:relative; padding-left:12px !important; max-width:100% !important; box-sizing:border-box}
-#administrative-list .work-card .flex.justify-between{gap:10px !important; display:flex !important; align-items:flex-start !important}
-#administrative-list .work-card .flex-1{display:flex !important; flex-direction:column !important; gap:6px !important}
-#administrative-list .work-card .flex-1 .text-sm{font-size:.9rem !important}
-#administrative-list .work-card .text-xs{font-size:.8rem !important}
-#administrative-list .work-card .flex.items-center.gap-2{flex-wrap:nowrap !important}
-#administrative-list .work-card .flex-1 > div:nth-child(1){flex-wrap:wrap !important}
-#administrative-list .work-card .flex-1 > div:nth-child(1) span:nth-of-type(1){font-size:11.5px !important}
-#administrative-list .work-card .flex-1 > div:nth-child(1) span:nth-of-type(2){font-size:12.5px !important; white-space:nowrap !important}
-#administrative-list .work-card .flex-1 > div:nth-child(1) span:nth-of-type(3){flex-basis:100%}
-#administrative-list .work-card .flex.flex-col.gap-1{position:static !important; left:auto !important; top:auto !important; flex-direction:row !important; align-items:center !important; justify-content:flex-start !important; gap:6px !important; margin-top:0 !important}
-#administrative-list .work-card .flex.flex-col.gap-1 button{padding:6px 8px !important}
-#administrative-list .work-card [style*="font-size:15px"]{font-size:14px !important}
-#administrative-list .work-card i.ri-calendar-event-line{font-size:14px !important}
+#administrative-list .work-card {
+    padding: 12px !important;
+    position: relative;
+    padding-left: 12px !important;
+    max-width: 100% !important;
+    box-sizing: border-box
+}
+
+#administrative-list .work-card .flex.justify-between {
+    gap: 10px !important;
+    display: flex !important;
+    align-items: flex-start !important
+}
+
+#administrative-list .work-card .flex-1 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important
+}
+
+#administrative-list .work-card .flex-1 .text-sm {
+    font-size: .9rem !important
+}
+
+#administrative-list .work-card .text-xs {
+    font-size: .8rem !important
+}
+
+#administrative-list .work-card .flex.items-center.gap-2 {
+    flex-wrap: nowrap !important
+}
+
+#administrative-list .work-card .flex-1>div:nth-child(1) {
+    flex-wrap: wrap !important
+}
+
+#administrative-list .work-card .flex-1>div:nth-child(1) span:nth-of-type(1) {
+    font-size: 11.5px !important
+}
+
+#administrative-list .work-card .flex-1>div:nth-child(1) span:nth-of-type(2) {
+    font-size: 12.5px !important;
+    white-space: nowrap !important
+}
+
+#administrative-list .work-card .flex-1>div:nth-child(1) span:nth-of-type(3) {
+    flex-basis: 100%
+}
+
+#administrative-list .work-card .flex.flex-col.gap-1 {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 6px !important;
+    margin-top: 0 !important
+}
+
+#administrative-list .work-card .flex.flex-col.gap-1 button {
+    padding: 6px 8px !important
+}
+
+#administrative-list .work-card [style*="font-size:15px"] {
+    font-size: 14px !important
+}
+
+#administrative-list .work-card i.ri-calendar-event-line {
+    font-size: 14px !important
+}
+
 #administrative-list .work-card i.ri-list-check,
-#administrative-list .work-card i.ri-map-pin-line{font-size:16px !important}
-.client-view .against-separator{display:block}
-@media (max-width:768px){
-.client-view .flex.flex-row.items-start.gap-6{flex-direction:column !important;gap:12px !important}
-.client-view .against-separator{display:none !important}
-.client-view .p-6{padding:12px !important}
-.client-view h3{font-size:1rem !important;margin-bottom:.5rem !important}
-.client-view .w-24, .client-view .md\:w-28{width:7rem !important;min-width:7rem !important}
-.client-view .inline-flex>div{font-size:.9rem !important}
-.client-view .inline-flex>div.flex-1{padding:.5rem .75rem !important}
-.client-view .space-y-4>*+*{margin-top:.5rem !important}
-.client-view .mt-6{margin-top:.75rem !important}
-.client-view #prev-opponent-btn, .client-view #next-opponent-btn{width:36px;height:36px;padding:0 !important;display:inline-flex;align-items:center;justify-content:center;border-radius:8px}
-.client-view .case-card .p-6{padding:12px !important}
-.client-view .case-card .p-4{padding:10px !important}
-.client-view .case-card h4{font-size:1rem !important}
-.client-view .case-card .text-sm{font-size:.8rem !important}
-
-/* Modal edit forms responsive - only for edit forms */
-#modal-container:has(#edit-client-form), 
-#modal-container:has(#edit-single-client-form),
-#modal-container:has(#edit-single-opponent-form),
-#modal-container:has(#edit-opponent-form),
-#modal-container:has(#edit-case-form) {
-    max-width: 100vw !important;
-    width: 100vw !important;
-    margin: 0 !important;
-    border-radius: 0 !important;
-    height: 100vh !important;
+#administrative-list .work-card i.ri-map-pin-line {
+    font-size: 16px !important
 }
 
-#modal:has(#edit-client-form) .flex.items-start.justify-center,
-#modal:has(#edit-single-client-form) .flex.items-start.justify-center,
-#modal:has(#edit-single-opponent-form) .flex.items-start.justify-center,
-#modal:has(#edit-opponent-form) .flex.items-start.justify-center,
-#modal:has(#edit-case-form) .flex.items-start.justify-center {
-    padding: 0 !important;
-    align-items: stretch !important;
+.client-view .against-separator {
+    display: block
 }
 
-#modal-container:has(#edit-client-form) #modal-content,
-#modal-container:has(#edit-single-client-form) #modal-content,
-#modal-container:has(#edit-single-opponent-form) #modal-content,
-#modal-container:has(#edit-opponent-form) #modal-content,
-#modal-container:has(#edit-case-form) #modal-content {
-    padding: 8px !important;
-    height: calc(100vh - 60px) !important;
-    overflow-y: auto !important;
-}
+@media (max-width:768px) {
+    .client-view .flex.flex-row.items-start.gap-6 {
+        flex-direction: column !important;
+        gap: 12px !important
+    }
 
-/* Edit forms styling - only for edit forms */
-#edit-client-form .space-y-6 > * + *,
-#edit-single-client-form .space-y-6 > * + *,
-#edit-single-opponent-form .space-y-6 > * + *,
-#edit-opponent-form .space-y-6 > * + *,
-#edit-case-form .space-y-6 > * + * {
-    margin-top: 12px !important;
-}
+    .client-view .against-separator {
+        display: none !important
+    }
 
-#edit-client-form .grid.grid-cols-1.md\:grid-cols-2,
-#edit-single-client-form .grid.grid-cols-1.md\:grid-cols-2,
-#edit-single-opponent-form .grid.grid-cols-1.md\:grid-cols-2,
-#edit-opponent-form .grid.grid-cols-1.md\:grid-cols-2,
-#edit-case-form .grid.grid-cols-1.md\:grid-cols-2 {
-    grid-template-columns: 1fr !important;
-    gap: 12px !important;
-}
+    .client-view .p-6 {
+        padding: 12px !important
+    }
 
-#edit-client-form .p-6,
-#edit-single-client-form .p-6,
-#edit-single-opponent-form .p-6,
-#edit-opponent-form .p-6,
-#edit-case-form .p-6 {
-    padding: 12px !important;
-}
+    .client-view h3 {
+        font-size: 1rem !important;
+        margin-bottom: .5rem !important
+    }
 
-#edit-client-form .px-8.py-4,
-#edit-single-client-form .px-8.py-4,
-#edit-single-opponent-form .px-8.py-4,
-#edit-opponent-form .px-8.py-4,
-#edit-case-form .px-8.py-4 {
-    padding: 12px 16px !important;
-    font-size: 14px !important;
-}
+    .client-view .w-24,
+    .client-view .md\:w-28 {
+        width: 7rem !important;
+        min-width: 7rem !important
+    }
 
-#edit-client-form .text-xl,
-#edit-single-client-form .text-xl,
-#edit-single-opponent-form .text-xl,
-#edit-opponent-form .text-xl,
-#edit-case-form .text-xl {
-    font-size: 16px !important;
-}
+    .client-view .inline-flex>div {
+        font-size: .9rem !important
+    }
 
-#edit-client-form .text-lg,
-#edit-single-client-form .text-lg,
-#edit-single-opponent-form .text-lg,
-#edit-opponent-form .text-lg,
-#edit-case-form .text-lg {
-    font-size: 15px !important;
-}
+    .client-view .inline-flex>div.flex-1 {
+        padding: .5rem .75rem !important
+    }
 
-/* Input fields in edit forms only */
-#edit-client-form input[type="text"],
-#edit-client-form input[type="number"],
-#edit-client-form select,
-#edit-client-form textarea,
-#edit-single-client-form input[type="text"],
-#edit-single-client-form input[type="number"],
-#edit-single-client-form select,
-#edit-single-client-form textarea,
-#edit-single-opponent-form input[type="text"],
-#edit-single-opponent-form input[type="number"],
-#edit-single-opponent-form select,
-#edit-single-opponent-form textarea,
-#edit-opponent-form input[type="text"],
-#edit-opponent-form input[type="number"],
-#edit-opponent-form select,
-#edit-opponent-form textarea,
-#edit-case-form input[type="text"],
-#edit-case-form input[type="number"],
-#edit-case-form select,
-#edit-case-form textarea {
-    padding: 10px !important;
-    font-size: 14px !important;
-}
+    .client-view .space-y-4>*+* {
+        margin-top: .5rem !important
+    }
 
-/* Form sections in edit forms only */
-#edit-client-form .bg-blue-50,
-#edit-client-form .bg-green-100,
-#edit-client-form .bg-white\/90,
-#edit-client-form .bg-white\/95,
-#edit-single-client-form .bg-blue-50,
-#edit-single-client-form .bg-green-100,
-#edit-single-client-form .bg-white\/90,
-#edit-single-client-form .bg-white\/95,
-#edit-single-opponent-form .bg-blue-50,
-#edit-single-opponent-form .bg-green-100,
-#edit-single-opponent-form .bg-white\/90,
-#edit-single-opponent-form .bg-white\/95,
-#edit-opponent-form .bg-blue-50,
-#edit-opponent-form .bg-green-100,
-#edit-opponent-form .bg-white\/90,
-#edit-opponent-form .bg-white\/95,
-#edit-opponent-form .bg-red-50,
-#edit-opponent-form .bg-red-100,
-#edit-case-form .bg-blue-50,
-#edit-case-form .bg-green-100,
-#edit-case-form .bg-white\/90,
-#edit-case-form .bg-white\/95 {
-    padding: 12px !important;
-    border-radius: 8px !important;
-}
+    .client-view .mt-6 {
+        margin-top: .75rem !important
+    }
 
-/* Buttons container in edit forms only */
-#edit-client-form .flex.gap-4.pt-6,
-#edit-single-client-form .flex.gap-4.pt-6,
-#edit-single-opponent-form .flex.gap-4.pt-6,
-#edit-opponent-form .flex.gap-4.pt-6,
-#edit-case-form .flex.gap-4.pt-6 {
-    flex-direction: column !important;
-    gap: 8px !important;
-    padding-top: 16px !important;
-}
+    .client-view #prev-opponent-btn,
+    .client-view #next-opponent-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0 !important;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px
+    }
 
-#edit-client-form .flex.gap-3.pt-4,
-#edit-single-client-form .flex.gap-3.pt-4,
-#edit-single-opponent-form .flex.gap-3.pt-4,
-#edit-opponent-form .flex.gap-3.pt-4,
-#edit-case-form .flex.gap-3.pt-4 {
-    flex-direction: column !important;
-    gap: 8px !important;
-    padding-top: 12px !important;
-}
+    .client-view .case-card .p-6 {
+        padding: 12px !important
+    }
 
-/* Individual buttons in edit forms only */
-#edit-client-form button,
-#edit-single-client-form button,
-#edit-single-opponent-form button,
-#edit-opponent-form button,
-#edit-case-form button {
-    padding: 12px !important;
-    font-size: 14px !important;
-    border-radius: 8px !important;
-}
+    .client-view .case-card .p-4 {
+        padding: 10px !important
+    }
 
-/* Inline-flex fields responsive for edit forms */
-#edit-client-form .inline-flex,
-#edit-opponent-form .inline-flex {
-    flex-direction: column !important;
-    align-items: stretch !important;
-}
+    .client-view .case-card h4 {
+        font-size: 1rem !important
+    }
 
-#edit-client-form .inline-flex label,
-#edit-opponent-form .inline-flex label {
-    width: 100% !important;
-    min-width: 100% !important;
-    border-radius: 8px 8px 0 0 !important;
-    border-left: 2px solid !important;
-    border-bottom: 0 !important;
-    padding: 8px 12px !important;
-    font-size: 13px !important;
-}
+    .client-view .case-card .text-sm {
+        font-size: .8rem !important
+    }
 
-#edit-client-form .inline-flex input,
-#edit-opponent-form .inline-flex input {
-    border-radius: 0 0 8px 8px !important;
-    border-right: 2px solid !important;
-    border-top: 0 !important;
-    padding: 10px 12px !important;
-    font-size: 14px !important;
-}
+    /* Modal edit forms responsive - only for edit forms */
+    #modal-container:has(#edit-client-form),
+    #modal-container:has(#edit-single-client-form),
+    #modal-container:has(#edit-single-opponent-form),
+    #modal-container:has(#edit-opponent-form),
+    #modal-container:has(#edit-case-form) {
+        max-width: 100vw !important;
+        width: 100vw !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        height: 100vh !important;
+    }
 
-/* Flex buttons responsive */
-#edit-client-form .flex.flex-col.sm\:flex-row,
-#edit-opponent-form .flex.flex-col.sm\:flex-row {
-    flex-direction: column !important;
-    gap: 8px !important;
-}
+    #modal:has(#edit-client-form) .flex.items-start.justify-center,
+    #modal:has(#edit-single-client-form) .flex.items-start.justify-center,
+    #modal:has(#edit-single-opponent-form) .flex.items-start.justify-center,
+    #modal:has(#edit-opponent-form) .flex.items-start.justify-center,
+    #modal:has(#edit-case-form) .flex.items-start.justify-center {
+        padding: 0 !important;
+        align-items: stretch !important;
+    }
 
-#edit-client-form .flex.flex-col.sm\:flex-row button,
-#edit-opponent-form .flex.flex-col.sm\:flex-row button {
-    padding: 12px 16px !important;
-    font-size: 14px !important;
-}
+    #modal-container:has(#edit-client-form) #modal-content,
+    #modal-container:has(#edit-single-client-form) #modal-content,
+    #modal-container:has(#edit-single-opponent-form) #modal-content,
+    #modal-container:has(#edit-opponent-form) #modal-content,
+    #modal-container:has(#edit-case-form) #modal-content {
+        padding: 8px !important;
+        height: calc(100vh - 60px) !important;
+        overflow-y: auto !important;
+    }
+
+    /* Edit forms styling - only for edit forms */
+    #edit-client-form .space-y-6>*+*,
+    #edit-single-client-form .space-y-6>*+*,
+    #edit-single-opponent-form .space-y-6>*+*,
+    #edit-opponent-form .space-y-6>*+*,
+    #edit-case-form .space-y-6>*+* {
+        margin-top: 12px !important;
+    }
+
+    #edit-client-form .grid.grid-cols-1.md\:grid-cols-2,
+    #edit-single-client-form .grid.grid-cols-1.md\:grid-cols-2,
+    #edit-single-opponent-form .grid.grid-cols-1.md\:grid-cols-2,
+    #edit-opponent-form .grid.grid-cols-1.md\:grid-cols-2,
+    #edit-case-form .grid.grid-cols-1.md\:grid-cols-2 {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    #edit-client-form .p-6,
+    #edit-single-client-form .p-6,
+    #edit-single-opponent-form .p-6,
+    #edit-opponent-form .p-6,
+    #edit-case-form .p-6 {
+        padding: 12px !important;
+    }
+
+    #edit-client-form .px-8.py-4,
+    #edit-single-client-form .px-8.py-4,
+    #edit-single-opponent-form .px-8.py-4,
+    #edit-opponent-form .px-8.py-4,
+    #edit-case-form .px-8.py-4 {
+        padding: 12px 16px !important;
+        font-size: 14px !important;
+    }
+
+    #edit-client-form .text-xl,
+    #edit-single-client-form .text-xl,
+    #edit-single-opponent-form .text-xl,
+    #edit-opponent-form .text-xl,
+    #edit-case-form .text-xl {
+        font-size: 16px !important;
+    }
+
+    #edit-client-form .text-lg,
+    #edit-single-client-form .text-lg,
+    #edit-single-opponent-form .text-lg,
+    #edit-opponent-form .text-lg,
+    #edit-case-form .text-lg {
+        font-size: 15px !important;
+    }
+
+    /* Input fields in edit forms only */
+    #edit-client-form input[type="text"],
+    #edit-client-form input[type="number"],
+    #edit-client-form select,
+    #edit-client-form textarea,
+    #edit-single-client-form input[type="text"],
+    #edit-single-client-form input[type="number"],
+    #edit-single-client-form select,
+    #edit-single-client-form textarea,
+    #edit-single-opponent-form input[type="text"],
+    #edit-single-opponent-form input[type="number"],
+    #edit-single-opponent-form select,
+    #edit-single-opponent-form textarea,
+    #edit-opponent-form input[type="text"],
+    #edit-opponent-form input[type="number"],
+    #edit-opponent-form select,
+    #edit-opponent-form textarea,
+    #edit-case-form input[type="text"],
+    #edit-case-form input[type="number"],
+    #edit-case-form select,
+    #edit-case-form textarea {
+        padding: 10px !important;
+        font-size: 14px !important;
+    }
+
+    /* Form sections in edit forms only */
+    #edit-client-form .bg-blue-50,
+    #edit-client-form .bg-green-100,
+    #edit-client-form .bg-white\/90,
+    #edit-client-form .bg-white\/95,
+    #edit-single-client-form .bg-blue-50,
+    #edit-single-client-form .bg-green-100,
+    #edit-single-client-form .bg-white\/90,
+    #edit-single-client-form .bg-white\/95,
+    #edit-single-opponent-form .bg-blue-50,
+    #edit-single-opponent-form .bg-green-100,
+    #edit-single-opponent-form .bg-white\/90,
+    #edit-single-opponent-form .bg-white\/95,
+    #edit-opponent-form .bg-blue-50,
+    #edit-opponent-form .bg-green-100,
+    #edit-opponent-form .bg-white\/90,
+    #edit-opponent-form .bg-white\/95,
+    #edit-opponent-form .bg-red-50,
+    #edit-opponent-form .bg-red-100,
+    #edit-case-form .bg-blue-50,
+    #edit-case-form .bg-green-100,
+    #edit-case-form .bg-white\/90,
+    #edit-case-form .bg-white\/95 {
+        padding: 12px !important;
+        border-radius: 8px !important;
+    }
+
+    /* Buttons container in edit forms only */
+    #edit-client-form .flex.gap-4.pt-6,
+    #edit-single-client-form .flex.gap-4.pt-6,
+    #edit-single-opponent-form .flex.gap-4.pt-6,
+    #edit-opponent-form .flex.gap-4.pt-6,
+    #edit-case-form .flex.gap-4.pt-6 {
+        flex-direction: column !important;
+        gap: 8px !important;
+        padding-top: 16px !important;
+    }
+
+    #edit-client-form .flex.gap-3.pt-4,
+    #edit-single-client-form .flex.gap-3.pt-4,
+    #edit-single-opponent-form .flex.gap-3.pt-4,
+    #edit-opponent-form .flex.gap-3.pt-4,
+    #edit-case-form .flex.gap-3.pt-4 {
+        flex-direction: column !important;
+        gap: 8px !important;
+        padding-top: 12px !important;
+    }
+
+    /* Individual buttons in edit forms only */
+    #edit-client-form button,
+    #edit-single-client-form button,
+    #edit-single-opponent-form button,
+    #edit-opponent-form button,
+    #edit-case-form button {
+        padding: 12px !important;
+        font-size: 14px !important;
+        border-radius: 8px !important;
+    }
+
+    /* Inline-flex fields responsive for edit forms */
+    #edit-client-form .inline-flex,
+    #edit-opponent-form .inline-flex {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+
+    #edit-client-form .inline-flex label,
+    #edit-opponent-form .inline-flex label {
+        width: 100% !important;
+        min-width: 100% !important;
+        border-radius: 8px 8px 0 0 !important;
+        border-left: 2px solid !important;
+        border-bottom: 0 !important;
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+    }
+
+    #edit-client-form .inline-flex input,
+    #edit-opponent-form .inline-flex input {
+        border-radius: 0 0 8px 8px !important;
+        border-right: 2px solid !important;
+        border-top: 0 !important;
+        padding: 10px 12px !important;
+        font-size: 14px !important;
+    }
+
+    /* Flex buttons responsive */
+    #edit-client-form .flex.flex-col.sm\:flex-row,
+    #edit-opponent-form .flex.flex-col.sm\:flex-row {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+
+    #edit-client-form .flex.flex-col.sm\:flex-row button,
+    #edit-opponent-form .flex.flex-col.sm\:flex-row button {
+        padding: 12px 16px !important;
+        font-size: 14px !important;
+    }
 }
 
 /* Accounts client cards responsive (v2) */
@@ -362,7 +648,7 @@
 
     /* Block with name and icon */
     .client-group .client-header .flex.items-center.gap-3:first-child {
-       width: 100%;
+        width: 100%;
     }
 
     .client-group .client-header h3 {
@@ -389,19 +675,21 @@
         flex-basis: 75px;
         flex-grow: 1;
     }
+
     .client-group .client-header .text-sm {
         font-size: 0.7rem !important;
     }
+
     .client-group .client-header .text-base {
         font-size: 0.9rem !important;
     }
 
     /* The expand icon */
     .client-group .client-header .expand-icon {
-       flex-shrink: 0;
-       margin-left: auto;
+        flex-shrink: 0;
+        margin-left: auto;
     }
-    
+
     .accounts-details {
         padding: 8px !important;
     }
@@ -459,7 +747,8 @@
         border-right-color: transparent !important;
         text-align: right !important;
         padding: 12px 12px !important;
-        font-size: 16px !important; /* prevent zoom & readable */
+        font-size: 16px !important;
+        /* prevent zoom & readable */
     }
 
     #expert-session-form .flex-1.relative {
@@ -473,12 +762,14 @@
         height: 18px !important;
         margin-left: 6px !important;
     }
+
     /* Ensure the session date text size matches the input on phones */
     #expert-session-form #session-date {
         font-size: 16px !important;
         line-height: 1.25 !important;
         padding: 12px 12px !important;
     }
+
     #expert-session-form #session-date::-webkit-datetime-edit,
     #expert-session-form #session-date::-webkit-datetime-edit-text,
     #expert-session-form #session-date::-webkit-datetime-edit-month-field,
@@ -515,7 +806,8 @@ body.form-active .mobile-sidebar-toggle {
         text-align: right !important;
         padding: 10px 10px !important;
         font-size: 0.9rem !important;
-        border: 2px solid #cbd5e1 !important; /* gray-300 */
+        border: 2px solid #cbd5e1 !important;
+        /* gray-300 */
         border-top-right-radius: 8px !important;
         border-bottom-right-radius: 8px !important;
         border-top-left-radius: 0 !important;
@@ -523,7 +815,7 @@ body.form-active .mobile-sidebar-toggle {
         margin: 0 !important;
     }
 
-    #account-form input, 
+    #account-form input,
     #account-form select,
     #account-form .autocomplete-results {
         width: 100% !important;
@@ -532,13 +824,16 @@ body.form-active .mobile-sidebar-toggle {
         border-bottom-right-radius: 0 !important;
         border-top-left-radius: 8px !important;
         border-bottom-left-radius: 8px !important;
-        border-right-color: transparent !important; /* merge with label */
+        border-right-color: transparent !important;
+        /* merge with label */
     }
 
-    #account-form input, #account-form select {
+    #account-form input,
+    #account-form select {
         text-align: right !important;
         padding: 12px 12px !important;
-        font-size: 16px !important; /* prevent zoom & readable */
+        font-size: 16px !important;
+        /* prevent zoom & readable */
     }
 
     #account-form .flex-1.relative {
@@ -547,7 +842,7 @@ body.form-active .mobile-sidebar-toggle {
     }
 
     /* Autocomplete toggles if any inside relative */
-    #account-form .relative > button[id$="-toggle"] {
+    #account-form .relative>button[id$="-toggle"] {
         left: 4px !important;
         right: auto !important;
     }
@@ -563,8 +858,9 @@ body.form-active .mobile-sidebar-toggle {
 
 /* --- Clerk Papers Responsive Styles --- */
 @media (max-width: 768px) {
+
     /* Remove container spacing in clerk papers view on mobile */
-    .search-right-pane > .bg-white.rounded-xl {
+    .search-right-pane>.bg-white.rounded-xl {
         border: none !important;
         box-shadow: none !important;
         border-radius: 0 !important;
@@ -603,7 +899,8 @@ body.form-active .mobile-sidebar-toggle {
     }
 
     #clerk-papers-list {
-        padding: 8px 4px !important; /* Adjust padding for list */
+        padding: 8px 4px !important;
+        /* Adjust padding for list */
     }
 
     /* Client group headers in clerk papers list */
@@ -655,13 +952,13 @@ body.form-active .mobile-sidebar-toggle {
     }
 
     /* Stack only the action buttons vertically (do not affect other flex gap-1 blocks) */
-    .paper-card > .flex.items-center.justify-between > .flex.items-center.gap-1 {
+    .paper-card>.flex.items-center.justify-between>.flex.items-center.gap-1 {
         flex-direction: column;
         align-items: flex-end;
         gap: 6px;
     }
 
-        
+
     /* Clerk Paper Form Responsive - place label to the right of input (RTL) */
     #clerk-paper-form .grid {
         gap: 10px !important;
@@ -680,7 +977,8 @@ body.form-active .mobile-sidebar-toggle {
         text-align: right !important;
         padding: 10px 10px !important;
         font-size: 0.9rem !important;
-        border: 2px solid #cbd5e1 !important; /* gray-300 to match input */
+        border: 2px solid #cbd5e1 !important;
+        /* gray-300 to match input */
         border-top-right-radius: 8px !important;
         border-bottom-right-radius: 8px !important;
         border-top-left-radius: 0 !important;
@@ -688,15 +986,17 @@ body.form-active .mobile-sidebar-toggle {
         margin: 0 !important;
     }
 
-    #clerk-paper-form input, 
+    #clerk-paper-form input,
     #clerk-paper-form .autocomplete-results {
         width: 100% !important;
-        border: 2px solid #cbd5e1 !important; /* ensure visible borders */
+        border: 2px solid #cbd5e1 !important;
+        /* ensure visible borders */
         border-top-right-radius: 0 !important;
         border-bottom-right-radius: 0 !important;
         border-top-left-radius: 8px !important;
         border-bottom-left-radius: 8px !important;
-        border-right-color: transparent !important; /* merge with label border */
+        border-right-color: transparent !important;
+        /* merge with label border */
         border-top-color: #cbd5e1 !important;
         border-bottom-color: #cbd5e1 !important;
         border-left-color: #cbd5e1 !important;
@@ -705,9 +1005,10 @@ body.form-active .mobile-sidebar-toggle {
     #clerk-paper-form input {
         text-align: right !important;
         padding: 12px 12px !important;
-        font-size: 16px !important; /* Prevent zoom and keep readable */
+        font-size: 16px !important;
+        /* Prevent zoom and keep readable */
     }
-    
+
     #clerk-paper-form .mt-auto.pt-4 {
         padding-top: 8px !important;
     }
@@ -719,20 +1020,24 @@ body.form-active .mobile-sidebar-toggle {
 
 /* General responsive fix for search pages layout */
 @media (max-width: 768px) {
-    .search-layout > .flex {
+    .search-layout>.flex {
         gap: 0 !important;
     }
+
     .search-right-pane {
         width: 100%;
-        flex: 1 1 100%; /* Ensure it takes full width in flex context */
+        flex: 1 1 100%;
+        /* Ensure it takes full width in flex context */
     }
 }
 
 /* تحسينات خاصة لرسائل التوست في صفحات البحث والجلسات على الهاتف */
 @media (max-width: 768px) {
+
     /* التأكد من أن التوست يظهر فوق جميع العناصر في صفحات البحث والجلسات */
     #toast-container {
-        top: 60px !important; /* مسافة مناسبة من الهيدر */
+        top: 60px !important;
+        /* مسافة مناسبة من الهيدر */
         left: 50% !important;
         transform: translateX(-50%) !important;
         position: fixed !important;
@@ -740,11 +1045,244 @@ body.form-active .mobile-sidebar-toggle {
         max-width: 90vw !important;
         min-width: 280px !important;
     }
-    
+
     /* تحسين مظهر التوست في صفحات البحث والجلسات */
     #toast-container .toast {
-        margin: 0 auto !important; /* توسيط التوست */
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important; /* ظل أقوى للوضوح */
-        border: 1px solid rgba(255, 255, 255, 0.3) !important; /* حدود واضحة */
+        margin: 0 auto !important;
+        /* توسيط التوست */
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+        /* ظل أقوى للوضوح */
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        /* حدود واضحة */
     }
+}
+
+/* ====== High Contrast Hover Effects for Search Page Buttons ====== */
+
+/* Sort Button (فرز باسم) in Sidebar - Black Hover */
+#cycle-sort:hover {
+    background-color: #000000 !important;
+    border-color: #000000 !important;
+    color: #ffffff !important;
+    transform: scale(1.03) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Client Card Buttons - Black Hover */
+/* Attach Files Button */
+.client-card .attach-files-btn:hover {
+    background: #000000 !important;
+    border-color: #000000 !important;
+    color: #ffffff !important;
+    transform: translateY(-2px) scale(1.03) !important;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Open Folder Button */
+.client-card .open-folder-btn:hover {
+    background: #000000 !important;
+    border-color: #000000 !important;
+    color: #ffffff !important;
+    transform: translateY(-2px) scale(1.03) !important;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Delete Button */
+.client-card .delete-client-btn:hover {
+    background: #000000 !important;
+    border-color: #000000 !important;
+    color: #ffffff !important;
+    transform: translateY(-2px) scale(1.03) !important;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Icons inside buttons turn white on hover */
+.client-card .attach-files-btn:hover i,
+.client-card .open-folder-btn:hover i,
+.client-card .delete-client-btn:hover i {
+    color: #ffffff !important;
+}
+
+/* ====== High Contrast Hover Effects for Client Details View ====== */
+
+/* Edit Client Button (تعديل الموكل) */
+#edit-client-data-btn:hover {
+    background-color: #000000 !important;
+    border-color: #000000 !important;
+    color: #ffffff !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Edit Opponent Button (تعديل الخصم) */
+.edit-opponent-btn:hover {
+    background-color: #000000 !important;
+    border-color: #000000 !important;
+    color: #ffffff !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Add Case Button (إضافة قضية) */
+#add-case-for-client-btn:hover {
+    background-color: #000000 !important;
+    border-color: #000000 !important;
+    color: #ffffff !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Case Navigation Arrows (أسهم التنقل بين القضايا) */
+#prev-case-btn:hover,
+#next-case-btn:hover {
+    background-color: #000000 !important;
+    border-color: #000000 !important;
+    color: #ffffff !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Edit Case Button (تعديل القضية) */
+.edit-case-btn:hover {
+    background-color: #000000 !important;
+    border-color: #000000 !important;
+    color: #ffffff !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Delete Case Button (حذف القضية) */
+.delete-case-btn:hover {
+    background-color: #000000 !important;
+    border-color: #000000 !important;
+    color: #ffffff !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Add Session Button (إضافة جلسة) */
+.add-session-for-case-btn:hover {
+    background-color: #000000 !important;
+    border-color: #000000 !important;
+    color: #ffffff !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Icons inside all these buttons turn white on hover */
+#edit-client-data-btn:hover i,
+.edit-opponent-btn:hover i,
+#add-case-for-client-btn:hover i,
+#prev-case-btn:hover i,
+#next-case-btn:hover i,
+.edit-case-btn:hover i,
+.delete-case-btn:hover i,
+.add-session-for-case-btn:hover i {
+    color: #ffffff !important;
+}
+
+/* ====== High Contrast Hover for Client Card ====== */
+/* تأثير واضح عند الوقوف على كارت الموكل */
+.client-card:hover {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 50%, #93c5fd 100%) !important;
+    /* أزرق فاتح-متوسط */
+    border-color: #3b82f6 !important;
+    /* أزرق واضح */
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.35), 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+    transform: translateY(-3px) !important;
+}
+
+/* تغيير لون النص داخل الكارت للأزرق الغامق عند الـ Hover */
+.client-card:hover h4,
+.client-card:hover .text-xl {
+    color: #1e3a8a !important;
+    /* أزرق غامق للعنوان */
+}
+
+/* تغيير أيقونة المستخدم الدائرية */
+.client-card:hover .w-12.h-12 {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    transform: scale(1.1) !important;
+}
+
+.client-card:hover .w-12.h-12 i {
+    color: #ffffff !important;
+}
+
+/* تغيير ألوان الإحصائيات الصغيرة - أغمق شوية */
+.client-card:hover .bg-red-100 {
+    background: #fecaca !important;
+}
+
+.client-card:hover .bg-blue-100 {
+    background: #bfdbfe !important;
+}
+
+.client-card:hover .bg-green-100 {
+    background: #bbf7d0 !important;
+}
+
+/* ====== High Contrast Hover for Case Cards ====== */
+/* تأثير واضح عند الوقوف على كارت القضية - لون أصفر زي لون الاختيار */
+.case-card:hover {
+    background: linear-gradient(135deg, #fefce8 0%, #fef9c3 50%, #fef08a 100%) !important;
+    /* أصفر فاتح-متوسط */
+    border-color: #eab308 !important;
+    /* أصفر واضح */
+    box-shadow: 0 8px 25px rgba(234, 179, 8, 0.3), 0 0 0 2px rgba(234, 179, 8, 0.15) !important;
+    transform: translateY(-2px) !important;
+}
+
+.case-card:hover h4 {
+    color: #a16207 !important;
+    /* أصفر غامق للعنوان */
+}
+
+.case-card:hover .case-arrow {
+    color: #a16207 !important;
+}
+
+/* ====== High Contrast Hover for Session Cards ====== */
+/* تأثير واضح عند الوقوف على أزرار الجلسات فقط - العناصر القابلة للضغط */
+.session-item-btn:hover {
+    background: linear-gradient(135deg, #faf5ff 0%, #ede9fe 50%, #ddd6fe 100%) !important;
+    /* بنفسجي فاتح-متوسط */
+    border-color: #8b5cf6 !important;
+    /* بنفسجي واضح */
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.25), 0 0 0 2px rgba(139, 92, 246, 0.1) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* أزرار الجلسات في القائمة الجانبية */
+#sessions-sidebar-list .session-item-btn:hover {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25) !important;
+}
+
+/* ====== Session Card Hover (Before Expansion) ====== */
+/* تأثير واضح عند الوقوف على كارت الجلسة قبل التوسعة - لون أصفر زي لون الاختيار */
+.session-card:hover {
+    background: linear-gradient(135deg, #fefce8 0%, #fef9c3 50%, #fef08a 100%) !important;
+    /* أصفر فاتح-متوسط */
+    border-color: #eab308 !important;
+    /* أصفر واضح */
+    box-shadow: 0 8px 25px rgba(234, 179, 8, 0.3), 0 0 0 2px rgba(234, 179, 8, 0.15) !important;
+    transform: translateY(-2px) !important;
+}
+
+.session-card:hover .session-header h5 {
+    color: #a16207 !important;
+    /* أصفر غامق للعنوان */
+}
+
+.session-card:hover .session-arrow {
+    color: #a16207 !important;
+}
+
+/* تغيير أيقونة التقويم في كارت الجلسة */
+.session-card:hover .w-8.h-8 {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+    /* برتقالي-أصفر */
+    transform: scale(1.1) !important;
 }

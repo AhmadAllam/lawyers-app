@@ -36,17 +36,45 @@ function generateMenuItems() {
 
 
     const iconColors = [
-        { bg: '#FFE5E5', icon: '#FF4444' },
-        { bg: '#FFF4E5', icon: '#FF9500' },
-        { bg: '#E5F9F6', icon: '#00C896' },
-        { bg: '#E5F0FF', icon: '#4285F4' },
-        { bg: '#E8F0FE', icon: '#1976D2' },
-        { bg: '#E3F2FD', icon: '#0288D1' },
-        { bg: '#FFF3E0', icon: '#FF8F00' },
-        { bg: '#F3E5F5', icon: '#9C27B0' },
-        { bg: '#F1F8E9', icon: '#689F38' },
-        { bg: '#E0F2F1', icon: '#00695C' }
+        { bg: '#E0F2FE', icon: '#0284C7' }, // درجات الأزرق المريحة للعين
+        { bg: '#DBEAFE', icon: '#1D4ED8' },
+        { bg: '#D1FAE5', icon: '#0EA5E9' },
+        { bg: '#E0F2FE', icon: '#0369A1' }
     ];
+
+    const mobileCardThemeById = {
+        'search': {
+            bg: 'linear-gradient(135deg, #8fd6d7 0%, #4aaab8 100%)',
+            text: '#0F172A',
+            iconBg: 'rgba(255,255,255,0.55)',
+            icon: '#0C6B78'
+        },
+        'new': {
+            bg: 'linear-gradient(135deg, #79bde3 0%, #3b82c4 100%)',
+            text: '#0F172A',
+            iconBg: 'rgba(255,255,255,0.55)',
+            icon: '#176EA6'
+        },
+        'clerk-papers': { from: '#86D7DF', to: '#73C9D2', text: '#0F172A', iconBg: 'rgba(255,255,255,0.55)', icon: '#0C6B78' },
+        'administrative': {
+            bg: 'linear-gradient(135deg, #86b7da 0%, #5a8fbd 100%)',
+            text: '#0F172A',
+            iconBg: 'rgba(255,255,255,0.55)',
+            icon: '#2E4F82'
+        },
+        'sessions': { from: '#B9F0DE', to: '#A2E7D2', text: '#0F172A', iconBg: 'rgba(255,255,255,0.55)', icon: '#1E7B6A' },
+        'archive': { from: '#4DB7C6', to: '#3DA8B8', text: '#0F172A', iconBg: 'rgba(255,255,255,0.55)', icon: '#1D6F7A' },
+        'expert-sessions': { from: '#A7CFE8', to: '#93BFE0', text: '#0F172A', iconBg: 'rgba(255,255,255,0.55)', icon: '#2E5E8D' },
+        'accounts': { from: '#A9C3E2', to: '#8FB2D8', text: '#0F172A', iconBg: 'rgba(255,255,255,0.55)', icon: '#2B5C8B' },
+        'legal-library': { from: '#79D2C2', to: '#66C7B6', text: '#0F172A', iconBg: 'rgba(255,255,255,0.55)', icon: '#1D7A67' },
+        'reports': {
+            bg: 'linear-gradient(135deg, #7fc6e3 0%, #3e93c8 100%)',
+            text: '#0F172A',
+            iconBg: 'rgba(255,255,255,0.55)',
+            icon: '#2F78C4'
+        },
+        'open-clients-folder': { from: '#7CC4D3', to: '#67B7C8', text: '#0F172A', iconBg: 'rgba(255,255,255,0.55)', icon: '#1B6D7A' }
+    };
 
     items.forEach((item, index) => {
         const btn = document.createElement('button');
@@ -56,25 +84,63 @@ function generateMenuItems() {
         btn.style.backgroundColor = '#374151';
         btn.style.color = '#FFFFFF';
 
+        const themed = mobileCardThemeById[item.id] || null;
+
         if (isMobile) {
 
             const colors = iconColors[index % iconColors.length];
-            btn.innerHTML = `
-                <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style="background-color: ${colors.bg};">
-                    <span class="material-symbols-outlined text-xl" style="color: ${colors.icon};">${item.icon}</span>
-                </div>
-                <h3 class="font-bold text-base leading-tight">${item.label}</h3>
-            `;
+            if (themed) {
+                if (themed.bg) {
+                    btn.style.backgroundImage = themed.bg;
+                } else {
+                    btn.style.backgroundImage = `linear-gradient(135deg, ${themed.from}, ${themed.to})`;
+                }
+                btn.style.backgroundColor = 'transparent';
+                btn.style.color = themed.text;
+                btn.style.border = '1px solid rgba(15, 23, 42, 0.14)';
+                btn.innerHTML = `
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style="background-color: ${themed.iconBg};">
+                        <span class="material-symbols-outlined text-xl" style="color: ${themed.icon};">${item.icon}</span>
+                    </div>
+                    <h3 class="font-bold text-base leading-tight">${item.label}</h3>
+                `;
+            } else {
+                btn.innerHTML = `
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style="background-color: ${colors.bg};">
+                        <span class="material-symbols-outlined text-xl" style="color: ${colors.icon};">${item.icon}</span>
+                    </div>
+                    <h3 class="font-bold text-base leading-tight">${item.label}</h3>
+                `;
+            }
         } else {
 
             const colors = iconColors[index % iconColors.length];
-            btn.innerHTML = `
-                <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style="background-color: ${colors.bg};">
-                    <span class="material-symbols-outlined text-xl" style="color: ${colors.icon};">${item.icon}</span>
-                </div>
-                <h3 class="font-bold text-base leading-tight mb-1">${item.label}</h3>
-                <p class="text-xs text-gray-200">${item.description || ''}</p>
-            `;
+            if (themed) {
+                if (themed.bg) {
+                    btn.style.backgroundImage = themed.bg;
+                } else {
+                    btn.style.backgroundImage = `linear-gradient(135deg, ${themed.from}, ${themed.to})`;
+                }
+                btn.style.backgroundColor = 'transparent';
+                btn.style.color = themed.text;
+                btn.style.border = '1px solid rgba(15, 23, 42, 0.14)';
+
+                btn.innerHTML = `
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style="background-color: ${themed.iconBg};">
+                        <span class="material-symbols-outlined text-xl" style="color: ${themed.icon};">${item.icon}</span>
+                    </div>
+                    <h3 class="font-bold text-base leading-tight mb-1">${item.label}</h3>
+                    <p class="text-xs" style="color: rgba(15, 23, 42, 0.72);">${item.description || ''}</p>
+                `;
+            } else {
+                btn.innerHTML = `
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style="background-color: ${colors.bg};">
+                        <span class="material-symbols-outlined text-xl" style="color: ${colors.icon};">${item.icon}</span>
+                    </div>
+                    <h3 class="font-bold text-base leading-tight mb-1">${item.label}</h3>
+                    <p class="text-xs text-gray-200">${item.description || ''}</p>
+                `;
+            }
         }
 
         btn.addEventListener('click', () => handleCardClick(item.id));
