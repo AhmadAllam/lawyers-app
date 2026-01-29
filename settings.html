@@ -213,6 +213,46 @@
         margin: 0 !important;
       }
 
+      /* استغلال عرض شاشة الهاتف بالكامل (إلغاء الهوامش/الفراغات الخارجية) */
+      body.settings-page {
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+
+      main {
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+
+      .container {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      #settings-content-container,
+      #modal-container,
+      #modal-content,
+      #settings-sections {
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      /* خلي الكروت ممتدة بعرض الشاشة */
+      #modal-content #settings-sections .settings-section>div,
+      #modal-content #settings-sections .bg-white.border {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        border-radius: 0 !important;
+      }
+
       #modal-content .grid>div,
       #trial-settings-card {
         border: 1px solid #e5e7eb !important;

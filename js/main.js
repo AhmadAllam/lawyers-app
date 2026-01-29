@@ -31,7 +31,9 @@ function generateMenuItems() {
 
     const firstRowContainer = document.createElement('div');
     firstRowContainer.id = 'first-row';
-    firstRowContainer.className = 'col-span-full grid grid-cols-2 gap-3 md:gap-4';
+    firstRowContainer.className = isMobile
+        ? 'col-span-full grid grid-cols-2 gap-1'
+        : 'col-span-full grid grid-cols-2 gap-3 md:gap-4';
     menuGrid.appendChild(firstRowContainer);
 
 
@@ -80,7 +82,9 @@ function generateMenuItems() {
         const btn = document.createElement('button');
         btn.type = 'button';
 
-        btn.className = 'menu-card md-elevation-1 rounded-3xl hover:md-elevation-2 flex flex-col items-center justify-center text-center md:min-h-[160px] group p-4 md:p-6';
+        btn.className = isMobile
+            ? 'menu-card md-elevation-1 rounded-3xl hover:md-elevation-2 flex flex-col items-center justify-center text-center group p-2'
+            : 'menu-card md-elevation-1 rounded-3xl hover:md-elevation-2 flex flex-col items-center justify-center text-center md:min-h-[160px] group p-4 md:p-6';
         btn.style.backgroundColor = '#374151';
         btn.style.color = '#FFFFFF';
 
@@ -99,17 +103,17 @@ function generateMenuItems() {
                 btn.style.color = themed.text;
                 btn.style.border = '1px solid rgba(15, 23, 42, 0.14)';
                 btn.innerHTML = `
-                    <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style="background-color: ${themed.iconBg};">
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center mb-1" style="background-color: ${themed.iconBg};">
                         <span class="material-symbols-outlined text-xl" style="color: ${themed.icon};">${item.icon}</span>
                     </div>
-                    <h3 class="font-bold text-base leading-tight">${item.label}</h3>
+                    <h3 class="font-bold text-xs leading-tight">${item.label}</h3>
                 `;
             } else {
                 btn.innerHTML = `
-                    <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style="background-color: ${colors.bg};">
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center mb-1" style="background-color: ${colors.bg};">
                         <span class="material-symbols-outlined text-xl" style="color: ${colors.icon};">${item.icon}</span>
                     </div>
-                    <h3 class="font-bold text-base leading-tight">${item.label}</h3>
+                    <h3 class="font-bold text-xs leading-tight">${item.label}</h3>
                 `;
             }
         } else {

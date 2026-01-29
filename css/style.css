@@ -187,6 +187,7 @@ main {
 @media (max-width: 640px) {
     .menu-card {
         min-height: 120px;
+        padding: 0.35rem !important;
     }
 
     main {

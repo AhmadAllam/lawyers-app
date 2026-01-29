@@ -160,7 +160,7 @@ async function displaySettingsModal() {
                 </div>
 
                 <!-- النسخ الاحتياطي التلقائي -->
-                <div class="bg-white border border-gray-200 rounded-lg sm:rounded-xl p-3 shadow-sm transition-all h-fit">
+                <div id="auto-backup-on-exit-card" class="bg-white border border-gray-200 rounded-lg sm:rounded-xl p-3 shadow-sm transition-all h-fit">
                     <div class="flex items-start gap-4">
                         <div class="flex items-center gap-2 flex-shrink-0 min-w-[160px]">
                             <div class="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-md">
@@ -185,7 +185,7 @@ async function displaySettingsModal() {
 
                 <!-- مزامنة البيانات -->
                 <!-- مسار حفظ البيانات (مجلد الموكلين) -->
-                <div class="bg-white border border-gray-200 rounded-lg sm:rounded-xl p-3 shadow-sm transition-all h-fit">
+                <div id="clients-path-card" class="bg-white border border-gray-200 rounded-lg sm:rounded-xl p-3 shadow-sm transition-all h-fit">
                     <div class="flex items-center gap-4">
                         <div class="flex items-center gap-2 flex-shrink-0 min-w-[160px]">
                             <div class="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-md">
@@ -456,6 +456,10 @@ async function displaySettingsModal() {
             try { return !!(window.matchMedia && window.matchMedia('(max-width: 768px)').matches); } catch (_) { return false; }
         })();
 
+        const isDesktop = (() => {
+            try { return !!(window && window.electronAPI); } catch (_) { return false; }
+        })();
+
         const sections = {
             general: document.getElementById('settings-section-general'),
             backup: document.getElementById('settings-section-backup'),
@@ -466,11 +470,13 @@ async function displaySettingsModal() {
 
         const tryRenderUsersSection = async () => {
             try {
-                const isAdmin = (sessionStorage.getItem('current_is_admin') === '1');
                 const usersNav = document.getElementById('settings-users-nav');
-                if (usersNav) {
-                    usersNav.classList.remove('hidden');
+                if (!isDesktop) {
+                    if (usersNav) usersNav.classList.add('hidden');
+                    try { if (sections.users) sections.users.classList.add('hidden'); } catch (e) { }
+                    return;
                 }
+                if (usersNav) usersNav.classList.remove('hidden');
                 if (!sections.users) return;
                 if (typeof window.renderUsersSettingsSection === 'function') {
                     await window.renderUsersSettingsSection(sections.users);
@@ -546,6 +552,16 @@ async function displaySettingsModal() {
             try { host.appendChild(card); } catch (e) { }
         });
 
+        // Electron-only cards: hide them completely outside Electron (mobile/PWA/normal browser)
+        try {
+            if (!isDesktop) {
+                const clientsPathCard = document.getElementById('clients-path-card');
+                if (clientsPathCard && clientsPathCard.parentNode) clientsPathCard.parentNode.removeChild(clientsPathCard);
+                const autoBackupCard = document.getElementById('auto-backup-on-exit-card');
+                if (autoBackupCard && autoBackupCard.parentNode) autoBackupCard.parentNode.removeChild(autoBackupCard);
+            }
+        } catch (e) { }
+
         try {
             const backupHost = sectionHosts.backup;
             if (backupHost) {
@@ -587,7 +603,9 @@ async function displaySettingsModal() {
                     updates: 'إعدادات التحديثات',
                     license: 'إعدادات الترخيص'
                 };
-                const keys = ['general', 'backup', 'users', 'updates', 'license'];
+                const keys = isDesktop
+                    ? ['general', 'backup', 'users', 'updates', 'license']
+                    : ['general', 'backup', 'updates', 'license'];
 
                 keys.forEach((key) => {
                     const host = sectionHosts[key];
@@ -643,7 +661,9 @@ async function displaySettingsModal() {
 
         const setActive = (key) => {
             const isAdmin = (sessionStorage.getItem('current_is_admin') === '1');
-            const keys = ['general', 'backup', 'users', 'updates', 'license'];
+            const keys = isDesktop
+                ? ['general', 'backup', 'users', 'updates', 'license']
+                : ['general', 'backup', 'updates', 'license'];
             const isMobile = (() => {
                 try { return !!(window.matchMedia && window.matchMedia('(max-width: 768px)').matches); } catch (_) { return false; }
             })();
