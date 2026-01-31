@@ -239,11 +239,19 @@ async function displayClientViewForm(clientId) {
 
         modalContent.innerHTML = `
             <div class="client-view client-view--mobile-tight space-y-6">
+                <style id="client-view-performance-style">
+                    .client-view .shadow-sm:not(button),
+                    .client-view .shadow-md:not(button),
+                    .client-view .shadow-lg:not(button),
+                    .client-view .hover\:shadow-lg:not(button):hover {
+                        box-shadow: none !important;
+                    }
+                </style>
                 <!-- بيانات الأطراف -->
                 <div class="flex flex-col md:flex-row items-start gap-4 md:gap-6">
                     <!-- بيانات الموكل -->
                     <div class="flex-1 flex flex-col">
-                        <div class="p-6 rounded-lg bg-blue-50 border border-blue-200/60 shadow-lg flex-1 flex flex-col">
+                        <div class="p-6 rounded-lg bg-blue-50 border border-blue-200/60 flex-1 flex flex-col">
                             <h3 class="text-lg font-bold text-blue-800 mb-4 flex items-center justify-center gap-2">
                                 <i class="ri-user-3-line"></i>
                                 <span>بيانات الموكل</span>
@@ -279,12 +287,12 @@ async function displayClientViewForm(clientId) {
 
                     <!-- فاصل "ضد" -->
                     <div class="against-separator flex items-center justify-center self-center">
-                        <span class="text-2xl font-black text-gray-500 bg-white px-4 py-2 rounded-full shadow-md border">ضد</span>
+                        <span class="text-2xl font-black text-gray-500 bg-white px-4 py-2 rounded-full border">ضد</span>
                     </div>
 
                     <!-- بيانات الخصوم -->
                     <div class="flex-1 flex flex-col">
-                        <div class="p-6 rounded-lg bg-red-50 border border-red-200/60 shadow-lg flex-1 flex flex-col">
+                        <div class="p-6 rounded-lg bg-red-50 border border-red-200/60 flex-1 flex flex-col">
                             <h3 class="text-lg font-bold text-red-800 mb-4 flex items-center justify-center gap-2">
                                 <i class="ri-shield-user-line"></i>
                                 <span>بيانات الخصوم</span>

@@ -159,6 +159,34 @@ function loadSearchContent() {
         </div>
     `;
 
+    try {
+        if (!document.getElementById('search-lite-effects-style')) {
+            const style = document.createElement('style');
+            style.id = 'search-lite-effects-style';
+            style.textContent = `
+                /* Performance: remove heavy shadows/transforms/transitions without touching hover colors */
+                #search-content-container .client-card,
+                #search-content-container .client-card:hover {
+                    box-shadow: none !important;
+                    transform: none !important;
+                }
+                #search-content-container .client-card * {
+                    transition: none !important;
+                }
+                #search-content-container .client-card:hover * {
+                    transform: none !important;
+                    filter: none !important;
+                }
+                #search-content-container .client-card button,
+                #search-content-container .client-card button:hover {
+                    box-shadow: none !important;
+                    transform: none !important;
+                }
+            `;
+            (document.head || document.documentElement).appendChild(style);
+        }
+    } catch (_) { }
+
     attachQuickSearchListener();
     attachStatsFilterListeners();
 
@@ -189,7 +217,7 @@ function loadSearchContent() {
     try {
         requestAnimationFrame(() => {
             setupClientsScrollBox();
-            setupHoverScrollBehavior();
+            try { setupHoverScrollBehavior(); } catch (_) { }
         });
         window.addEventListener('resize', setupClientsScrollBox);
         setupBackButton();
@@ -256,34 +284,15 @@ function setupClientsScrollBox() {
 }
 
 function setupHoverScrollBehavior() {
-    const leftPane = document.querySelector('.search-left-pane');
-    const rightList = document.getElementById('clients-list');
-    const mainEl = document.querySelector('main');
-    if (!leftPane || !rightList || !mainEl) return;
-
-
-    const enablePageScroll = () => {
-        mainEl.style.overflowY = 'auto';
-        document.body.style.overflowY = '';
-        rightList.style.overscrollBehavior = 'contain';
-    };
-
-    const enableRightListScrollOnly = () => {
-        mainEl.style.overflowY = 'hidden';
-        rightList.style.overscrollBehavior = 'contain';
-    };
-
-
-    leftPane.addEventListener('mouseenter', enablePageScroll);
-    leftPane.addEventListener('mouseleave', enableRightListScrollOnly);
-
-
-    rightList.addEventListener('mouseenter', enableRightListScrollOnly);
-    rightList.addEventListener('mouseleave', enablePageScroll);
-
-
-    enablePageScroll();
+    // هذا السلوك كان بيبدّل overflow حسب حركة الماوس وده بيعمل تقطيع (reflow) على الأجهزة الضعيفة.
+    // نخليه no-op ونسيب اسكرول القائمة شغال بشكل طبيعي.
+    try {
+        if (window.__searchHoverScrollDisabled) return;
+        window.__searchHoverScrollDisabled = true;
+    } catch (_) { }
 }
+
+let __quickSearchToken = 0;
 
 
 let activeStatsFilter = null;
@@ -606,6 +615,15 @@ function attachQuickSearchListener() {
         } catch (_) { }
     };
 
+    // الفرز الافتراضي لأول مرة فقط: الأحدث أولاً
+    try {
+        const hasField = (sessionStorage.getItem('sort_field') != null);
+        const hasDir = (sessionStorage.getItem('sort_dir') != null);
+        if (!hasField && !hasDir) {
+            setSortState({ field: 'date', dir: 'desc' });
+        }
+    } catch (_) { }
+
     // تحديث زر الفرز
     const updateSortButton = () => {
         const option = sortOptions[currentSortIndex];
@@ -660,7 +678,7 @@ function attachQuickSearchListener() {
 // تحميل جميع الموكلين
 async function loadAllClients() {
     try {
-        const clients = await getAllClients();
+        const clients = await (typeof getAllClientsCached === 'function' ? getAllClientsCached() : getAllClients());
         const clientsList = document.getElementById('clients-list');
         if (!clientsList) return;
 
@@ -698,19 +716,6 @@ async function loadAllClients() {
             return;
         }
 
-        // Prefetch cases and sessions once, then compute per-client data locally
-        const allCases = await getAllCases();
-        const allSessions = await getAllSessions();
-        const casesByClient = new Map();
-        for (const cs of allCases) {
-            const arr = casesByClient.get(cs.clientId) || [];
-            arr.push(cs);
-            casesByClient.set(cs.clientId, arr);
-        }
-        const sessionsCountByCase = new Map();
-        for (const s of allSessions) {
-            sessionsCountByCase.set(s.caseId, (sessionsCountByCase.get(s.caseId) || 0) + 1);
-        }
         let clientOpponentRelations = {};
         try { clientOpponentRelations = JSON.parse(localStorage.getItem('clientOpponentRelations') || '{}'); } catch (_) { clientOpponentRelations = {}; }
 
@@ -720,10 +725,11 @@ async function loadAllClients() {
             clients: sortedClients,
             index: 0,
             total: sortedClients.length,
-            batchSize: 60,
-            casesByClient,
-            sessionsCountByCase,
+            batchSize: 25,
+            casesByClient: null,
+            sessionsCountByCase: null,
             clientOpponentRelations,
+            statsReady: false,
             done: false,
             rendering: false
         };
@@ -733,6 +739,9 @@ async function loadAllClients() {
             __renderNextClientsBatch();
             setTimeout(() => { try { __renderNextClientsBatch(); } catch (_) { } }, 0);
         });
+
+        // تجهيز أرقام القضايا/الجلسات/الخصوم بعد ظهور القائمة (بدون تعطيل الواجهة)
+        __prepareClientStatsAsync(state);
 
     } catch (error) {
         const el = document.getElementById('clients-list');
@@ -801,17 +810,17 @@ function __buildClientCardHTML(client, { opponentsCount = 0, casesCount = 0, tot
                         <div class="flex items-center gap-3">
                             <div class="flex items-center gap-1 bg-red-100 px-3 py-1.5 rounded-full">
                                 <i class="ri-shield-user-line text-red-600 text-sm"></i>
-                                <span class="text-sm font-semibold text-red-700">${opponentsCount}</span>
+                                <span class="text-sm font-semibold text-red-700" data-role="opponents-count">${opponentsCount}</span>
                                 <span class="text-xs text-red-600">خصم</span>
                             </div>
                             <div class="flex items-center gap-1 bg-blue-100 px-3 py-1.5 rounded-full">
                                 <i class="ri-briefcase-line text-blue-600 text-sm"></i>
-                                <span class="text-sm font-semibold text-blue-700">${casesCount}</span>
+                                <span class="text-sm font-semibold text-blue-700" data-role="cases-count">${casesCount}</span>
                                 <span class="text-xs text-blue-600">قضية</span>
                             </div>
                             <div class="flex items-center gap-1 bg-green-100 px-3 py-1.5 rounded-full">
                                 <i class="ri-calendar-event-line text-green-600 text-sm"></i>
-                                <span class="text-sm font-semibold text-green-700">${totalSessions}</span>
+                                <span class="text-sm font-semibold text-green-700" data-role="sessions-count">${totalSessions}</span>
                                 <span class="text-xs text-green-600">جلسة</span>
                             </div>
                         </div>
@@ -829,6 +838,81 @@ function __buildClientCardHTML(client, { opponentsCount = 0, casesCount = 0, tot
     `;
 }
 
+async function __prepareClientStatsAsync(state) {
+    try {
+        if (!state || state.statsReady) return;
+        state.statsReady = 'loading';
+
+        const work = async () => {
+            try {
+                const allCases = await getAllCases();
+                const allSessions = await getAllSessions();
+                const casesByClient = new Map();
+                for (const cs of allCases) {
+                    const arr = casesByClient.get(cs.clientId) || [];
+                    arr.push(cs);
+                    casesByClient.set(cs.clientId, arr);
+                }
+                const sessionsCountByCase = new Map();
+                for (const s of allSessions) {
+                    sessionsCountByCase.set(s.caseId, (sessionsCountByCase.get(s.caseId) || 0) + 1);
+                }
+                state.casesByClient = casesByClient;
+                state.sessionsCountByCase = sessionsCountByCase;
+                state.statsReady = true;
+                __updateRenderedClientStats();
+            } catch (_) {
+                state.statsReady = true;
+            }
+        };
+
+        // ادي فرصة للواجهة تظهر الأول
+        setTimeout(() => {
+            try {
+                if (typeof requestIdleCallback === 'function') {
+                    requestIdleCallback(() => { work(); }, { timeout: 2500 });
+                } else {
+                    work();
+                }
+            } catch (e) {
+                work();
+            }
+        }, 1200);
+    } catch (_) { }
+}
+
+function __updateRenderedClientStats() {
+    try {
+        const clientsList = document.getElementById('clients-list');
+        if (!clientsList) return;
+        const st = clientsList.__renderState;
+        if (!st || st.statsReady !== true || !st.casesByClient || !st.sessionsCountByCase) return;
+
+        const cards = clientsList.querySelectorAll('.client-card[data-client-id]');
+        cards.forEach(card => {
+            try {
+                const clientId = parseInt(card.getAttribute('data-client-id') || '0', 10);
+                if (!clientId) return;
+                const cases = st.casesByClient.get(clientId) || [];
+                const caseOpponentIds = [...new Set(cases.map(c => c.opponentId).filter(id => id))];
+                const tempOpponentIds = (st.clientOpponentRelations && st.clientOpponentRelations[clientId]) ? st.clientOpponentRelations[clientId] : [];
+                const opponentsCount = new Set([...caseOpponentIds, ...tempOpponentIds]).size;
+                let totalSessions = 0;
+                for (const caseRecord of cases) {
+                    totalSessions += (st.sessionsCountByCase.get(caseRecord.id) || 0);
+                }
+
+                const oppEl = card.querySelector('[data-role="opponents-count"]');
+                const casesEl = card.querySelector('[data-role="cases-count"]');
+                const sessEl = card.querySelector('[data-role="sessions-count"]');
+                if (oppEl) oppEl.textContent = String(opponentsCount);
+                if (casesEl) casesEl.textContent = String(cases.length);
+                if (sessEl) sessEl.textContent = String(totalSessions);
+            } catch (_) { }
+        });
+    } catch (_) { }
+}
+
 function __setupClientsIncrementalScroll(state) {
     try {
         const clientsList = document.getElementById('clients-list');
@@ -836,15 +920,28 @@ function __setupClientsIncrementalScroll(state) {
         clientsList.__renderState = state;
         if (clientsList.__scrollBound) return;
         clientsList.__scrollBound = true;
+        let pending = false;
         clientsList.addEventListener('scroll', () => {
             try {
-                const st = clientsList.__renderState;
-                if (!st || st.done || st.rendering) return;
-                const nearBottom = (clientsList.scrollTop + clientsList.clientHeight) >= (clientsList.scrollHeight - 250);
-                if (nearBottom) {
-                    __renderNextClientsBatch();
+                if (pending) return;
+                pending = true;
+                const tick = () => {
+                    pending = false;
+                    try {
+                        const st = clientsList.__renderState;
+                        if (!st || st.done || st.rendering) return;
+                        const nearBottom = (clientsList.scrollTop + clientsList.clientHeight) >= (clientsList.scrollHeight - 300);
+                        if (nearBottom) {
+                            __renderNextClientsBatch();
+                        }
+                    } catch (_) { }
+                };
+                if (typeof requestAnimationFrame === 'function') {
+                    requestAnimationFrame(tick);
+                } else {
+                    setTimeout(tick, 50);
                 }
-            } catch (_) { }
+            } catch (_) { pending = false; }
         }, { passive: true });
     } catch (_) { }
 }
@@ -861,15 +958,22 @@ function __renderNextClientsBatch() {
         let html = '';
         for (let i = start; i < end; i++) {
             const client = state.clients[i];
-            const cases = state.casesByClient.get(client.id) || [];
-            const caseOpponentIds = [...new Set(cases.map(c => c.opponentId).filter(id => id))];
-            const tempOpponentIds = (state.clientOpponentRelations && state.clientOpponentRelations[client.id]) ? state.clientOpponentRelations[client.id] : [];
-            const opponentsCount = new Set([...caseOpponentIds, ...tempOpponentIds]).size;
+            let opponentsCount = 0;
+            let casesCount = 0;
             let totalSessions = 0;
-            for (const caseRecord of cases) {
-                totalSessions += (state.sessionsCountByCase.get(caseRecord.id) || 0);
-            }
-            html += __buildClientCardHTML(client, { opponentsCount, casesCount: cases.length, totalSessions });
+            try {
+                if (state.statsReady === true && state.casesByClient && state.sessionsCountByCase) {
+                    const cases = state.casesByClient.get(client.id) || [];
+                    casesCount = cases.length;
+                    const caseOpponentIds = [...new Set(cases.map(c => c.opponentId).filter(id => id))];
+                    const tempOpponentIds = (state.clientOpponentRelations && state.clientOpponentRelations[client.id]) ? state.clientOpponentRelations[client.id] : [];
+                    opponentsCount = new Set([...caseOpponentIds, ...tempOpponentIds]).size;
+                    for (const caseRecord of cases) {
+                        totalSessions += (state.sessionsCountByCase.get(caseRecord.id) || 0);
+                    }
+                }
+            } catch (_) { }
+            html += __buildClientCardHTML(client, { opponentsCount, casesCount, totalSessions });
         }
         if (start === 0) {
             clientsList.innerHTML = '';
@@ -878,6 +982,9 @@ function __renderNextClientsBatch() {
         state.index = end;
         state.done = (state.index >= state.total);
         attachClientCardListeners();
+        if (state.statsReady === true) {
+            try { __updateRenderedClientStats(); } catch (_) { }
+        }
     } catch (_) {
     } finally {
         state.rendering = false;
@@ -1054,328 +1161,356 @@ async function performQuickSearch(query) {
     const clientsList = document.getElementById('clients-list');
     if (!clientsList) return;
 
+    const token = ++__quickSearchToken;
+
     // مسح النتائج الحالية وعرض مؤشر التحميل
     clientsList.innerHTML = '<div class="text-center text-gray-500 py-8"><i class="ri-loader-4-line animate-spin text-3xl mb-3"></i><p class="text-lg">جاري البحث السريع...</p></div>';
 
     try {
-        let allMatchingClients = new Map(); // استخدام Map لحفظ التطابقات
+        let allMatchingClients = new Map();
 
-        // 1. البحث في أسماء الموكلين
-        const clients = await getAllClients();
-        const matchingClientsByName = clients.filter(c => c.name.toLowerCase().includes(query));
-        matchingClientsByName.forEach(client => {
-            if (!allMatchingClients.has(client.id)) {
-                allMatchingClients.set(client.id, []);
-            }
+        // مرحلة 1: نتائج سريعة بالاسم فقط (تظهر فورًا)
+        const clients = await (typeof getAllClientsCached === 'function' ? getAllClientsCached() : getAllClients());
+        if (token !== __quickSearchToken) return;
+        const clientsById = new Map((Array.isArray(clients) ? clients : []).map(c => [c.id, c]));
+
+        const nameMatches = (Array.isArray(clients) ? clients : []).filter(c => (c?.name || '').toLowerCase().includes(query));
+        nameMatches.forEach(client => {
+            if (!allMatchingClients.has(client.id)) allMatchingClients.set(client.id, []);
             allMatchingClients.get(client.id).push(`الاسم: ${client.name}`);
         });
 
-        // 2. البحث في أسماء الخصوم
-        const opponents = await getAllOpponents();
-        const matchingOpponents = opponents.filter(o => o.name.toLowerCase().includes(query));
+        // عرض سريع أولي
+        try {
+            if (nameMatches.length > 0) {
+                let htmlFast = '';
+                for (const client of nameMatches.slice(0, 30)) {
+                    htmlFast += __buildClientCardHTML(client, { opponentsCount: 0, casesCount: 0, totalSessions: 0 });
+                }
+                clientsList.innerHTML = htmlFast;
+                attachClientCardListeners();
+            }
+        } catch (_) { }
 
-        for (const opponent of matchingOpponents) {
-            // جلب القضايا المرتبطة بهذا الخصم
-            const opponentCases = await getFromIndex('cases', 'opponentId', opponent.id);
-            opponentCases.forEach(caseRecord => {
-                if (caseRecord.clientId) {
-                    if (!allMatchingClients.has(caseRecord.clientId)) {
-                        allMatchingClients.set(caseRecord.clientId, []);
+        // مرحلة 2: بحث شامل + تجهيز العدادات (يتعمل في وقت فاضي)
+        const doFull = async () => {
+            try {
+                if (token !== __quickSearchToken) return;
+
+                const opponents = await getAllOpponents();
+                if (token !== __quickSearchToken) return;
+
+                const allCases = await getAllCases();
+                if (token !== __quickSearchToken) return;
+
+                const allSessions = await getAllSessions();
+                if (token !== __quickSearchToken) return;
+
+                const matchingOpponents = (Array.isArray(opponents) ? opponents : []).filter(o => (o?.name || '').toLowerCase().includes(query));
+                const matchingOpponentIds = new Set(matchingOpponents.map(o => o.id));
+                const opponentNameById = new Map((Array.isArray(opponents) ? opponents : []).map(o => [o.id, o]));
+
+                // خريطة القضايا لكل موكل + عد الجلسات لكل قضية
+                const casesByClient = new Map();
+                for (const cs of (Array.isArray(allCases) ? allCases : [])) {
+                    const arr = casesByClient.get(cs.clientId) || [];
+                    arr.push(cs);
+                    casesByClient.set(cs.clientId, arr);
+                }
+                const sessionsCountByCase = new Map();
+                for (const s of (Array.isArray(allSessions) ? allSessions : [])) {
+                    sessionsCountByCase.set(s.caseId, (sessionsCountByCase.get(s.caseId) || 0) + 1);
+                }
+
+                // تطابق الخصوم: أي قضية خصمها مطابق
+                for (const cs of (Array.isArray(allCases) ? allCases : [])) {
+                    if (!cs || !cs.clientId) continue;
+                    if (cs.opponentId && matchingOpponentIds.has(cs.opponentId)) {
+                        const opp = opponentNameById.get(cs.opponentId);
+                        const oppName = (opp && opp.name) ? opp.name : '';
+                        if (!allMatchingClients.has(cs.clientId)) allMatchingClients.set(cs.clientId, []);
+                        if (oppName) allMatchingClients.get(cs.clientId).push(`الخصم: ${oppName}`);
                     }
-                    allMatchingClients.get(caseRecord.clientId).push(`الخصم: ${opponent.name}`);
                 }
-            });
-        }
 
-        // 3. البحث في أرقام الدعاوى فقط
-        const cases = await getAllCases();
-        const matchingCases = cases.filter(c =>
-            c.caseNumber?.toString().includes(query)
-        );
-        matchingCases.forEach(caseRecord => {
-            if (caseRecord.clientId) {
-                if (!allMatchingClients.has(caseRecord.clientId)) {
-                    allMatchingClients.set(caseRecord.clientId, []);
+                // تطابق رقم الدعوى
+                for (const cs of (Array.isArray(allCases) ? allCases : [])) {
+                    if (!cs || !cs.clientId) continue;
+                    const num = (cs.caseNumber != null) ? String(cs.caseNumber) : '';
+                    if (num && num.includes(query)) {
+                        if (!allMatchingClients.has(cs.clientId)) allMatchingClients.set(cs.clientId, []);
+                        allMatchingClients.get(cs.clientId).push(`رقم الدعوى: ${cs.caseNumber}`);
+                    }
                 }
-                allMatchingClients.get(caseRecord.clientId).push(`رقم الدعوى: ${caseRecord.caseNumber}`);
-            }
-        });
 
-        // 4. البحث في أرقام الحصر من جدول الجلسات
-        const sessions = await getAllSessions();
-        const matchingSessions = sessions.filter(s =>
-            s.inventoryNumber?.toString().includes(query)
-        );
-        matchingSessions.forEach(session => {
-            if (session.clientId) {
-                if (!allMatchingClients.has(session.clientId)) {
-                    allMatchingClients.set(session.clientId, []);
+                // تطابق رقم الحصر من جدول الجلسات
+                for (const s of (Array.isArray(allSessions) ? allSessions : [])) {
+                    const inv = (s && s.inventoryNumber != null) ? String(s.inventoryNumber) : '';
+                    if (!inv) continue;
+                    if (!inv.includes(query)) continue;
+                    const cid = s.clientId;
+                    if (!cid) continue;
+                    if (!allMatchingClients.has(cid)) allMatchingClients.set(cid, []);
+                    allMatchingClients.get(cid).push(`رقم الحصر: ${s.inventoryNumber}`);
                 }
-                allMatchingClients.get(session.clientId).push(`رقم الحصر: ${session.inventoryNumber}`);
-            }
-        });
 
-        // تحويل Map إلى array والحصول على بيانات الموكلين
-        const matchingClientIds = Array.from(allMatchingClients.keys());
-        const matchingClients = await Promise.all(
-            matchingClientIds.map(id => getById('clients', id))
-        );
-        const validMatchingClients = matchingClients.filter(client => client !== null);
+                const matchingClientIds = Array.from(allMatchingClients.keys());
+                const validMatchingClients = matchingClientIds.map(id => clientsById.get(id)).filter(Boolean);
+                if (token !== __quickSearchToken) return;
 
-        const compareByNameAsc = (a, b) => (a.name || '').localeCompare(b.name || '', 'ar');
-        const compareByNameDesc = (a, b) => (b.name || '').localeCompare(a.name || '', 'ar');
-        const normalizeDate = (v) => {
-            if (v instanceof Date) return v.getTime();
-            if (typeof v === 'number') return v;
-            if (typeof v === 'string') {
-                const t = Date.parse(v);
-                return isNaN(t) ? 0 : t;
+                const compareByNameAsc = (a, b) => (a.name || '').localeCompare(b.name || '', 'ar');
+                const compareByNameDesc = (a, b) => (b.name || '').localeCompare(a.name || '', 'ar');
+                const normalizeDate = (v) => {
+                    if (v instanceof Date) return v.getTime();
+                    if (typeof v === 'number') return v;
+                    if (typeof v === 'string') {
+                        const t = Date.parse(v);
+                        return isNaN(t) ? 0 : t;
+                    }
+                    return 0;
+                };
+                const getCreated = (x) => normalizeDate(x?.createdAt ?? x?.created_at ?? x?.created ?? x?.addedAt ?? x?.id ?? 0);
+                const compareByCreatedAsc = (a, b) => getCreated(a) - getCreated(b);
+                const compareByCreatedDesc = (a, b) => getCreated(b) - getCreated(a);
+                const field = sessionStorage.getItem('sort_field') || 'name';
+                const dir = sessionStorage.getItem('sort_dir') || 'asc';
+                if (field === 'name') {
+                    validMatchingClients.sort(dir === 'asc' ? compareByNameAsc : compareByNameDesc);
+                } else {
+                    validMatchingClients.sort(dir === 'asc' ? compareByCreatedAsc : compareByCreatedDesc);
+                }
+
+                if (validMatchingClients.length === 0) {
+                    clientsList.innerHTML = `
+                        <div class="text-center text-gray-500 py-12">
+                            <i class="ri-search-line text-4xl mb-4 text-gray-400"></i>
+                            <p class="text-lg font-medium">لا توجد نتائج للبحث</p>
+                            <p class="text-sm text-gray-400 mt-2">جرب كلمات مفتاحية أخرى</p>
+                        </div>
+                    `;
+                    const displayedResultsElement = document.getElementById('displayed-results');
+                    if (displayedResultsElement) displayedResultsElement.textContent = 0;
+                    return;
+                }
+
+                let clientOpponentRelations = {};
+                try { clientOpponentRelations = JSON.parse(localStorage.getItem('clientOpponentRelations') || '{}'); } catch (_) { clientOpponentRelations = {}; }
+
+                let html = '';
+                for (const client of validMatchingClients) {
+                    const cases = casesByClient.get(client.id) || [];
+                    const caseOpponentIds = [...new Set(cases.map(c => c.opponentId).filter(id => id))];
+                    const tempOpponentIds = (clientOpponentRelations && clientOpponentRelations[client.id]) ? clientOpponentRelations[client.id] : [];
+                    const uniqueOpponentIds = [...new Set([...caseOpponentIds, ...tempOpponentIds])];
+                    const opponentsCount = uniqueOpponentIds.length;
+                    let totalSessions = 0;
+                    for (const caseRecord of cases) {
+                        totalSessions += (sessionsCountByCase.get(caseRecord.id) || 0);
+                    }
+
+                    const matches = allMatchingClients.get(client.id) || [];
+                    const matchesHtml = matches.length > 0 ? `
+                        <div class="flex items-center gap-2 mt-2">
+                            ${matches.slice(0, 3).map(match => {
+                                let bgColor = 'bg-purple-100';
+                                let textColor = 'text-purple-700';
+                                let iconColor = 'text-purple-600';
+                                let icon = 'ri-search-eye-line';
+
+                                if (match.includes('الاسم:')) {
+                                    bgColor = 'bg-blue-100';
+                                    textColor = 'text-blue-700';
+                                    iconColor = 'text-blue-600';
+                                    icon = 'ri-user-3-line';
+                                } else if (match.includes('الخصم:')) {
+                                    bgColor = 'bg-red-100';
+                                    textColor = 'text-red-700';
+                                    iconColor = 'text-red-600';
+                                    icon = 'ri-shield-user-line';
+                                } else if (match.includes('رقم الدعوى:') || match.includes('سنة الدعوى:')) {
+                                    bgColor = 'bg-indigo-100';
+                                    textColor = 'text-indigo-700';
+                                    iconColor = 'text-indigo-600';
+                                    icon = 'ri-briefcase-line';
+                                } else if (match.includes('رقم الحصر:') || match.includes('سنة الحصر:')) {
+                                    bgColor = 'bg-purple-100';
+                                    textColor = 'text-purple-700';
+                                    iconColor = 'text-purple-600';
+                                    icon = 'ri-file-list-3-line';
+                                } else if (match.includes('رقم التوكيل:')) {
+                                    bgColor = 'bg-emerald-100';
+                                    textColor = 'text-emerald-700';
+                                    iconColor = 'text-emerald-600';
+                                    icon = 'ri-file-text-line';
+                                }
+
+                                return `
+                                    <div class="flex items-center gap-1 ${bgColor} px-2 py-1 rounded-full">
+                                        <i class="${icon} ${iconColor} text-xs"></i>
+                                        <span class="text-xs font-medium ${textColor}">${match}</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                            ${matches.length > 3 ? `
+                                <div class="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
+                                    <i class="ri-more-line text-gray-600 text-xs"></i>
+                                    <span class="text-xs font-medium text-gray-700">+${matches.length - 3}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    ` : '';
+
+                    html += `
+                        <div class="client-card bg-gradient-to-r from-white via-blue-50 to-white border border-blue-200 rounded-xl p-5 hover:shadow-lg hover:border-blue-400 hover:from-blue-50 hover:to-blue-100 transition-all duration-300 cursor-pointer group" data-client-id="${client.id}">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-4 flex-1">
+                                    <div class="relative">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-green-600 to-green-700 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                            <i class="ri-user-3-line text-white text-lg"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="font-bold text-xl text-gray-800 mb-2 group-hover:text-blue-700 transition-colors">${client.name}</h4>
+                                        <div class="flex items-center gap-3">
+                                            <div class="flex items-center gap-1 bg-red-100 px-3 py-1.5 rounded-full">
+                                                <i class="ri-shield-user-line text-red-600 text-sm"></i>
+                                                <span class="text-sm font-semibold text-red-700">${opponentsCount}</span>
+                                                <span class="text-xs text-red-600">خصم</span>
+                                            </div>
+                                            <div class="flex items-center gap-1 bg-blue-100 px-3 py-1.5 rounded-full">
+                                                <i class="ri-briefcase-line text-blue-600 text-sm"></i>
+                                                <span class="text-sm font-semibold text-blue-700">${cases.length}</span>
+                                                <span class="text-xs text-blue-600">قضية</span>
+                                            </div>
+                                            <div class="flex items-center gap-1 bg-green-100 px-3 py-1.5 rounded-full">
+                                                <i class="ri-calendar-event-line text-green-600 text-sm"></i>
+                                                <span class="text-sm font-semibold text-green-700">${totalSessions}</span>
+                                                <span class="text-xs text-green-600">جلسة</span>
+                                            </div>
+                                        </div>
+                                        ${matchesHtml}
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <button class="attach-files-btn bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105" data-client-name="${client.name}">
+                                        <i class="ri-attachment-2 ml-1"></i>إرفاق ملفات
+                                    </button>
+                                    <button class="open-folder-btn bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105" data-client-name="${client.name}">
+                                        <i class="ri-folder-open-line ml-1"></i>فتح المجلد
+                                    </button>
+                                    <button class="delete-client-btn bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105" data-client-id="${client.id}">
+                                        <i class="ri-delete-bin-line ml-1"></i>حذف
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                if (token !== __quickSearchToken) return;
+                clientsList.innerHTML = html;
+                attachClientCardListeners();
+            } catch (e) {
+                // تجاهل
             }
-            return 0;
         };
-        const getCreated = (x) => normalizeDate(x?.createdAt ?? x?.created_at ?? x?.created ?? x?.addedAt ?? x?.id ?? 0);
-        const compareByCreatedAsc = (a, b) => getCreated(a) - getCreated(b);
-        const compareByCreatedDesc = (a, b) => getCreated(b) - getCreated(a);
-        const field = sessionStorage.getItem('sort_field') || 'name';
-        const dir = sessionStorage.getItem('sort_dir') || 'asc';
-        if (field === 'name') {
-            validMatchingClients.sort(dir === 'asc' ? compareByNameAsc : compareByNameDesc);
+
+        if (typeof requestIdleCallback === 'function') {
+            requestIdleCallback(() => { try { doFull(); } catch (_) { } }, { timeout: 1200 });
         } else {
-            validMatchingClients.sort(dir === 'asc' ? compareByCreatedAsc : compareByCreatedDesc);
+            setTimeout(() => { try { doFull(); } catch (_) { } }, 0);
         }
-
-        if (validMatchingClients.length === 0) {
-            clientsList.innerHTML = `
-                <div class="text-center text-gray-500 py-12">
-                    <i class="ri-search-line text-4xl mb-4 text-gray-400"></i>
-                    <p class="text-lg font-medium">لا توجد نتائج للبحث</p>
-                    <p class="text-sm text-gray-400 mt-2">جرب كلمات مفتاحية أخرى</p>
-                </div>
-            `;
-
-            // تحديث عداد النتائج المعروضة
-            const displayedResultsElement = document.getElementById('displayed-results');
-            if (displayedResultsElement) {
-                displayedResultsElement.textContent = 0;
-            }
-            return;
-        }
-
-        // عرض النتائج بنفس التنسيق مثل loadAllClients
-        let html = '';
-        for (const client of validMatchingClients) {
-            // جلب القضايا ا��خاصة بالموكل
-            const cases = await getFromIndex('cases', 'clientId', client.id);
-
-            // جلب الخصوم
-            const caseOpponentIds = [...new Set(cases.map(c => c.opponentId).filter(id => id))];
-            let tempOpponentIds = [];
-            const clientOpponentRelations = JSON.parse(localStorage.getItem('clientOpponentRelations') || '{}');
-            if (clientOpponentRelations[client.id]) {
-                tempOpponentIds = clientOpponentRelations[client.id];
-            }
-
-            const uniqueOpponentIds = [...new Set([...caseOpponentIds, ...tempOpponentIds])];
-            const opponents = [];
-            for (const opponentId of uniqueOpponentIds) {
-                const opponent = await getById('opponents', opponentId);
-                if (opponent) opponents.push(opponent);
-            }
-
-            // جلب الجلسات
-            let totalSessions = 0;
-            for (const caseRecord of cases) {
-                const sessions = await getFromIndex('sessions', 'caseId', caseRecord.id);
-                totalSessions += sessions.length;
-            }
-
-            // إعداد التطابقات للعرض
-            const matches = allMatchingClients.get(client.id) || [];
-            const matchesHtml = matches.length > 0 ? `
-                <div class="flex items-center gap-2 mt-2">
-                    ${matches.slice(0, 3).map(match => {
-                let bgColor = 'bg-purple-100';
-                let textColor = 'text-purple-700';
-                let iconColor = 'text-purple-600';
-                let icon = 'ri-search-eye-line';
-
-                if (match.includes('الاسم:')) {
-                    bgColor = 'bg-blue-100';
-                    textColor = 'text-blue-700';
-                    iconColor = 'text-blue-600';
-                    icon = 'ri-user-3-line';
-                } else if (match.includes('الخصم:')) {
-                    bgColor = 'bg-red-100';
-                    textColor = 'text-red-700';
-                    iconColor = 'text-red-600';
-                    icon = 'ri-shield-user-line';
-                } else if (match.includes('رقم الدعوى:') || match.includes('سنة الدعوى:')) {
-                    bgColor = 'bg-indigo-100';
-                    textColor = 'text-indigo-700';
-                    iconColor = 'text-indigo-600';
-                    icon = 'ri-briefcase-line';
-                } else if (match.includes('رقم الحصر:') || match.includes('سنة الحصر:')) {
-                    bgColor = 'bg-purple-100';
-                    textColor = 'text-purple-700';
-                    iconColor = 'text-purple-600';
-                    icon = 'ri-file-list-3-line';
-                } else if (match.includes('رقم التوكيل:')) {
-                    bgColor = 'bg-emerald-100';
-                    textColor = 'text-emerald-700';
-                    iconColor = 'text-emerald-600';
-                    icon = 'ri-file-text-line';
-                }
-
-                return `
-                            <div class="flex items-center gap-1 ${bgColor} px-2 py-1 rounded-full">
-                                <i class="${icon} ${iconColor} text-xs"></i>
-                                <span class="text-xs font-medium ${textColor}">${match}</span>
-                            </div>
-                        `;
-            }).join('')}
-                    ${matches.length > 3 ? `
-                        <div class="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
-                            <i class="ri-more-line text-gray-600 text-xs"></i>
-                            <span class="text-xs font-medium text-gray-700">+${matches.length - 3}</span>
-                        </div>
-                    ` : ''}
-                </div>
-            ` : '';
-
-            html += `
-                <div class="client-card bg-gradient-to-r from-white via-blue-50 to-white border border-blue-200 rounded-xl p-5 hover:shadow-lg hover:border-blue-400 hover:from-blue-50 hover:to-blue-100 transition-all duration-300 cursor-pointer group" data-client-id="${client.id}">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-4 flex-1">
-                            <div class="relative">
-                                <div class="w-12 h-12 bg-gradient-to-br from-green-600 to-green-700 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                                    <i class="ri-user-3-line text-white text-lg"></i>
-                                </div>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <h4 class="font-bold text-xl text-gray-800 mb-2 group-hover:text-blue-700 transition-colors">${client.name}</h4>
-                                <div class="flex items-center gap-3">
-                                    <div class="flex items-center gap-1 bg-red-100 px-3 py-1.5 rounded-full">
-                                        <i class="ri-shield-user-line text-red-600 text-sm"></i>
-                                        <span class="text-sm font-semibold text-red-700">${opponents.length}</span>
-                                        <span class="text-xs text-red-600">خصم</span>
-                                    </div>
-                                    <div class="flex items-center gap-1 bg-blue-100 px-3 py-1.5 rounded-full">
-                                        <i class="ri-briefcase-line text-blue-600 text-sm"></i>
-                                        <span class="text-sm font-semibold text-blue-700">${cases.length}</span>
-                                        <span class="text-xs text-blue-600">قضية</span>
-                                    </div>
-                                    <div class="flex items-center gap-1 bg-green-100 px-3 py-1.5 rounded-full">
-                                        <i class="ri-calendar-event-line text-green-600 text-sm"></i>
-                                        <span class="text-sm font-semibold text-green-700">${totalSessions}</span>
-                                        <span class="text-xs text-green-600">جلسة</span>
-                                    </div>
-                                </div>
-                                ${matchesHtml}
-                            </div>
-                        </div>
-                        <div class="flex flex-col gap-2">
-                            <button class="attach-files-btn bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105" data-client-name="${client.name}">
-                                <i class="ri-attachment-2 ml-1"></i>إرفاق ملفات
-                            </button>
-                            <button class="open-folder-btn bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105" data-client-name="${client.name}">
-                                <i class="ri-folder-open-line ml-1"></i>فتح المجلد
-                            </button>
-                            <button class="delete-client-btn bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105" data-client-id="${client.id}">
-                                <i class="ri-delete-bin-line ml-1"></i>حذف
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        html = html.replace(/<button class="delete-client-btn([^>]*)>\s*<i class="ri-delete-bin-line ml-1"><\/i>حذف\s*<\/button>/g, '<button class="delete-client-btn$1><i class="ri-delete-bin-line"></i></button>');
-        clientsList.innerHTML = html;
-        attachClientCardListeners();
 
     } catch (error) {
-        if (clientsList) {
-            clientsList.innerHTML = `
-                <div class="text-center text-red-500 py-8">
-                    <i class="ri-error-warning-line text-2xl mb-2"></i>
-                    <p>خطأ في البحث</p>
-                </div>
-            `;
-        }
         console.error('Search error:', error);
+        clientsList.innerHTML = `
+            <div class="text-center text-red-500 py-8">
+                <i class="ri-error-warning-line text-2xl mb-2"></i>
+                <p>خطأ في البحث</p>
+            </div>
+        `;
     }
 }
 
 
 async function updateQuickStats() {
     try {
-        const clients = await getAllClients();
+        const clients = await (typeof getAllClientsCached === 'function' ? getAllClientsCached() : getAllClients());
         const noOpponentsElement = document.getElementById('clients-no-opponents');
         const noCasesElement = document.getElementById('clients-no-cases');
         const noSessionsElement = document.getElementById('clients-no-sessions');
         const duplicateNamesElement = document.getElementById('duplicate-names');
 
+        if (!Array.isArray(clients) || clients.length === 0) {
+            if (noOpponentsElement) noOpponentsElement.textContent = '0';
+            if (noCasesElement) noCasesElement.textContent = '0';
+            if (noSessionsElement) noSessionsElement.textContent = '0';
+            if (duplicateNamesElement) duplicateNamesElement.textContent = '0';
+            return;
+        }
+
+        let clientOpponentRelations = {};
+        try { clientOpponentRelations = JSON.parse(localStorage.getItem('clientOpponentRelations') || '{}'); } catch (_) { clientOpponentRelations = {}; }
+
+        const allCases = await getAllCases();
+        const allSessions = await getAllSessions();
+
+        const casesByClient = new Map();
+        for (const cs of (Array.isArray(allCases) ? allCases : [])) {
+            const arr = casesByClient.get(cs.clientId) || [];
+            arr.push(cs);
+            casesByClient.set(cs.clientId, arr);
+        }
+
+        const sessionsCountByCase = new Map();
+        for (const s of (Array.isArray(allSessions) ? allSessions : [])) {
+            sessionsCountByCase.set(s.caseId, (sessionsCountByCase.get(s.caseId) || 0) + 1);
+        }
 
         let clientsWithoutOpponents = 0;
-        for (const client of clients) {
-            const cases = await getFromIndex('cases', 'clientId', client.id);
-            const caseOpponentIds = [...new Set(cases.map(c => c.opponentId).filter(id => id))];
-            const clientOpponentRelations = JSON.parse(localStorage.getItem('clientOpponentRelations') || '{}');
-            const tempOpponentIds = clientOpponentRelations[client.id] || [];
-            const uniqueOpponentIds = [...new Set([...caseOpponentIds, ...tempOpponentIds])];
-            if (uniqueOpponentIds.length === 0) {
-                clientsWithoutOpponents++;
-            }
-        }
-        if (noOpponentsElement) {
-            noOpponentsElement.textContent = clientsWithoutOpponents;
-        }
-
-
         let clientsWithoutCases = 0;
+        let clientsWithoutSessions = 0;
+
         for (const client of clients) {
-            const cases = await getFromIndex('cases', 'clientId', client.id);
+            const cid = client && client.id != null ? client.id : null;
+            if (cid == null) continue;
+
+            const cases = casesByClient.get(cid) || [];
             if (cases.length === 0) {
                 clientsWithoutCases++;
+                clientsWithoutOpponents++;
+                clientsWithoutSessions++;
+                continue;
             }
-        }
-        if (noCasesElement) {
-            noCasesElement.textContent = clientsWithoutCases;
-        }
 
+            const caseOpponentIds = [...new Set(cases.map(c => c.opponentId).filter(id => id))];
+            const tempOpponentIds = Array.isArray(clientOpponentRelations[cid]) ? clientOpponentRelations[cid] : [];
+            const uniqueOpponentIds = new Set([...caseOpponentIds, ...tempOpponentIds]);
+            if (uniqueOpponentIds.size === 0) clientsWithoutOpponents++;
 
-        let clientsWithoutSessions = 0;
-        for (const client of clients) {
-            const cases = await getFromIndex('cases', 'clientId', client.id);
             let totalSessions = 0;
             for (const caseRecord of cases) {
-                const sessions = await getFromIndex('sessions', 'caseId', caseRecord.id);
-                totalSessions += sessions.length;
+                totalSessions += (sessionsCountByCase.get(caseRecord.id) || 0);
             }
-            if (totalSessions === 0) {
-                clientsWithoutSessions++;
-            }
-        }
-        if (noSessionsElement) {
-            noSessionsElement.textContent = clientsWithoutSessions;
+            if (totalSessions === 0) clientsWithoutSessions++;
         }
 
+        if (noOpponentsElement) noOpponentsElement.textContent = String(clientsWithoutOpponents);
+        if (noCasesElement) noCasesElement.textContent = String(clientsWithoutCases);
+        if (noSessionsElement) noSessionsElement.textContent = String(clientsWithoutSessions);
 
         const nameCount = {};
         for (const client of clients) {
-            const name = client.name.trim().toLowerCase();
+            const name = (client && client.name ? String(client.name) : '').trim().toLowerCase();
+            if (!name) continue;
             nameCount[name] = (nameCount[name] || 0) + 1;
         }
         const duplicateCount = Object.values(nameCount).filter(count => count > 1).length;
-        if (duplicateNamesElement) {
-            duplicateNamesElement.textContent = duplicateCount;
-        }
-
+        if (duplicateNamesElement) duplicateNamesElement.textContent = String(duplicateCount);
     } catch (error) {
         console.error('خطأ في تحديث الإحصائيات:', error);
     }
 }
-
 
 async function handleDeleteClient(clientId) {
     try {

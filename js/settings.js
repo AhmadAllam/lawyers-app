@@ -1289,7 +1289,7 @@ async function displaySettingsModal() {
 
                     if (!selectedDrive) return;
 
-                    const chosenPath = `${selectedDrive}\\ملفات الموكلين`;
+                    const chosenPath = `${selectedDrive}\\المحامى الرقمى`;
                     await setSetting('customClientsPath', chosenPath);
                     try { if (window.electronAPI && window.electronAPI.setCustomClientsPath) { await window.electronAPI.setCustomClientsPath(chosenPath); } } catch (e) { }
 
@@ -2228,9 +2228,74 @@ async function handleSaveSecuritySettings(options) {
 
 async function handleBackupData() {
     try {
+        const __yieldToUI = async () => {
+            try { await new Promise(r => setTimeout(r, 0)); } catch (_) { }
+        };
+        const __ensureBackupProgressUI = () => {
+            try {
+                if (document.getElementById('__backup-progress-overlay')) return;
+                const el = document.createElement('div');
+                el.id = '__backup-progress-overlay';
+                el.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px;';
+                el.innerHTML = `
+                    <div style="width:min(520px, 92vw); background:#0b1220; color:#fff; border-radius:14px; padding:16px 14px; box-shadow:0 20px 60px rgba(0,0,0,.35);">
+                        <div id="__backup-progress-title" style="font-weight:700; font-size:15px; margin-bottom:10px;">جاري إنشاء النسخة الاحتياطية...</div>
+                        <div style="width:100%; background:rgba(255,255,255,.12); border-radius:999px; overflow:hidden; height:12px;">
+                            <div id="__backup-progress-bar" style="width:0%; height:12px; background:linear-gradient(90deg,#16a34a,#22c55e); border-radius:999px;"></div>
+                        </div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:10px; font-size:13px; opacity:.95;">
+                            <div id="__backup-progress-text">بدء إنشاء النسخة...</div>
+                            <div id="__backup-progress-pct" style="white-space:nowrap;">0%</div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(el);
+            } catch (e) { }
+        };
+        const __showBackupProgress = (title) => {
+            try {
+                __ensureBackupProgressUI();
+                const overlay = document.getElementById('__backup-progress-overlay');
+                const t = document.getElementById('__backup-progress-title');
+                const bar = document.getElementById('__backup-progress-bar');
+                const text = document.getElementById('__backup-progress-text');
+                const pct = document.getElementById('__backup-progress-pct');
+                if (t) t.textContent = title || 'جاري إنشاء النسخة الاحتياطية...';
+                if (bar) bar.style.width = '0%';
+                if (text) text.textContent = 'بدء إنشاء النسخة...';
+                if (pct) pct.textContent = '0%';
+                if (overlay) overlay.style.display = 'flex';
+            } catch (e) { }
+        };
+        const __updateBackupProgress = async (percent, text) => {
+            try {
+                const bar = document.getElementById('__backup-progress-bar');
+                const t = document.getElementById('__backup-progress-text');
+                const pct = document.getElementById('__backup-progress-pct');
+                const p = Math.max(0, Math.min(100, Number(percent) || 0));
+                if (bar) bar.style.width = `${p}%`;
+                if (t && text) t.textContent = text;
+                if (pct) pct.textContent = `${Math.round(p)}%`;
+            } catch (e) { }
+            await __yieldToUI();
+        };
+        const __hideBackupProgress = () => {
+            try {
+                const overlay = document.getElementById('__backup-progress-overlay');
+                if (overlay) overlay.style.display = 'none';
+            } catch (e) { }
+        };
+
         showToast('جاري إنشاء النسخة الاحتياطية...', 'info');
 
+        __showBackupProgress('جاري إنشاء النسخة الاحتياطية...');
+        await __updateBackupProgress(2, 'تجهيز البيانات...');
+        try {
+            window.__backupProgressHook = (p, msg) => { try { __updateBackupProgress(p, msg); } catch (_) { } };
+        } catch (_) { }
+
         const backupData = await createBackup();
+        await __updateBackupProgress(90, 'تجهيز ملف النسخة...');
         const dataStr = JSON.stringify(backupData);
 
 
@@ -2240,8 +2305,10 @@ async function handleBackupData() {
 
 
         if (window.electronAPI && typeof window.electronAPI.saveBackupJson === 'function') {
+            await __updateBackupProgress(95, 'حفظ الملف...');
             const res = await window.electronAPI.saveBackupJson(dataStr, filename);
             if (res && res.success) {
+                await __updateBackupProgress(100, 'تم الحفظ');
                 showToast('تم إنشاء النسخة الاحتياطية بنجاح');
                 return;
             }
@@ -2260,10 +2327,17 @@ async function handleBackupData() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
+        await __updateBackupProgress(100, 'تم الحفظ');
         showToast('تم إنشاء النسخة الاحتياطية بنجاح');
 
     } catch (error) {
         showToast('حدث خطأ في إنشاء النسخة الاحتياطية', 'error');
+    } finally {
+        try { delete window.__backupProgressHook; } catch (_) { window.__backupProgressHook = undefined; }
+        try {
+            const overlay = document.getElementById('__backup-progress-overlay');
+            if (overlay) overlay.style.display = 'none';
+        } catch (_) { }
     }
 }
 
@@ -2322,18 +2396,112 @@ function handleRestoreDataClick() {
 }
 
 async function restoreFromBackupJsonString(fileContent) {
+    const __yieldToUI = async () => {
+        try { await new Promise(r => setTimeout(r, 0)); } catch (_) { }
+    };
+    const __tryParseBackupPayload = async (raw) => {
+        const normalizeText = (s) => {
+            try {
+                let x = (s == null) ? '' : String(s);
+                // strip UTF-8 BOM if present
+                if (x.charCodeAt(0) === 0xFEFF) x = x.slice(1);
+                return x.trim();
+            } catch (e) {
+                return '';
+            }
+        };
+
+        // 1) Plain JSON
+        try {
+            return JSON.parse(normalizeText(raw));
+        } catch (_) { }
+
+        // 2) Base64 payload (some manual downloads or copy/paste can end up as base64 string)
+        try {
+            const s = normalizeText(raw);
+            const clean = s.replace(/\s/g, '');
+            const looksLikeBase64 = clean.length > 64 && /^[A-Za-z0-9+/=]+$/.test(clean);
+            if (looksLikeBase64 && typeof __syncDecompress === 'function') {
+                const json = await __syncDecompress(clean);
+                if (json) return JSON.parse(normalizeText(json));
+            }
+        } catch (_) { }
+
+        return null;
+    };
+    const __ensureRestoreProgressUI = () => {
+        try {
+            if (document.getElementById('__restore-progress-overlay')) return;
+            const el = document.createElement('div');
+            el.id = '__restore-progress-overlay';
+            el.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px;';
+            el.innerHTML = `
+                <div style="width:min(520px, 92vw); background:#0b1220; color:#fff; border-radius:14px; padding:16px 14px; box-shadow:0 20px 60px rgba(0,0,0,.35);">
+                    <div id="__restore-progress-title" style="font-weight:700; font-size:15px; margin-bottom:10px;">جاري استعادة البيانات...</div>
+                    <div style="width:100%; background:rgba(255,255,255,.12); border-radius:999px; overflow:hidden; height:12px;">
+                        <div id="__restore-progress-bar" style="width:0%; height:12px; background:linear-gradient(90deg,#2563eb,#1d4ed8); border-radius:999px;"></div>
+                    </div>
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:10px; font-size:13px; opacity:.95;">
+                        <div id="__restore-progress-text">بدء الاسترجاع...</div>
+                        <div id="__restore-progress-pct" style="white-space:nowrap;">0%</div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(el);
+        } catch (e) { }
+    };
+    const __showRestoreProgress = (title) => {
+        try {
+            __ensureRestoreProgressUI();
+            const overlay = document.getElementById('__restore-progress-overlay');
+            const t = document.getElementById('__restore-progress-title');
+            const bar = document.getElementById('__restore-progress-bar');
+            const text = document.getElementById('__restore-progress-text');
+            const pct = document.getElementById('__restore-progress-pct');
+            if (t) t.textContent = title || 'جاري استعادة البيانات...';
+            if (bar) bar.style.width = '0%';
+            if (text) text.textContent = 'بدء الاسترجاع...';
+            if (pct) pct.textContent = '0%';
+            if (overlay) overlay.style.display = 'flex';
+        } catch (e) { }
+    };
+    const __updateRestoreProgress = async (percent, text) => {
+        try {
+            const bar = document.getElementById('__restore-progress-bar');
+            const t = document.getElementById('__restore-progress-text');
+            const pct = document.getElementById('__restore-progress-pct');
+            const p = Math.max(0, Math.min(100, Number(percent) || 0));
+            if (bar) bar.style.width = `${p}%`;
+            if (t && text) t.textContent = text;
+            if (pct) pct.textContent = `${Math.round(p)}%`;
+        } catch (e) { }
+        await __yieldToUI();
+    };
+    const __hideRestoreProgress = () => {
+        try {
+            const overlay = document.getElementById('__restore-progress-overlay');
+            if (overlay) overlay.style.display = 'none';
+        } catch (e) { }
+    };
+
     let backupData;
     try {
-        backupData = JSON.parse(fileContent);
+        __showRestoreProgress('جاري استعادة البيانات...');
+        await __updateRestoreProgress(2, 'قراءة الملف...');
+        backupData = await __tryParseBackupPayload(fileContent);
+        if (!backupData) throw new Error('JSON');
     } catch (parseError) {
+        __hideRestoreProgress();
         throw new Error('الملف ليس بصيغة JSON صحيحة');
     }
 
     if (!backupData || typeof backupData !== 'object') {
+        __hideRestoreProgress();
         throw new Error('بنية الملف غير صحيحة');
     }
 
     if (!backupData.data) {
+        __hideRestoreProgress();
         throw new Error('الملف لا يحتوي على بيانات صحيحة');
     }
 
@@ -2343,6 +2511,7 @@ async function restoreFromBackupJsonString(fileContent) {
     );
 
     if (!hasValidData) {
+        __hideRestoreProgress();
         throw new Error('الملف لا يحتوي على بيانات صحيحة للتطبيق');
     }
 
@@ -2360,7 +2529,17 @@ async function restoreFromBackupJsonString(fileContent) {
         }
     }
 
-    await restoreBackup(backupData);
+    try {
+        window.__restoreProgressHook = (p, msg) => { try { __updateRestoreProgress(p, msg); } catch (_) { } };
+    } catch (_) { }
+    try {
+        await __updateRestoreProgress(5, 'تجهيز قاعدة البيانات...');
+        await restoreBackup(backupData);
+        await __updateRestoreProgress(100, 'اكتمل الاسترجاع');
+    } finally {
+        try { delete window.__restoreProgressHook; } catch (_) { window.__restoreProgressHook = undefined; }
+        __hideRestoreProgress();
+    }
     try { if (typeof updateCountersInHeader === 'function') await updateCountersInHeader(); } catch (_) { }
     try { showToast('تم استعادة البيانات بنجاح ✅'); } catch (_) { }
     try { if (typeof closeModal === 'function') closeModal(); } catch (_) { }
@@ -2680,6 +2859,13 @@ async function handleRestoreData(event) {
         await restoreFromBackupJsonString(fileContent);
 
     } catch (error) {
+        if (error && error.message === '__GZIP_UNSUPPORTED__') {
+            try {
+                showToast('هذا الملف نسخة سحابة مضغوطة (gzip) والمتصفح لا يدعم فك الضغط. جرّب Chrome/Edge أو استخدم تطبيق سطح المكتب.', 'error');
+            } catch (_) { }
+            try { event.target.value = ''; } catch (_) { }
+            return;
+        }
         if (error && error.message === '__LICENSE_LIMIT__') {
             try { event.target.value = ''; } catch (_) { }
             return;
@@ -2736,13 +2922,33 @@ async function createBackup(useOnlyEnabledTables = false) {
 
     storeNames = (Array.isArray(storeNames) ? storeNames : []).filter(s => existingStores.includes(s));
 
+    const __report = async (p, msg) => {
+        try {
+            if (typeof window !== 'undefined' && typeof window.__backupProgressHook === 'function') {
+                await window.__backupProgressHook(p, msg);
+            }
+        } catch (_) { }
+    };
+
+    const totalStores = Math.max(1, storeNames.length);
+    let doneStores = 0;
+
     for (const storeName of storeNames) {
         try {
+            const pct = 5 + (80 * (doneStores / totalStores));
+            await __report(pct, `قراءة جدول ${storeName}...`);
             const records = await getAllRecords(storeName);
             backup.data[storeName] = records;
         } catch (error) {
 
             backup.data[storeName] = [];
+        }
+
+        doneStores++;
+        if ((doneStores % 1) === 0) {
+            const pct2 = 5 + (80 * (doneStores / totalStores));
+            await __report(pct2, `تم قراءة ${doneStores}/${totalStores} جدول`);
+            try { await new Promise(r => setTimeout(r, 0)); } catch (_) { }
         }
     }
 
@@ -2799,10 +3005,38 @@ async function restoreBackup(backupData, useOnlyEnabledTables = false) {
 
         expectedStores = (Array.isArray(expectedStores) ? expectedStores : []).filter(s => existingStores.includes(s));
 
+        const __report = async (p, msg) => {
+            try {
+                if (typeof window !== 'undefined' && typeof window.__restoreProgressHook === 'function') {
+                    await window.__restoreProgressHook(p, msg);
+                }
+            } catch (_) { }
+        };
+
+        const totalRecords = (() => {
+            try {
+                let sum = 0;
+                for (const s of expectedStores) {
+                    const arr = dataToRestore ? dataToRestore[s] : null;
+                    if (Array.isArray(arr)) sum += arr.length;
+                }
+                return Math.max(1, sum);
+            } catch (e) {
+                return 1;
+            }
+        })();
+
+        let processedRecords = 0;
+        const calcPct = (base, span) => {
+            const p = base + (span * (processedRecords / totalRecords));
+            return Math.max(0, Math.min(99, p));
+        };
+
 
         console.log('🗑️ حذف البيانات المحلية القديمة...');
         for (const storeName of expectedStores) {
             try {
+                await __report(10, 'حذف البيانات القديمة...');
                 await clearStore(storeName);
                 console.log(`✅ تم حذف جدول ${storeName}`);
             } catch (error) {
@@ -2884,6 +3118,8 @@ async function restoreBackup(backupData, useOnlyEnabledTables = false) {
             const records = dataToRestore ? dataToRestore[storeName] : null;
             if (!Array.isArray(records) || records.length === 0) return;
 
+            await __report(calcPct(15, 80), `استعادة ${storeName}...`);
+
             for (const record of records) {
                 if (!record || typeof record !== 'object') continue;
 
@@ -2959,9 +3195,15 @@ async function restoreBackup(backupData, useOnlyEnabledTables = false) {
                         await safePutOrAdd(storeName, r);
                         restoredCount++;
                         restoreStats[storeName].restored++;
+                        processedRecords++;
                     } catch (e) {
                         console.warn(`تخطي سجل غير صالح في ${storeName}:`, e);
                         restoreStats[storeName].skipped++;
+                        processedRecords++;
+                    }
+                    if ((processedRecords % 80) === 0) {
+                        await __report(calcPct(15, 80), `استعادة ${storeName}... (${processedRecords}/${totalRecords})`);
+                        try { await new Promise(r => setTimeout(r, 0)); } catch (_) { }
                     }
                     continue;
                 }
@@ -2975,6 +3217,7 @@ async function restoreBackup(backupData, useOnlyEnabledTables = false) {
                     }
                     restoredCount++;
                     if (restoreStats[storeName]) restoreStats[storeName].restored++;
+                    processedRecords++;
                 } catch (e) {
                     // Case unique key may conflict on old backups; retry without the unique field.
                     const isConstraint = (e && (e.name === 'ConstraintError' || String(e.message || '').includes('ConstraintError')));
@@ -2985,13 +3228,20 @@ async function restoreBackup(backupData, useOnlyEnabledTables = false) {
                             await putRecord(storeName, retry);
                             restoredCount++;
                             if (restoreStats[storeName]) restoreStats[storeName].restored++;
+                            processedRecords++;
                             continue;
                         } catch (e2) {
                             throw e2;
                         }
                     }
                     if (restoreStats[storeName]) restoreStats[storeName].skipped++;
+                    processedRecords++;
                     throw e;
+                }
+
+                if ((processedRecords % 80) === 0) {
+                    await __report(calcPct(15, 80), `استعادة ${storeName}... (${processedRecords}/${totalRecords})`);
+                    try { await new Promise(r => setTimeout(r, 0)); } catch (_) { }
                 }
             }
         };
@@ -3001,6 +3251,7 @@ async function restoreBackup(backupData, useOnlyEnabledTables = false) {
         for (const storeName of ordered) {
             if (!expectedStores.includes(storeName)) continue;
             try {
+                await __report(calcPct(15, 80), `استعادة ${storeName}...`);
                 await restoreStore(storeName);
             } catch (error) {
                 const details = error && (error.name || error.message) ? ` (${error.name || error.message})` : '';
@@ -3008,6 +3259,8 @@ async function restoreBackup(backupData, useOnlyEnabledTables = false) {
                 throw new Error(`فشل في استعادة جدول ${storeName}${details}`);
             }
         }
+
+        await __report(98, `إتمام الاسترجاع... (${processedRecords}/${totalRecords})`);
 
         try {
             console.log('📦 تقرير الاستعادة:', restoreStats);
@@ -3050,10 +3303,70 @@ async function clearStore(storeName) {
 
 function readFileAsText(file) {
     return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = () => reject(reader.error);
-        reader.readAsText(file);
+        const fallbackText = () => {
+            try {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = () => reject(reader.error);
+                reader.readAsText(file);
+            } catch (e) {
+                reject(e);
+            }
+        };
+
+        try {
+            // Try binary path first (supports gzip-compressed backups downloaded manually from GitHub)
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const buf = e && e.target ? e.target.result : null;
+                    if (!buf) return fallbackText();
+                    const bytes = new Uint8Array(buf);
+                    const isGzip = bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b;
+
+                    if (isGzip) {
+                        if (typeof DecompressionStream === 'function') {
+                            const stream = new Blob([bytes]).stream();
+                            const decompressedStream = stream.pipeThrough(new DecompressionStream('gzip'));
+                            const text = await new Response(decompressedStream).text();
+                            return resolve(text);
+                        }
+                        // No gzip support in this browser
+                        return reject(new Error('__GZIP_UNSUPPORTED__'));
+                    }
+
+                    // Not gzip: decode text (support UTF-16 BOM as well)
+                    try {
+                        const isUtf16le = bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE;
+                        const isUtf16be = bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF;
+                        if (isUtf16le) {
+                            const text = new TextDecoder('utf-16le').decode(bytes);
+                            return resolve(text);
+                        }
+                        if (isUtf16be) {
+                            // Convert to LE by swapping pairs
+                            const swapped = new Uint8Array(bytes.length);
+                            for (let i = 0; i + 1 < bytes.length; i += 2) {
+                                swapped[i] = bytes[i + 1];
+                                swapped[i + 1] = bytes[i];
+                            }
+                            const text = new TextDecoder('utf-16le').decode(swapped);
+                            return resolve(text);
+                        }
+                        const text = new TextDecoder().decode(bytes);
+                        return resolve(text);
+                    } catch (_) {
+                        return fallbackText();
+                    }
+                } catch (err) {
+                    return fallbackText();
+                }
+            };
+            reader.onerror = () => fallbackText();
+            reader.readAsArrayBuffer(file);
+        } catch (e) {
+            fallbackText();
+        }
     });
 }
 
@@ -3365,12 +3678,9 @@ async function getLatestBackupFromGitHub(clientId, onlyMeta = false) {
         const url = __cacheBust(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${encodedId}`);
 
         const response = await fetch(url, {
-            cache: 'no-store',
             headers: {
                 'Authorization': `token ${GITHUB_CONFIG.token}`,
-                'Accept': 'application/vnd.github.v3+json',
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
+                'Accept': 'application/vnd.github.v3+json'
             }
         });
 
@@ -3411,12 +3721,9 @@ async function getLatestBackupFromGitHub(clientId, onlyMeta = false) {
         }
 
         const fileResponse = await fetch(__cacheBust(latestFile.url), {
-            cache: 'no-store',
             headers: {
                 'Authorization': `token ${GITHUB_CONFIG.token}`,
-                'Accept': 'application/vnd.github.v3+json',
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
+                'Accept': 'application/vnd.github.v3+json'
             }
         });
 
@@ -3429,7 +3736,8 @@ async function getLatestBackupFromGitHub(clientId, onlyMeta = false) {
         const hasInline = fileData && typeof fileData.content === 'string' && fileData.content.length > 0;
         if (hasInline) {
             try {
-                const json = await __syncDecompress(fileData.content);
+                const clean = String(fileData.content || '').replace(/\s/g, '');
+                const json = await __syncDecompress(clean);
                 parsed = json ? JSON.parse(json) : null;
             } catch (decodeError) {
                 console.warn('تعذر فك تشفير المحتوى المضمن، سيتم استخدام رابط التحميل المباشر إن توفر:', decodeError);
@@ -3437,14 +3745,8 @@ async function getLatestBackupFromGitHub(clientId, onlyMeta = false) {
         }
         if (!parsed && fileData && fileData.download_url) {
             try {
-                const rawRes = await fetch(__cacheBust(fileData.download_url), {
-                    cache: 'no-store',
-                    headers: {
-                        'Authorization': `token ${GITHUB_CONFIG.token}`,
-                        'Cache-Control': 'no-cache',
-                        'Pragma': 'no-cache'
-                    }
-                });
+                // Do NOT send Authorization header to raw.githubusercontent.com (causes CORS preflight failures)
+                const rawRes = await fetch(__cacheBust(fileData.download_url));
                 if (rawRes.ok) {
                     const bytes = new Uint8Array(await rawRes.arrayBuffer());
                     let json;
@@ -3521,12 +3823,9 @@ async function cleanupCloudBackups(clientId) {
         const encodedId = encodeURIComponent(clientId);
         const url = __cacheBust(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${encodedId}`);
         const response = await fetch(url, {
-            cache: 'no-store',
             headers: {
                 'Authorization': `token ${GITHUB_CONFIG.token}`,
-                'Accept': 'application/vnd.github.v3+json',
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
+                'Accept': 'application/vnd.github.v3+json'
             }
         });
         if (!response.ok) return;
@@ -3829,7 +4128,10 @@ async function checkCloudData(clientId) {
 
     const decodeBase64Json = async (base64) => {
         try {
-            const json = await __syncDecompress(base64);
+            const clean = String(base64 || '').replace(/\s/g, '');
+            // GitHub contents API returns base64 of the file bytes.
+            // Our backup file bytes are gzip-compressed JSON.
+            const json = await __syncDecompress(clean);
             return json ? JSON.parse(json) : null;
         } catch (e) { return null; }
     };
@@ -3859,9 +4161,7 @@ async function checkCloudData(clientId) {
 
         const commonHeaders = {
             'Authorization': `token ${GITHUB_CONFIG.token}`,
-            'Accept': 'application/vnd.github.v3+json',
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
+            'Accept': 'application/vnd.github.v3+json'
         };
 
         const folderUrl = __cacheBust(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${encodeURIComponent(licenseId)}`);
@@ -4263,7 +4563,7 @@ function createDataComparisonModal(clientId, cloudData, localData) {
                 <!-- الأزرار -->
                 <div class="flex flex-col gap-2 sm:gap-3">
                     <!-- مجموعة أزرار المزامنة -->
-                    <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                    <div class="flex flex-row flex-wrap gap-2 sm:gap-3">
                         <!-- زر التنزيل من السحابة -->
                         <button id="download-cloud-btn" class="flex-1 bg-blue-900 hover:bg-blue-800 text-white px-3 sm:px-4 py-2.5 sm:py-2 rounded-lg font-bold transition-colors flex items-center justify-center gap-2 shadow-md text-xs sm:text-sm">
                             <i class="ri-download-cloud-line text-base sm:text-lg"></i>
@@ -4356,12 +4656,9 @@ async function showCloudBackupHistory(localData) {
         const encodedId = encodeURIComponent(clientId);
         const url = __cacheBust(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${encodedId}`);
         const response = await fetch(url, {
-            cache: 'no-store',
             headers: {
                 'Authorization': `token ${GITHUB_CONFIG.token}`,
-                'Accept': 'application/vnd.github.v3+json',
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
+                'Accept': 'application/vnd.github.v3+json'
             }
         });
         if (!response.ok) throw new Error('فشل في جلب قائمة النسخ');
@@ -4466,19 +4763,20 @@ async function showBackupComparisonModal(backup, localData, clientId) {
             }
         };
         const fileResponse = await fetch(__cacheBust(backup.url), {
-            cache: 'no-store',
             headers: {
                 'Authorization': `token ${GITHUB_CONFIG.token}`,
-                'Accept': 'application/vnd.github.v3+json',
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
+                'Accept': 'application/vnd.github.v3+json'
             }
         });
         if (!fileResponse.ok) throw new Error('فشل في جلب محتوى النسخة');
         const fileData = await fileResponse.json();
         let parsed;
-        if (fileData.content) { const json = await __syncDecompress(fileData.content); parsed = json ? JSON.parse(json) : null; }
-        if (!parsed && fileData.download_url) { const rawRes = await fetch(__cacheBust(fileData.download_url), { cache: 'no-store', headers: { 'Authorization': `token ${GITHUB_CONFIG.token}`, 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } }); if (rawRes.ok) { const bytes = new Uint8Array(await rawRes.arrayBuffer()); let json; if (bytes[0] === 0x1f && bytes[1] === 0x8b) { json = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text(); } else { json = new TextDecoder().decode(bytes); } parsed = json ? JSON.parse(json) : null; } }
+        if (fileData.content) {
+            const clean = String(fileData.content || '').replace(/\s/g, '');
+            const json = await __syncDecompress(clean);
+            parsed = json ? JSON.parse(json) : null;
+        }
+        if (!parsed && fileData.download_url) { const rawRes = await fetch(__cacheBust(fileData.download_url)); if (rawRes.ok) { const bytes = new Uint8Array(await rawRes.arrayBuffer()); let json; if (bytes[0] === 0x1f && bytes[1] === 0x8b) { json = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text(); } else { json = new TextDecoder().decode(bytes); } parsed = json ? JSON.parse(json) : null; } }
         if (!parsed) throw new Error('فشل في قراءة محتوى النسخة');
         const cloudDataObj = parsed.data || parsed;
         const formatDate = (dateStr) => { if (!dateStr) return 'غير محدد'; try { const d = new Date(dateStr); return isNaN(d.getTime()) ? dateStr : d.toLocaleString('ar-EG', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch { return dateStr; } };
@@ -5027,7 +5325,6 @@ async function checkInternetConnection() {
         const response = await fetch('https://api.github.com/rate_limit', {
             method: 'GET',
             headers: { 'Accept': 'application/vnd.github.v3+json' },
-            cache: 'no-store',
             signal: controller.signal
         });
         clearTimeout(timer);
@@ -5075,7 +5372,17 @@ async function handleDirectDownload() {
         updateSyncProgress(45, 'فحص بيانات السحابة...', 'تنزيل البيانات من السحابة');
         let cloudData;
         try {
-            cloudData = await checkCloudData(clientId);
+            const latest = await getLatestBackupFromGitHub(clientId, false);
+            if (latest) {
+                cloudData = {
+                    data: latest.data || latest,
+                    sha: latest.__meta?.sha,
+                    size: latest.__meta?.size,
+                    lastModified: latest.timestamp || latest.exportDate || latest.__meta?.fetchedAt || 'غير محدد'
+                };
+            } else {
+                cloudData = await checkCloudData(clientId);
+            }
         } catch (error) {
             hideSyncProgress();
             console.error('خطأ في الاتصال بالسحابة:', error);

@@ -63,6 +63,16 @@ function render(){
     else if (s === 'install') cont.innerHTML = getInstallHtml();
     else if (s === 'done') cont.innerHTML = getDoneHtml();
 
+    // Mobile-only: make install mandatory by using the Next button as the install button.
+    // We do not change install logic itself; we only change the button label here.
+    if (s === 'install') {
+        try {
+            if (!isDesktopApp()) {
+                next.textContent = isStandaloneMode() ? 'التالي' : 'تثبيت التطبيق';
+            }
+        } catch (e) {}
+    }
+
     bindStepHandlers(s);
 
     if (s === 'done') {
@@ -358,7 +368,7 @@ function bindStepHandlers(stepId){
                         const finishWithDrive = async (dv) => {
                             const selectedDrive = String(dv || '').trim();
                             if (!selectedDrive) return;
-                            const chosenPath = `${selectedDrive}\\ملفات الموكلين`;
+                            const chosenPath = `${selectedDrive}\\المحامى الرقمى`;
                             try { await setSetting('customClientsPath', chosenPath); } catch (e) { }
                             try { if (window.electronAPI && window.electronAPI.setCustomClientsPath) { await window.electronAPI.setCustomClientsPath(chosenPath); } } catch (e) { }
                             try { const span = $('chosen-path'); if (span) span.textContent = chosenPath; } catch (e) { }
@@ -437,6 +447,8 @@ function bindStepHandlers(stepId){
         const status = $('setup-install-status');
         const finalMsg = $('setup-install-final');
         const help = $('setup-install-help');
+        const nextBtn = $('next-btn');
+        const cont = $('step-container');
 
         const setBtn = (text, disabled) => {
             try { if (btn) btn.textContent = text; } catch (e) {}
@@ -458,12 +470,79 @@ function bindStepHandlers(stepId){
                 if (status) status.textContent = can ? 'جاهز للتثبيت' : 'التثبيت غير متاح الآن';
                 showFinal('');
                 if (help) help.style.display = can ? 'none' : 'block';
+
+                // Mobile-only: Next button acts as the install button (mandatory install)
+                try {
+                    if (!isDesktopApp() && nextBtn) {
+                        if (!isStandaloneMode()) {
+                            nextBtn.textContent = 'تثبيت التطبيق';
+                            nextBtn.disabled = !can;
+                        } else {
+                            nextBtn.textContent = 'التالي';
+                            nextBtn.disabled = false;
+                        }
+                    }
+                } catch (e) {}
             } catch (e) {
                 if (help) help.style.display = 'block';
             }
         };
 
         refreshState();
+
+        // Secret gesture (mobile only): swipe right to skip install step.
+        // This is intentionally silent and only active on the install step.
+        try {
+            if (!isDesktopApp() && cont) {
+                // cleanup previous listeners (if any)
+                try {
+                    const prev = window.__lawyerSetupInstallSwipe;
+                    if (prev && prev.el && prev.onStart && prev.onEnd) {
+                        prev.el.removeEventListener('touchstart', prev.onStart, { passive: true });
+                        prev.el.removeEventListener('touchend', prev.onEnd, { passive: true });
+                    }
+                } catch (e) {}
+
+                let startX = 0;
+                let startY = 0;
+                let startT = 0;
+
+                const onStart = (ev) => {
+                    try {
+                        const t = ev && ev.touches && ev.touches[0];
+                        if (!t) return;
+                        startX = t.clientX;
+                        startY = t.clientY;
+                        startT = Date.now();
+                    } catch (e) {}
+                };
+
+                const onEnd = (ev) => {
+                    try {
+                        if (!steps || !steps[currentStep] || steps[currentStep].id !== 'install') return;
+                        const t = ev && ev.changedTouches && ev.changedTouches[0];
+                        if (!t) return;
+
+                        const dx = t.clientX - startX;
+                        const dy = Math.abs(t.clientY - startY);
+                        const dt = Date.now() - startT;
+
+                        // Right swipe: enough horizontal distance, limited vertical move, not too slow.
+                        if (dx >= 90 && dy <= 70 && dt <= 900) {
+                            if (currentStep < steps.length - 1) {
+                                currentStep += 1;
+                                render();
+                            }
+                        }
+                    } catch (e) {}
+                };
+
+                // Passive listeners to avoid scroll jank.
+                cont.addEventListener('touchstart', onStart, { passive: true });
+                cont.addEventListener('touchend', onEnd, { passive: true });
+                window.__lawyerSetupInstallSwipe = { el: cont, onStart, onEnd };
+            }
+        } catch (e) {}
 
         const updatePrecacheProgress = (done, total) => {
             try {
@@ -479,6 +558,12 @@ function bindStepHandlers(stepId){
             try {
                 if (status) status.textContent = 'تم التثبيت بنجاح. جاري تجهيز ملفات الأوفلاين...';
                 setBtn('تم التثبيت ✓', true);
+                try {
+                    if (nextBtn && !isDesktopApp()) {
+                        nextBtn.textContent = 'التالي';
+                        nextBtn.disabled = false;
+                    }
+                } catch (e) {}
             } catch (e) {}
         };
 
@@ -494,6 +579,13 @@ function bindStepHandlers(stepId){
                     setBtn('تم ✓', true);
                     showFinal('قم بالتحقق من الشاشة الرئيسية لديك: ستجد التطبيق تم تثبيته.');
                 }
+
+                try {
+                    if (nextBtn && !isDesktopApp()) {
+                        nextBtn.textContent = 'التالي';
+                        nextBtn.disabled = false;
+                    }
+                } catch (e) {}
             } catch (e) {}
         };
 
@@ -539,6 +631,13 @@ function bindStepHandlers(stepId){
             });
         }
 
+        // Mobile-only: hide the inner install button (use Next instead).
+        try {
+            if (!isDesktopApp() && btn) {
+                btn.style.display = 'none';
+            }
+        } catch (e) {}
+
         try {
             window.dispatchEvent(new CustomEvent('lawyer:setup:install-step'));
         } catch (e) {}
@@ -549,6 +648,20 @@ function bindStepHandlers(stepId){
 
 async function handleNext(){
     const id = steps[currentStep].id;
+
+    // Mobile-only: on install step, Next triggers install until the app is installed.
+    if (id === 'install') {
+        try {
+            if (!isDesktopApp() && !isStandaloneMode()) {
+                const installBtn = document.getElementById('setup-install-btn');
+                if (installBtn) {
+                    installBtn.click();
+                }
+                return;
+            }
+        } catch (e) {}
+    }
+
     if (id === 'office') {
         
         const name = (document.getElementById('office-name-input')?.value || '').trim();

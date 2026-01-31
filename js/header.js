@@ -161,7 +161,11 @@
     } catch (e) { }
 })();
 
+let __updateCountersInHeaderRunning = false;
+
 async function updateCountersInHeader() {
+    if (__updateCountersInHeaderRunning) return;
+    __updateCountersInHeaderRunning = true;
     try {
         const [
             clientCount,
@@ -282,6 +286,8 @@ async function updateCountersInHeader() {
         }
 
     } catch (error) {
+    } finally {
+        __updateCountersInHeaderRunning = false;
     }
 }
 
@@ -537,9 +543,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         const popoverToggleMuteBtn = document.getElementById('popover-toggle-mute-btn');
 
 
-        try { if (typeof initDB === 'function') await initDB(); } catch (e) { }
-
         let outsideHandlerBound = false;
+        let notificationsReady = false;
 
 
         function setNotificationsBellMutedIcon(muted) {
@@ -564,7 +569,21 @@ window.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        await refreshMuteLabel();
+        async function ensureNotificationsReady() {
+            if (notificationsReady) return true;
+            try {
+                if (typeof initDB === 'function') {
+                    await initDB();
+                }
+                await refreshMuteLabel();
+                notificationsReady = true;
+                return true;
+            } catch (e) {
+                try { await refreshMuteLabel(); } catch (_) { }
+                notificationsReady = true;
+                return true;
+            }
+        }
 
         async function buildNotificationsList(targetEl) {
             if (!targetEl) return;
@@ -684,8 +703,10 @@ window.addEventListener('DOMContentLoaded', async () => {
             const isHidden = menu.classList.contains('hidden');
             if (isHidden) {
                 menu.classList.remove('hidden');
-                buildNotificationsList(list);
-                refreshMuteLabel();
+                ensureNotificationsReady().then(() => {
+                    try { buildNotificationsList(list); } catch (e) { }
+                    try { refreshMuteLabel(); } catch (e) { }
+                });
                 if (!outsideHandlerBound) {
                     outsideHandlerBound = true;
                     document.addEventListener('click', outsideHandler, true);

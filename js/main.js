@@ -24,6 +24,8 @@ function generateMenuItems() {
     if (!menuGrid) return;
     menuGrid.innerHTML = '';
 
+    const rootFrag = document.createDocumentFragment();
+
 
     const isMobile = window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
     const items = isMobile ? menuItemsMobile : menuItemsDesktop;
@@ -34,7 +36,7 @@ function generateMenuItems() {
     firstRowContainer.className = isMobile
         ? 'col-span-full grid grid-cols-2 gap-1'
         : 'col-span-full grid grid-cols-2 gap-3 md:gap-4';
-    menuGrid.appendChild(firstRowContainer);
+    rootFrag.appendChild(firstRowContainer);
 
 
     const iconColors = [
@@ -153,9 +155,11 @@ function generateMenuItems() {
         if (index < 2) {
             firstRowContainer.appendChild(btn);
         } else {
-            menuGrid.appendChild(btn);
+            rootFrag.appendChild(btn);
         }
     });
+
+    menuGrid.appendChild(rootFrag);
 }
 
 function getFeatureLabelById(id) {
@@ -247,7 +251,113 @@ async function handleCardClick(id) {
 }
 
 document.addEventListener('DOMContentLoaded', async function () {
-    generateMenuItems();
+    const isDesktopApp = (function () {
+        try { return !!(typeof window !== 'undefined' && window.electronAPI); } catch (_) { return false; }
+    })();
+
+    function ensureHomeLoadingOverlay() {
+        try {
+            if (!isDesktopApp) return;
+            if (document.getElementById('app-loading-overlay')) return;
+
+            const overlay = document.createElement('div');
+            overlay.id = 'app-loading-overlay';
+            overlay.setAttribute('data-app-loading', '1');
+            overlay.style.cssText = [
+                'position:fixed',
+                'inset:0',
+                'background:rgba(255,255,255,0.92)',
+                'z-index:2147483646',
+                'display:flex',
+                'align-items:center',
+                'justify-content:center',
+                'padding:16px',
+                'direction:rtl'
+            ].join(';');
+
+            const box = document.createElement('div');
+            box.style.cssText = [
+                'width:min(520px, 100%)',
+                'background:#ffffff',
+                'border:1px solid rgba(15,23,42,.12)',
+                'border-radius:16px',
+                'padding:16px',
+                'box-shadow:0 16px 40px rgba(15,23,42,.14)',
+                'font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial',
+                'text-align:center'
+            ].join(';');
+
+            const title = document.createElement('div');
+            title.textContent = 'جاري التحميل';
+            title.style.cssText = 'font-weight:900;color:#0f172a;font-size:16px;margin-bottom:12px;';
+
+            const pulseWrap = document.createElement('div');
+            pulseWrap.style.cssText = 'display:flex;align-items:center;justify-content:center;padding:10px 0;';
+
+            const pulse = document.createElement('div');
+            pulse.id = 'app-loading-pulse';
+            pulse.style.cssText = [
+                'width:54px',
+                'height:54px',
+                'border-radius:9999px',
+                'background:#0EA5E9',
+                'box-shadow:0 0 0 0 rgba(14,165,233,.55)',
+                'animation:appPulse 1.05s ease-in-out infinite'
+            ].join(';');
+            pulseWrap.appendChild(pulse);
+
+            const hint = document.createElement('div');
+            hint.textContent = 'الرجاء الانتظار...';
+            hint.style.cssText = 'margin-top:10px;font-size:13px;color:#334155;';
+
+            if (!document.querySelector('style[data-app-loading-style="1"]')) {
+                const style = document.createElement('style');
+                style.setAttribute('data-app-loading-style', '1');
+                style.textContent = [
+                    '@keyframes appPulse{',
+                    '0%{transform:scale(.92);box-shadow:0 0 0 0 rgba(14,165,233,.55);opacity:.95}',
+                    '70%{transform:scale(1);box-shadow:0 0 0 18px rgba(14,165,233,0);opacity:1}',
+                    '100%{transform:scale(.92);box-shadow:0 0 0 0 rgba(14,165,233,0);opacity:.95}',
+                    '}'
+                ].join('');
+                (document.head || document.documentElement).appendChild(style);
+            }
+
+            box.appendChild(title);
+            box.appendChild(pulseWrap);
+            box.appendChild(hint);
+            overlay.appendChild(box);
+            (document.body || document.documentElement).appendChild(overlay);
+        } catch (e) { }
+    }
+
+    function hideHomeLoadingOverlay() {
+        try {
+            const el = document.getElementById('app-loading-overlay');
+            if (!el) return;
+            el.style.transition = 'opacity .25s ease';
+            el.style.opacity = '0';
+            setTimeout(() => {
+                try { el.remove(); } catch (_) {
+                    try { if (el.parentNode) el.parentNode.removeChild(el); } catch (_) { }
+                }
+            }, 280);
+        } catch (e) { }
+    }
+
+    ensureHomeLoadingOverlay();
+    try {
+        // ابدأ برسم القائمة في أقرب إطار لتقليل التقطيع على الأجهزة الضعيفة
+        if (typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(() => {
+                try { generateMenuItems(); } catch (e) { }
+                try { hideHomeLoadingOverlay(); } catch (e) { }
+            });
+        } else {
+            generateMenuItems();
+            try { hideHomeLoadingOverlay(); } catch (e) { }
+        }
+    } catch (e) { }
 
 
     try {
@@ -260,10 +370,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
         } catch (e) { }
 
-
         const setupRunBefore = localStorage.getItem('lawyer_app_setup_completed');
-
-
         if (!setupRunBefore) {
             if (!/setup\.html$/.test(window.location.pathname)) {
                 window.location.href = 'setup.html';
@@ -272,6 +379,13 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
     } catch (e) { }
 
+
+    let __dateFormatter = null;
+    try {
+        __dateFormatter = new Intl.DateTimeFormat('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+    } catch (e) {
+        __dateFormatter = null;
+    }
 
     function updateCurrentDateTime() {
         const dateLine = document.getElementById('current-date-line');
@@ -284,10 +398,13 @@ document.addEventListener('DOMContentLoaded', async function () {
         const dayName = days[now.getDay()];
 
 
-        try {
-            const dateFormatter = new Intl.DateTimeFormat('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
-            dateLine.textContent = `${dayName} - ${dateFormatter.format(now)}`;
-        } catch (e) {
+        if (__dateFormatter) {
+            try {
+                dateLine.textContent = `${dayName} - ${__dateFormatter.format(now)}`;
+            } catch (e) {
+                dateLine.textContent = `${dayName} - ${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`;
+            }
+        } else {
             dateLine.textContent = `${dayName} - ${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`;
         }
 
@@ -299,22 +416,39 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (h12 === 0) h12 = 12;
         const hh = pad(h12);
         const mm = pad(now.getMinutes());
-        const ss = pad(now.getSeconds());
-        timeEl.textContent = `${hh}:${mm}:${ss} ${suffix}`;
+        timeEl.textContent = `${hh}:${mm} ${suffix}`;
     }
     updateCurrentDateTime();
     try { if (window.__clockTimer) { clearInterval(window.__clockTimer); } } catch (e) { }
-    window.__clockTimer = setInterval(updateCurrentDateTime, 1000);
+    window.__clockTimer = setInterval(updateCurrentDateTime, 60000);
     window.addEventListener('blur', () => {
         try { if (window.__clockTimer) { clearInterval(window.__clockTimer); window.__clockTimer = null; } } catch (e) { }
     });
     window.addEventListener('focus', () => {
-        try { if (!window.__clockTimer) { updateCurrentDateTime(); window.__clockTimer = setInterval(updateCurrentDateTime, 1000); } } catch (e) { }
+        try { if (!window.__clockTimer) { updateCurrentDateTime(); window.__clockTimer = setInterval(updateCurrentDateTime, 60000); } } catch (e) { }
     });
 
     try {
-        await initDB();
-        await updateCountersInHeader();
+        // تحديث العدادات ممكن يبقى تقيل، فبنأخره سنة صغيرة بعد ما الصفحة تبان
+        await new Promise((r) => setTimeout(r, 1000));
+
+        const runCounters = async () => {
+            try { await updateCountersInHeader(); } catch (e) { }
+        };
+
+        if (typeof requestIdleCallback === 'function') {
+            await new Promise((resolve) => {
+                try {
+                    requestIdleCallback(async () => {
+                        try { await runCounters(); } finally { resolve(); }
+                    }, { timeout: 1500 });
+                } catch (e) {
+                    runCounters().finally(resolve);
+                }
+            });
+        } else {
+            await runCounters();
+        }
 
         try {
             const name = await getSetting('officeName');
